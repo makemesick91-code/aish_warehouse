@@ -1,4 +1,6 @@
 import '../../../../core/enums/app_enums.dart';
+import '../../../../core/time/app_time_zone.dart';
+import '../../../../core/time/date_only.dart';
 
 /// Domain models for master data. They intentionally mirror only the business
 /// columns so the rest of the app never depends on Drift row classes.
@@ -97,18 +99,17 @@ class MasterBatch {
   final String itemId;
   final String batchNo;
 
-  /// Stored as a UTC midnight instant.
+  /// Civil date, carried as a UTC midnight value and never converted (T-8).
   final DateTime expiryDate;
 
-  /// A batch is usable until the end of its expiry date (G-E4).
-  bool isExpiredOn(DateTime referenceUtc) {
-    final today = DateTime.utc(
-      referenceUtc.year,
-      referenceUtc.month,
-      referenceUtc.day,
-    );
-    return expiryDate.isBefore(today);
-  }
+  /// A batch is usable until the end of its expiry date (G-E4), where "end of
+  /// day" means the operational day in GMT+8 rather than the device's (T-10).
+  ///
+  /// [referenceUtc] is a UTC instant — typically the injected clock.
+  bool isExpiredOn(DateTime referenceUtc) => DateOnly.isBeforeDate(
+    expiryDate,
+    AppTimeZone.operationalDate(referenceUtc),
+  );
 }
 
 class MasterLocation {

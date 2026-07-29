@@ -1,6 +1,8 @@
 import 'package:aish_warehouse/core/db/app_database.dart';
 import 'package:aish_warehouse/core/db/seed/development_seed.dart';
 import 'package:aish_warehouse/core/enums/app_enums.dart';
+import 'package:aish_warehouse/core/time/app_time_zone.dart';
+import 'package:aish_warehouse/core/time/date_only.dart';
 import 'package:aish_warehouse/features/inventory/data/repositories/drift_inventory_repository.dart';
 import 'package:aish_warehouse/features/inventory/domain/repositories/inventory_repository.dart';
 import 'package:aish_warehouse/features/inventory/domain/services/stock_posting_service.dart';
@@ -149,8 +151,20 @@ Future<InventoryFixture> buildFixture(TestContext context) async {
   );
 }
 
-/// Helper for expiry dates relative to "today" in UTC.
-DateTime utcDaysFromNow(int days) {
-  final now = DateTime.now().toUtc();
-  return DateTime.utc(now.year, now.month, now.day + days);
-}
+/// An expiry date [days] away from the current *operational* day.
+///
+/// Counting from the GMT+8 date rather than the UTC one matters between 16:00
+/// and 24:00 UTC, when the operational day has already rolled over: using the
+/// UTC date there would place the batch a day earlier than intended and make
+/// the expiry assertions flaky depending on when the suite runs.
+DateTime expiryDateInDays(int days) =>
+    DateOnly.addDays(AppTimeZone.operationalDate(DateTime.now().toUtc()), days);
+
+/// A fixed UTC instant, for tests that must not depend on the wall clock.
+DateTime utcInstant(
+  int year,
+  int month,
+  int day, [
+  int hour = 0,
+  int minute = 0,
+]) => DateTime.utc(year, month, day, hour, minute);

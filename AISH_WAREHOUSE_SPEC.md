@@ -124,7 +124,7 @@ Konvensi umum untuk **semua tabel**:
 | `location_id` | FK → stock_locations | |
 | `item_id` | FK → items | |
 | `batch_id` | FK? → item_batches | NULL untuk barang tanpa kadaluarsa |
-| `qty_on_hand` | INT | ≥ 0 selalu |
+| `qty_on_hand` | INTEGER (milli-unit) | ≥ 0 selalu. Fixed-point skala 1000 — lihat §6.2 |
 | UNIQUE(`location_id`,`item_id`,`batch_id`) | | Saldo dipecah per batch untuk barang ber-ED |
 
 **`stock_movements`** — Ledger perpindahan stok (**append-only, tidak boleh di-edit/di-delete**)
@@ -135,7 +135,7 @@ Konvensi umum untuk **semua tabel**:
 | `batch_id` | FK? → item_batches | Wajib untuk barang `has_expiry = true` |
 | `from_location_id` | FK? → stock_locations | NULL jika barang masuk dari luar sistem |
 | `to_location_id` | FK? → stock_locations | NULL jika barang keluar sistem (pemakaian/buang) |
-| `qty` | INT | > 0 selalu |
+| `qty` | INTEGER (milli-unit) | > 0 selalu. Fixed-point skala 1000 — lihat §6.2 |
 | `movement_type` | TEXT enum | `inbound_warehouse` · `shipment` · `good_receipt` · `distribution` · `opname_adjustment` · `consumption` · `return` · `disposal` (pemusnahan barang kedaluwarsa) |
 | `ref_doc_type` | TEXT | `PR` / `DO` / `GR` / `DIST` / `SO` |
 | `ref_doc_id` | TEXT | ID dokumen sumber |
@@ -166,9 +166,9 @@ Konvensi umum untuk **semua tabel**:
 | `opname_id` | FK → stock_opnames | |
 | `item_id` | FK → items | |
 | `batch_id` | FK? → item_batches | Barang ber-ED dihitung **per batch** (1 baris per batch); NULL untuk barang tanpa ED |
-| `system_qty` | INT | Stok sistem saat opname dimulai (snapshot) |
-| `counted_qty` | INT | Hasil hitung fisik perawat |
-| `difference` | INT (generated) | `counted_qty - system_qty` |
+| `system_qty` | INTEGER (milli-unit) | Stok sistem saat opname dimulai (snapshot) |
+| `counted_qty` | INTEGER (milli-unit) | Hasil hitung fisik perawat; menerima desimal, mis. `0.5` |
+| `difference` | INTEGER (milli-unit, generated) | `counted_qty - system_qty`; **boleh negatif** |
 | `note` | TEXT? | Alasan selisih |
 
 **`purchase_requests`** — PR dari Kepala Cabang ke Warehouse
@@ -195,8 +195,8 @@ Konvensi umum untuk **semua tabel**:
 |---|---|---|
 | `pr_id` | FK → purchase_requests | |
 | `item_id` | FK → items | |
-| `suggested_qty` | INT | Saran sistem: `max(0, min_stock − counted_qty)` agregat ruangan |
-| `requested_qty` | INT | Qty final yang diminta Kepala Cabang (> 0) |
+| `suggested_qty` | INTEGER (milli-unit) | Saran sistem: `max(0, min_stock − counted_qty)` agregat ruangan |
+| `requested_qty` | INTEGER (milli-unit) | Qty final yang diminta Kepala Cabang (> 0) |
 | `note` | TEXT? | |
 
 **`delivery_orders`** — Pengiriman/Surat Jalan dari Warehouse (1 PR bisa >1 DO untuk pengiriman parsial)
@@ -217,7 +217,7 @@ Konvensi umum untuk **semua tabel**:
 | `pr_line_id` | FK → purchase_request_lines | Wajib merujuk baris PR |
 | `item_id` | FK → items | |
 | `batch_id` | FK? → item_batches | Batch yang dipilih warehouse (saran otomatis **FEFO**) |
-| `shipped_qty` | INT | > 0; kumulatif per PR line ≤ `requested_qty` |
+| `shipped_qty` | INTEGER (milli-unit) | > 0; kumulatif per PR line ≤ `requested_qty` |
 
 **`good_receipts`** — Penerimaan barang oleh Kepala Cabang (1 GR per DO)
 
@@ -237,8 +237,8 @@ Konvensi umum untuk **semua tabel**:
 | `do_line_id` | FK → delivery_order_lines | |
 | `item_id` | FK → items | |
 | `batch_id` | FK? → item_batches | Diverifikasi Kepala Cabang terhadap fisik (batch & ED di kemasan) |
-| `shipped_qty` | INT | Salinan dari DO (read-only) |
-| `received_qty` | INT | Qty diterima; 0 ≤ received ≤ shipped |
+| `shipped_qty` | INTEGER (milli-unit) | Salinan dari DO (read-only) |
+| `received_qty` | INTEGER (milli-unit) | Qty diterima; 0 ≤ received ≤ shipped |
 | `line_status` | TEXT enum | `pending` → `checked` (✔ sesuai) · `rejected` (✘ tidak sesuai/dihapus) |
 | `reject_reason` | TEXT? | **Wajib** jika `rejected` |
 
@@ -260,7 +260,7 @@ Konvensi umum untuk **semua tabel**:
 | `room_id` | FK → rooms | Ruangan tujuan (harus milik cabang yang sama) |
 | `item_id` | FK → items | |
 | `batch_id` | FK? → item_batches | Saran otomatis **FEFO** dari saldo gudang cabang |
-| `qty` | INT | > 0; total per item ≤ saldo gudang cabang |
+| `qty` | INTEGER (milli-unit) | > 0; total per item ≤ saldo gudang cabang |
 
 **`export_logs`** — Jejak audit setiap ekspor laporan (Excel/PDF)
 
@@ -561,7 +561,8 @@ Kacab:    Distribusi → pilih R1/R2/R3 → pilih barang & qty → Posting (stok
 | Ekspor Excel | package `excel` (atau `syncfusion_flutter_xlsio`) | Generate `.xlsx` lokal, tanpa server |
 | Ekspor PDF | package `pdf` + `printing` | Generate `.pdf` lokal + preview/print/share sheet |
 | Berbagi file | `share_plus` + `path_provider` | Simpan & bagikan hasil ekspor |
-| Zona waktu | Simpan UTC, tampil WITA (Asia/Makassar) | Konsistensi lintas cabang |
+| Zona waktu | Simpan UTC, zona operasional **UTC+08:00 / GMT+8** (§6.1) | Konsistensi lintas cabang, bebas dari zona waktu perangkat |
+| Kuantitas | Fixed-point INTEGER milli-unit, skala 1000 (§6.2) | Desimal (0.5, 1.25, 2.375) tanpa galat floating point |
 
 ### 5.1 Urutan Implementasi yang Disarankan (belum dikerjakan)
 
@@ -572,4 +573,136 @@ Kacab:    Distribusi → pilih R1/R2/R3 → pilih barang & qty → Posting (stok
 
 ---
 
-*Aish Warehouse © Aish Tech Solution — dokumen spesifikasi v1.0, 29 Juli 2026.*
+## 6. Keputusan Operasional (Milestone 1.1)
+
+Dua keputusan bisnis di bawah ini berlaku sebagai **aturan project untuk sekarang dan
+seterusnya**, dan mengikat seluruh fitur berikutnya (Stok Opname, PR, DO, GR, Distribusi,
+Laporan).
+
+### 6.1 Zona Waktu Operasional
+
+```
+Operational timezone: UTC+08:00 / GMT+8
+```
+
+Keputusan ini **menggantikan asumsi zona waktu perangkat** dan mempertegas (bukan
+mengganti) prinsip penyimpanan UTC untuk sinkronisasi.
+
+**Aturan:**
+
+- **T-1** — Seluruh timestamp persisten tetap disimpan dalam **UTC**: `created_at`,
+  `updated_at`, `deleted_at`, timestamp movement, dan timestamp dokumen
+  (`submitted_at`, `reviewed_at`, `shipped_at`, `posted_at`).
+- **T-2** — Seluruh waktu yang **ditampilkan** kepada pengguna dikonversi ke UTC+08:00.
+- **T-3** — Perhitungan tanggal operasional, "hari ini", minggu ISO, dan batas pergantian
+  hari menggunakan UTC+08:00.
+- **T-4** — Implementasi **tidak boleh bergantung pada zona waktu perangkat**. Pemanggilan
+  `DateTime.toLocal()` dilarang pada jalur tampilan maupun perhitungan.
+- **T-5** — Seluruh konversi berada di utility terpusat `lib/core/time/app_time_zone.dart`
+  (`AppTimeZone`). Menyebar `.add(const Duration(hours: 8))` ke banyak file dilarang.
+- **T-6** — Istilah kode yang dipakai adalah **operational time**, bukan *local time*, agar
+  tidak tertukar dengan zona waktu perangkat.
+- **T-7** — Clock tetap dapat di-inject pada service (`StockPostingService({clock})`) agar
+  test deterministik. Test tidak boleh memakai waktu nyata.
+
+**Mengapa UTC tetap dipakai untuk penyimpanan:**
+
+- Sinkronisasi tetap konsisten lintas cabang dan perangkat.
+- Data tidak tergantung zona waktu perangkat yang bisa salah setel.
+- Backend tidak pernah menerima timestamp ambigu.
+- Audit trail memiliki satu referensi waktu tunggal.
+
+**GMT+8 hanya dipakai sebagai zona operasional untuk:** tampilan UI, input tanggal & waktu
+pengguna, penentuan "hari ini", penentuan batch kedaluwarsa, periode laporan, minggu ISO
+Stok Opname, filter berdasarkan tanggal, serta batas awal dan akhir hari.
+
+**Civil date (`expiry_date`):**
+
+- **T-8** — `expiry_date` bukan timestamp kejadian melainkan **tanggal kalender tanpa jam**
+  (civil date / date-only), disimpan sebagai UTC midnight dan **tidak boleh bergeser** oleh
+  konversi zona waktu. Tanggal `2026-07-29` harus tetap `2026-07-29` di penyimpanan,
+  perbandingan, maupun tampilan.
+- **T-9** — Konversi GMT+8 **tidak** boleh dipanggil pada `expiry_date`. Utility date-only
+  ada di `lib/core/time/date_only.dart`.
+- **T-10** — Batch berlaku **sampai akhir tanggal kedaluwarsa** menurut tanggal operasional
+  GMT+8, dan ditolak mulai hari berikutnya:
+
+  | `expiry_date` | Tanggal operasional | Hasil |
+  |---|---|---|
+  | 2026-07-29 | 2026-07-29 | masih valid |
+  | 2026-07-29 | 2026-07-30 | kedaluwarsa |
+
+**Format tampilan** (`lib/core/time/app_date_time_formatter.dart`, Bahasa Indonesia):
+`dd MMM yyyy` · `dd MMM yyyy, HH:mm` · `HH:mm`. Setiap timestamp dipastikan UTC → dikonversi
+lewat `AppTimeZone` → baru diformat. Label zona ditambahkan bila kejelasan dibutuhkan,
+mis. `29 Jul 2026, 22:30 GMT+8`.
+
+### 6.2 Kuantitas Desimal (Fixed-Point)
+
+**Aturan:**
+
+- **Q-1** — Semua kuantitas barang mendukung **maksimal 3 angka desimal**.
+  Valid: `1`, `0.5`, `1.25`, `2.375`. Tidak valid: `-1`, `0.0001`, `NaN`, `Infinity`.
+- **Q-2** — Kuantitas stok disimpan sebagai **fixed-point integer**, bukan floating point.
+  Skala penyimpanan adalah **1000**:
+
+  ```
+  1 unit     = 1000 milli-units
+  0.5 unit   = 500 milli-units
+  1.25 unit  = 1250 milli-units
+  2.375 unit = 2375 milli-units
+  ```
+
+- **Q-3** — Kolom kuantitas ledger memakai tipe SQLite **INTEGER** berisi milli-unit.
+  **REAL dilarang** pada kolom kuantitas, dan `double` dilarang sebagai sumber kebenaran
+  perhitungan saldo. Constraint tetap berlaku pada nilai terskala
+  (`qty_on_hand >= 0`, `qty > 0`).
+- **Q-4** — Value object terpusat `Quantity` (`lib/core/quantity/quantity.dart`) adalah
+  satu-satunya representasi kuantitas di domain, repository, service, dan UI. DAO boleh
+  memakai `int` milli-unit **hanya** pada boundary database; widget dan service tidak boleh
+  mengetahui bahwa database memakai milli-unit.
+- **Q-5** — Parser `Quantity.parse` menerima titik maupun koma sebagai pemisah desimal
+  (`"0.5"` dan `"0,5"` sama-sama 500 milli-unit) dan **menolak** input kosong, negatif,
+  bukan angka, `NaN`, `Infinity`, serta lebih dari 3 desimal. **Tidak ada pembulatan diam-diam**:
+  input berdesimal lebih dari 3 menghasilkan validation error.
+- **Q-6** — Formatter menghapus nol yang tidak diperlukan: `1000 → "1"`, `500 → "0.5"`,
+  `1250 → "1.25"`, `2375 → "2.375"`. Bentuk `0.500` / `1.000` tidak ditampilkan kecuali
+  diminta oleh laporan formal tertentu. Nilai milli-unit **tidak pernah** ditampilkan kepada
+  pengguna.
+- **Q-7** — Kuantitas umum tidak boleh negatif. Operasi pengurangan `Quantity` boleh
+  menghasilkan nilai negatif secara internal (dipakai untuk selisih opname), tetapi input
+  fisik dan movement tetap mengikuti business rule masing-masing (`qty > 0`,
+  `qty_on_hand >= 0`).
+- **Q-8** — Input UI memakai `TextInputType.numberWithOptions(decimal: true)` dengan
+  formatter terpusat yang membatasi 3 desimal namun **tidak menghalangi** ketikan antara
+  seperti `0.` atau `0,`. Validasi final dijalankan saat submit atau saat field kehilangan
+  fokus, dengan pesan Bahasa Indonesia: *"Masukkan jumlah yang valid."*,
+  *"Jumlah harus lebih dari 0."*, *"Maksimal 3 angka di belakang koma."*
+
+**Field yang wajib memakai mekanisme ini** — sekarang dan pada seluruh fitur berikutnya:
+
+```
+qty              qty_on_hand      system_qty       counted_qty      difference
+requested_qty    approved_qty     shipped_qty      received_qty     distributed_qty
+```
+
+**Catatan untuk Stok Opname (schema v3):** `system_qty`, `counted_qty`, dan `difference`
+memakai `Quantity` dan disimpan sebagai INTEGER milli-unit. `difference` **dapat bernilai
+negatif**. Input `counted_qty` oleh perawat harus menerima nilai desimal seperti `0.5`.
+
+### 6.3 Versi Schema Database
+
+| Versi | Cakupan |
+|---|---|
+| v1 | Skema awal Milestone 1 (kuantitas sebagai unit bulat) |
+| **v2** | **Milestone 1.1** — kuantitas ledger menjadi fixed-point milli-unit |
+| v3 | Stok Opname (`stock_opnames`, `stock_opname_lines`) — **belum dikerjakan** |
+
+Migrasi v1 → v2 hanya menskalakan data (`× 1000`) pada `stock_balances.qty_on_hand` dan
+`stock_movements.qty`; tipe kolom tetap INTEGER sehingga tidak ada rebuild tabel. Migrasi
+dijalankan tepat satu kali, pada blok `if (from < 2)`. Stok Opname **wajib** memakai schema
+v3, bukan menumpang v2.
+
+---
+
+*Aish Warehouse © Aish Tech Solution — dokumen spesifikasi v1.1, 29 Juli 2026.*

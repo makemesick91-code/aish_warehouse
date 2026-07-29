@@ -63,4 +63,31 @@ void main() {
 
     await disposeApp(tester);
   });
+
+  testWidgets('saldo desimal tampil tanpa artefak floating point', (
+    WidgetTester tester,
+  ) async {
+    await pumpApp(tester);
+    await tester.tap(find.text('Jalankan Seed Pengembangan'));
+    await tester.pumpAndSettle();
+
+    // Decimal balances render as typed, whole ones without a decimal tail.
+    expect(find.text('10.5 box'), findsOneWidget);
+    expect(find.text('150 box'), findsOneWidget);
+    expect(find.text('150.0 box'), findsNothing);
+    // Milli-units must never reach the screen.
+    expect(find.text('10500 box'), findsNothing);
+
+    await disposeApp(tester);
+  });
+
+  testWidgets('zona waktu operasional dinyatakan pada halaman', (
+    WidgetTester tester,
+  ) async {
+    await pumpApp(tester);
+
+    expect(find.text('Zona waktu operasional: GMT+8'), findsOneWidget);
+
+    await disposeApp(tester);
+  });
 }

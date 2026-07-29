@@ -34,6 +34,13 @@ class StockBalances extends Table with BusinessColumns {
 
   TextColumn get batchId => text().nullable().references(ItemBatches, #id)();
 
+  /// Balance in **milli-units** — `Quantity.scale` (1000) per whole unit, so
+  /// 0.5 on the shelf is stored as 500 (spec Q-3, schema v2).
+  ///
+  /// INTEGER, never REAL: a REAL balance would accumulate binary rounding error
+  /// across postings and could drift away from the ledger it mirrors. The
+  /// CHECK below applies to the scaled value, so it still means "never
+  /// negative" (G-A2).
   IntColumn get qtyOnHand => integer()();
 
   @override
@@ -59,6 +66,9 @@ class StockMovements extends Table with BusinessColumns {
   TextColumn get toLocationId =>
       text().nullable().references(StockLocations, #id)();
 
+  /// Movement quantity in **milli-units**, matching
+  /// [StockBalances.qtyOnHand] (spec Q-3). `CHECK (qty > 0)` below is evaluated
+  /// on the scaled value, so the smallest postable movement is 0.001 units.
   IntColumn get qty => integer()();
 
   TextColumn get movementType =>

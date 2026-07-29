@@ -5,8 +5,15 @@ import '../../../features/inventory/domain/services/stock_posting_service.dart';
 import '../../../features/master/domain/models/master_models.dart';
 import '../../../features/master/domain/repositories/master_data_repository.dart';
 import '../../enums/app_enums.dart';
+import '../../quantity/quantity.dart';
+import '../../time/app_time_zone.dart';
+import '../../time/date_only.dart';
 
 /// Definition of one seeded item plus its opening warehouse stock.
+///
+/// Quantities are written the way a user would type them and go through
+/// [Quantity.parse], which keeps the decimal seeds (`10.5`, `2.375`, `0.5`)
+/// readable and exercises the same parser the UI uses.
 class _SeedItem {
   const _SeedItem({
     required this.sku,
@@ -29,7 +36,7 @@ class _SeedItem {
   final bool hasExpiry;
 
   /// Opening quantity for non-expiry items (batched items use [batches]).
-  final int openingQty;
+  final String openingQty;
   final List<_SeedBatch> batches;
 }
 
@@ -44,7 +51,7 @@ class _SeedBatch {
 
   /// Relative to the seed run so the data stays meaningful over time.
   final int daysUntilExpiry;
-  final int qty;
+  final String qty;
 }
 
 /// Idempotent development seed.
@@ -83,10 +90,10 @@ class DevelopmentSeed {
       minStockRoom: 4,
       minStockBranch: 12,
       hasExpiry: true,
-      openingQty: 0,
+      openingQty: '0',
       batches: [
-        _SeedBatch(batchNo: 'KMP-2401', daysUntilExpiry: 45, qty: 20),
-        _SeedBatch(batchNo: 'KMP-2402', daysUntilExpiry: 210, qty: 30),
+        _SeedBatch(batchNo: 'KMP-2401', daysUntilExpiry: 45, qty: '20'),
+        _SeedBatch(batchNo: 'KMP-2402', daysUntilExpiry: 210, qty: '30'),
       ],
     ),
     _SeedItem(
@@ -97,10 +104,10 @@ class DevelopmentSeed {
       minStockRoom: 3,
       minStockBranch: 9,
       hasExpiry: true,
-      openingQty: 0,
+      openingQty: '0',
       batches: [
-        _SeedBatch(batchNo: 'GIC-2311', daysUntilExpiry: 20, qty: 12),
-        _SeedBatch(batchNo: 'GIC-2405', daysUntilExpiry: 365, qty: 24),
+        _SeedBatch(batchNo: 'GIC-2311', daysUntilExpiry: 20, qty: '12'),
+        _SeedBatch(batchNo: 'GIC-2405', daysUntilExpiry: 365, qty: '24'),
       ],
     ),
     _SeedItem(
@@ -111,8 +118,11 @@ class DevelopmentSeed {
       minStockRoom: 2,
       minStockBranch: 6,
       hasExpiry: true,
-      openingQty: 0,
-      batches: [_SeedBatch(batchNo: 'BND-2404', daysUntilExpiry: 150, qty: 18)],
+      openingQty: '0',
+      // Three-decimal opening stock, so the dashboard shows `2.375 botol`.
+      batches: [
+        _SeedBatch(batchNo: 'BND-2404', daysUntilExpiry: 150, qty: '2.375'),
+      ],
     ),
     _SeedItem(
       sku: 'DEN-0004',
@@ -122,7 +132,8 @@ class DevelopmentSeed {
       minStockRoom: 5,
       minStockBranch: 20,
       hasExpiry: false,
-      openingQty: 120,
+      // Decimal opening stock: `10.5 box` on the development home page.
+      openingQty: '10.5',
     ),
     _SeedItem(
       sku: 'DEN-0005',
@@ -132,7 +143,7 @@ class DevelopmentSeed {
       minStockRoom: 50,
       minStockBranch: 200,
       hasExpiry: false,
-      openingQty: 800,
+      openingQty: '800',
     ),
     _SeedItem(
       sku: 'DEN-0006',
@@ -142,7 +153,7 @@ class DevelopmentSeed {
       minStockRoom: 3,
       minStockBranch: 10,
       hasExpiry: false,
-      openingQty: 60,
+      openingQty: '60',
     ),
     _SeedItem(
       sku: 'DEN-0007',
@@ -152,11 +163,11 @@ class DevelopmentSeed {
       minStockRoom: 10,
       minStockBranch: 40,
       hasExpiry: true,
-      openingQty: 0,
+      openingQty: '0',
       batches: [
-        _SeedBatch(batchNo: 'LID-2403', daysUntilExpiry: 10, qty: 40),
-        _SeedBatch(batchNo: 'LID-2407', daysUntilExpiry: 120, qty: 60),
-        _SeedBatch(batchNo: 'LID-2412', daysUntilExpiry: 400, qty: 100),
+        _SeedBatch(batchNo: 'LID-2403', daysUntilExpiry: 10, qty: '40'),
+        _SeedBatch(batchNo: 'LID-2407', daysUntilExpiry: 120, qty: '60'),
+        _SeedBatch(batchNo: 'LID-2412', daysUntilExpiry: 400, qty: '100'),
       ],
     ),
     _SeedItem(
@@ -167,8 +178,11 @@ class DevelopmentSeed {
       minStockRoom: 4,
       minStockBranch: 12,
       hasExpiry: true,
-      openingQty: 0,
-      batches: [_SeedBatch(batchNo: 'CHX-2402', daysUntilExpiry: 75, qty: 25)],
+      openingQty: '0',
+      // Half-unit opening stock: `0.5 botol`.
+      batches: [
+        _SeedBatch(batchNo: 'CHX-2402', daysUntilExpiry: 75, qty: '0.5'),
+      ],
     ),
     _SeedItem(
       sku: 'DEN-0009',
@@ -178,7 +192,7 @@ class DevelopmentSeed {
       minStockRoom: 4,
       minStockBranch: 16,
       hasExpiry: false,
-      openingQty: 150,
+      openingQty: '150',
     ),
     _SeedItem(
       sku: 'DEN-0010',
@@ -188,7 +202,7 @@ class DevelopmentSeed {
       minStockRoom: 3,
       minStockBranch: 10,
       hasExpiry: false,
-      openingQty: 40,
+      openingQty: '40',
     ),
   ];
 
@@ -284,29 +298,27 @@ class DevelopmentSeed {
           refDocId: 'seed-opening-${spec.sku}',
           itemId: item.id,
           locationId: warehouse.id,
-          qty: spec.openingQty,
+          qty: Quantity.parse(spec.openingQty),
           actorUserId: warehouseUser.id,
         );
         continue;
       }
 
-      final today = DateTime.now().toUtc();
+      // Expiry dates are civil dates counted from the operational day, so a
+      // seed run close to midnight cannot land on yesterday's date (T-3/T-8).
+      final today = AppTimeZone.operationalDate(DateTime.now().toUtc());
       for (final batchSpec in spec.batches) {
         final batch = await _master.ensureBatch(
           itemId: item.id,
           batchNo: batchSpec.batchNo,
-          expiryDate: DateTime.utc(
-            today.year,
-            today.month,
-            today.day + batchSpec.daysUntilExpiry,
-          ),
+          expiryDate: DateOnly.addDays(today, batchSpec.daysUntilExpiry),
         );
         await _postOpeningStock(
           refDocId: 'seed-opening-${spec.sku}-${batchSpec.batchNo}',
           itemId: item.id,
           batchId: batch.id,
           locationId: warehouse.id,
-          qty: batchSpec.qty,
+          qty: Quantity.parse(batchSpec.qty),
           actorUserId: warehouseUser.id,
         );
       }
@@ -320,10 +332,10 @@ class DevelopmentSeed {
     required String itemId,
     String? batchId,
     required String locationId,
-    required int qty,
+    required Quantity qty,
     required String actorUserId,
   }) async {
-    if (qty <= 0) return;
+    if (!qty.isPositive) return;
 
     final existing = await _inventory.movementsByRef(
       refDocType: RefDocType.seed,

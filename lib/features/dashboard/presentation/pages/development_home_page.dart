@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/time/app_date_time_formatter.dart';
 import '../../../../core/widgets/status_card.dart';
 import '../../../inventory/domain/models/inventory_models.dart';
 import '../../../inventory/presentation/widgets/expiry_badge.dart';
@@ -76,6 +77,8 @@ class DevelopmentHomePage extends ConsumerWidget {
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
+            const SizedBox(height: AppSpacing.xs),
+            const _OperationalTimeZoneNote(),
             const SizedBox(height: AppSpacing.sm),
             const _WarehouseBalanceSection(),
           ],
@@ -269,6 +272,34 @@ class _WarehouseBalanceSection extends ConsumerWidget {
   }
 }
 
+/// Makes the operational timezone explicit, so nobody reads a displayed time as
+/// device time (T-2).
+class _OperationalTimeZoneNote extends StatelessWidget {
+  const _OperationalTimeZoneNote();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Icon(
+          Icons.schedule,
+          size: 14,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        Text(
+          'Zona waktu operasional: ${AppDateTimeFormatter.timeZoneLabel}',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _BalanceTile extends StatelessWidget {
   const _BalanceTile({required this.balance, required this.now});
 
@@ -301,10 +332,20 @@ class _BalanceTile extends StatelessWidget {
               ],
             ),
           ],
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            // The stored instant is UTC; the formatter converts it to GMT+8.
+            'Diperbarui ${AppDateTimeFormatter.dateTimeWithZone(balance.updatedAt)}',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
+      // `Quantity.formatWithUnit` drops trailing zeros, so a whole balance
+      // shows as `10 pcs` and never `10.0`, and a decimal one as `0.5 box`.
       trailing: Text(
-        '${balance.qtyOnHand} ${balance.unit}',
+        balance.qtyOnHand.formatWithUnit(balance.unit),
         style: theme.textTheme.titleMedium?.copyWith(
           fontWeight: FontWeight.w600,
         ),

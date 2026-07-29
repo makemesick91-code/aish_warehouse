@@ -1,4 +1,7 @@
 import '../../../../core/enums/app_enums.dart';
+import '../../../../core/quantity/quantity.dart';
+import '../../../../core/time/app_time_zone.dart';
+import '../../../../core/time/date_only.dart';
 
 /// One balance row enriched with the data the UI needs to render it.
 class StockBalanceView {
@@ -11,6 +14,7 @@ class StockBalanceView {
     required this.hasExpiry,
     required this.expiryAlertDays,
     required this.qtyOnHand,
+    required this.updatedAt,
     this.batchId,
     this.batchNo,
     this.expiryDate,
@@ -23,32 +27,36 @@ class StockBalanceView {
   final String unit;
   final bool hasExpiry;
   final int expiryAlertDays;
-  final int qtyOnHand;
+  final Quantity qtyOnHand;
+
+  /// UTC instant of the last balance write; convert before displaying.
+  final DateTime updatedAt;
   final String? batchId;
   final String? batchNo;
+
+  /// Civil date — never timezone converted (T-8).
   final DateTime? expiryDate;
 
+  /// Expiry is judged against the *operational* date (T-10), so a batch stays
+  /// usable for the whole of its expiry day in GMT+8 regardless of where the
+  /// device thinks it is.
   bool isExpiredOn(DateTime referenceUtc) {
     final expiry = expiryDate;
     if (expiry == null) return false;
-    final today = DateTime.utc(
-      referenceUtc.year,
-      referenceUtc.month,
-      referenceUtc.day,
+    return DateOnly.isBeforeDate(
+      expiry,
+      AppTimeZone.operationalDate(referenceUtc),
     );
-    return expiry.isBefore(today);
   }
 
   /// Days left until expiry, negative when already expired.
   int? daysUntilExpiry(DateTime referenceUtc) {
     final expiry = expiryDate;
     if (expiry == null) return null;
-    final today = DateTime.utc(
-      referenceUtc.year,
-      referenceUtc.month,
-      referenceUtc.day,
+    return DateOnly.daysBetween(
+      AppTimeZone.operationalDate(referenceUtc),
+      expiry,
     );
-    return expiry.difference(today).inDays;
   }
 }
 
@@ -64,7 +72,7 @@ class BatchStock {
   final String batchId;
   final String batchNo;
   final DateTime expiryDate;
-  final int qtyOnHand;
+  final Quantity qtyOnHand;
 }
 
 /// Result of a FEFO allocation: how much to take from which batch.
@@ -79,10 +87,10 @@ class FefoAllocation {
   final String batchId;
   final String batchNo;
   final DateTime expiryDate;
-  final int qty;
+  final Quantity qty;
 
   @override
-  String toString() => 'FefoAllocation($batchNo, qty: $qty)';
+  String toString() => 'FefoAllocation($batchNo, qty: ${qty.format()})';
 }
 
 /// Input for a new ledger row. There is no update counterpart on purpose:
@@ -108,7 +116,7 @@ class MovementDraft {
   final String? batchId;
   final String? fromLocationId;
   final String? toLocationId;
-  final int qty;
+  final Quantity qty;
   final StockMovementType movementType;
   final String actorUserId;
   final String? refDocType;
@@ -140,13 +148,15 @@ class InventoryMovement {
   final String? batchId;
   final String? fromLocationId;
   final String? toLocationId;
-  final int qty;
+  final Quantity qty;
   final StockMovementType movementType;
   final String actorUserId;
   final String? refDocType;
   final String? refDocId;
   final String? note;
   final String? reversalOfMovementId;
+
+  /// UTC instant (T-1).
   final DateTime createdAt;
 
   bool get isReversal => movementType == StockMovementType.reversal;

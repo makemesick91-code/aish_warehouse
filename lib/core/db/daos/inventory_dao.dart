@@ -24,6 +24,11 @@ class BalanceWithDetails {
 /// Deliberately offers no way to modify or remove a ledger row:
 /// `stock_movements` is append-only (G-A1). Corrections go through a reversal
 /// movement posted by `StockPostingService`.
+///
+/// This is the one layer that speaks in raw milli-units (Q-4): `qty_on_hand`
+/// and `qty` are INTEGER columns holding `unit * 1000`. All arithmetic and
+/// every comparison below is integer arithmetic — no REAL, no `double`, so a
+/// balance can never drift. The repository above converts to `Quantity`.
 @DriftAccessor(
   tables: [StockBalances, StockMovements, Items, ItemBatches, StockLocations],
 )
@@ -55,11 +60,13 @@ class InventoryDao extends DatabaseAccessor<AppDatabase>
 
   /// Writes the absolute quantity for one balance key, inserting the row when
   /// it does not exist yet. Callers must run this inside a transaction.
+  ///
+  /// [qtyOnHandMilliUnits] is already scaled — 0.5 units arrive here as 500.
   Future<void> setBalanceQty({
     required String locationId,
     required String itemId,
     String? batchId,
-    required int qtyOnHand,
+    required int qtyOnHandMilliUnits,
   }) async {
     final existing = await findBalance(
       locationId: locationId,
@@ -73,7 +80,7 @@ class InventoryDao extends DatabaseAccessor<AppDatabase>
           locationId: locationId,
           itemId: itemId,
           batchId: Value(batchId),
-          qtyOnHand: qtyOnHand,
+          qtyOnHand: qtyOnHandMilliUnits,
         ),
       );
       return;
@@ -81,7 +88,7 @@ class InventoryDao extends DatabaseAccessor<AppDatabase>
 
     await (update(stockBalances)..where((t) => t.id.equals(existing.id))).write(
       StockBalancesCompanion(
-        qtyOnHand: Value(qtyOnHand),
+        qtyOnHand: Value(qtyOnHandMilliUnits),
         updatedAt: Value(DateTime.now().toUtc()),
       ),
     );

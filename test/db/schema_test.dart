@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:aish_warehouse/core/quantity/quantity.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -14,8 +15,39 @@ void main() {
 
   tearDown(() => context.dispose());
 
-  test('schema version adalah 1', () {
-    expect(context.database.schemaVersion, 1);
+  test('schema version adalah 2', () {
+    // v2 introduced fixed-point milli-unit quantities. Stok Opname must bump
+    // this to v3 rather than reuse v2 (spec §6.3).
+    expect(context.database.schemaVersion, 2);
+  });
+
+  test('kolom kuantitas ledger bertipe INTEGER, bukan REAL', () async {
+    Future<String> columnType(String table, String column) async {
+      final rows = await context.database
+          .customSelect('PRAGMA table_info($table);')
+          .get();
+      final row = rows.firstWhere((r) => r.read<String>('name') == column);
+      return row.read<String>('type').toUpperCase();
+    }
+
+    expect(await columnType('stock_balances', 'qty_on_hand'), 'INTEGER');
+    expect(await columnType('stock_movements', 'qty'), 'INTEGER');
+  });
+
+  test('kuantitas desimal tersimpan sebagai milli-unit INTEGER', () async {
+    final fixture = await buildFixture(context);
+    await context.posting.postInboundWarehouse(
+      itemId: fixture.simpleItem.id,
+      toLocationId: fixture.warehouse.id,
+      qty: Quantity.parse('0.5'),
+      actorUserId: fixture.actor.id,
+    );
+
+    final row = await context.database
+        .customSelect('SELECT qty_on_hand FROM stock_balances;')
+        .getSingle();
+
+    expect(row.read<int>('qty_on_hand'), 500);
   });
 
   test('foreign key aktif', () async {
@@ -42,7 +74,7 @@ void main() {
     await context.posting.postInboundWarehouse(
       itemId: fixture.simpleItem.id,
       toLocationId: fixture.warehouse.id,
-      qty: 5,
+      qty: Quantity.fromWhole(5),
       actorUserId: fixture.actor.id,
     );
 
@@ -105,7 +137,7 @@ void main() {
       await context.posting.postInboundWarehouse(
         itemId: fixture.simpleItem.id,
         toLocationId: fixture.warehouse.id,
-        qty: 5,
+        qty: Quantity.fromWhole(5),
         actorUserId: fixture.actor.id,
       );
 
@@ -162,6 +194,56 @@ void main() {
       isNot(contains('delete(stockMovements)')),
     );
     expect(sources['inventory_dao.dart'], contains('insertMovement'));
+  });
+
+  test('tidak ada double atau REAL pada jalur perhitungan ledger', () {
+    // Q-3: the ledger is integer-only. Guard the sources so a `double` or a
+    // `CAST(... AS REAL)` cannot creep back into balance arithmetic.
+    //
+    // Comments are stripped first: the guard is about executable code, and the
+    // files legitimately *describe* why floating point is not used.
+    String codeOnly(String source) => source
+        .split('\n')
+        .where((line) => !line.trimLeft().startsWith('//'))
+        .join('\n');
+
+    final sources = {
+      'inventory_dao.dart': File(
+        'lib/core/db/daos/inventory_dao.dart',
+      ).readAsStringSync(),
+      'stock_posting_service.dart': File(
+        'lib/features/inventory/domain/services/stock_posting_service.dart',
+      ).readAsStringSync(),
+      'drift_inventory_repository.dart': File(
+        'lib/features/inventory/data/repositories/'
+        'drift_inventory_repository.dart',
+      ).readAsStringSync(),
+      'inventory_tables.dart': File(
+        'lib/core/db/tables/inventory_tables.dart',
+      ).readAsStringSync(),
+      'quantity.dart': File(
+        'lib/core/quantity/quantity.dart',
+      ).readAsStringSync(),
+    };
+
+    for (final entry in sources.entries) {
+      final code = codeOnly(entry.value);
+      expect(
+        code,
+        isNot(matches(RegExp(r'\bdouble\b'))),
+        reason: '${entry.key} must not use double for ledger quantities',
+      );
+      expect(
+        code,
+        isNot(contains('AS REAL')),
+        reason: '${entry.key} must not cast ledger quantities to REAL',
+      );
+      expect(
+        code,
+        isNot(contains('real()')),
+        reason: '${entry.key} must not declare a REAL quantity column',
+      );
+    }
   });
 
   test('sync_status default untuk data lokal baru adalah pending', () async {

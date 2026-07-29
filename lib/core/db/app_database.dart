@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../enums/app_enums.dart';
+import '../quantity/quantity.dart';
 import 'converters/enum_converters.dart';
 import 'daos/inventory_dao.dart';
 import 'daos/master_data_dao.dart';
@@ -29,8 +30,12 @@ class AppDatabase extends _$AppDatabase {
   /// app passes the lazily opened file connection.
   AppDatabase(super.executor);
 
+  /// * v1 — initial Milestone 1 schema, quantities in whole units.
+  /// * v2 — Milestone 1.1, ledger quantities become fixed-point milli-units.
+  ///
+  /// Stok Opname must introduce v3 rather than extend v2 (spec §6.3).
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -38,8 +43,22 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
     },
     onUpgrade: (Migrator m, int from, int to) async {
-      // Schema is still at version 1; no upgrade steps exist yet. Later
-      // milestones add explicit `if (from < n)` blocks here.
+      if (from < 2) {
+        // v1 already stored both quantity columns as INTEGER — only their
+        // meaning changed, from whole units to milli-units. Scaling the
+        // existing rows by `Quantity.scale` is therefore the entire migration:
+        // no table rebuild, so every id, timestamp, sync status, foreign key,
+        // reversal reference and partial unique index survives untouched.
+        //
+        // Guarded by `from < 2`, this runs exactly once per database.
+        await customStatement(
+          'UPDATE stock_balances SET qty_on_hand = qty_on_hand * '
+          '${Quantity.scale};',
+        );
+        await customStatement(
+          'UPDATE stock_movements SET qty = qty * ${Quantity.scale};',
+        );
+      }
     },
     beforeOpen: (details) async {
       // SQLite does not enforce foreign keys unless explicitly asked to.

@@ -1,3 +1,5 @@
+import '../quantity/quantity.dart';
+
 /// Business-rule failures for Aish Warehouse.
 ///
 /// Every guardrail violation throws a specific subtype so the UI can present a
@@ -30,8 +32,8 @@ final class InsufficientStockFailure extends AppFailure {
   final String itemId;
   final String locationId;
   final String? batchId;
-  final int available;
-  final int requested;
+  final Quantity available;
+  final Quantity requested;
 }
 
 /// Item is tracked per batch (`has_expiry = true`) but no batch was supplied.

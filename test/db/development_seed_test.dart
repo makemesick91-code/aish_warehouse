@@ -1,4 +1,5 @@
 import 'package:aish_warehouse/core/enums/app_enums.dart';
+import 'package:aish_warehouse/core/quantity/quantity.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/test_context.dart';
@@ -34,6 +35,53 @@ void main() {
     expect(balances, isNotEmpty);
     expect(balances.any((b) => b.hasExpiry && b.batchId != null), isTrue);
     expect(balances.any((b) => !b.hasExpiry && b.batchId == null), isTrue);
+  });
+
+  test('seed menyertakan saldo desimal yang tampil tanpa artefak', () async {
+    await context.seed.run();
+
+    final warehouse = (await context.master.warehouseLocation())!;
+    final balances = await context.inventory.balancesAtLocation(warehouse.id);
+
+    final gloves = balances.firstWhere((b) => b.sku == 'DEN-0004');
+    expect(gloves.qtyOnHand, Quantity.parse('10.5'));
+    expect(gloves.qtyOnHand.formatWithUnit(gloves.unit), '10.5 box');
+
+    final antiseptic = balances.firstWhere((b) => b.sku == 'DEN-0008');
+    expect(antiseptic.qtyOnHand, Quantity.parse('0.5'));
+    expect(antiseptic.qtyOnHand.formatWithUnit(antiseptic.unit), '0.5 botol');
+
+    final bonding = balances.firstWhere((b) => b.sku == 'DEN-0003');
+    expect(bonding.qtyOnHand, Quantity.parse('2.375'));
+    expect(bonding.qtyOnHand.format(), '2.375');
+
+    // Whole balances must not gain a decimal tail.
+    final mask = balances.firstWhere((b) => b.sku == 'DEN-0009');
+    expect(mask.qtyOnHand.format(), '150');
+    for (final balance in balances) {
+      expect(balance.qtyOnHand.format(), isNot(endsWith('.0')));
+    }
+  });
+
+  test('saldo desimal tetap idempoten setelah seed kedua', () async {
+    await context.seed.run();
+    await context.seed.run();
+
+    final warehouse = (await context.master.warehouseLocation())!;
+    final balances = await context.inventory.balancesAtLocation(warehouse.id);
+
+    expect(
+      balances.firstWhere((b) => b.sku == 'DEN-0004').qtyOnHand,
+      Quantity.parse('10.5'),
+    );
+    expect(
+      balances.firstWhere((b) => b.sku == 'DEN-0008').qtyOnHand,
+      Quantity.parse('0.5'),
+    );
+    expect(
+      balances.firstWhere((b) => b.sku == 'DEN-0003').qtyOnHand,
+      Quantity.parse('2.375'),
+    );
   });
 
   test('saldo awal selalu memiliki movement ledger', () async {

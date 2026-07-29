@@ -2,6 +2,7 @@ import '../../../../core/db/app_database.dart';
 import '../../../../core/db/daos/master_data_dao.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/time/date_only.dart';
 import '../../domain/models/master_models.dart';
 import '../../domain/repositories/master_data_repository.dart';
 
@@ -140,7 +141,7 @@ class DriftMasterDataRepository implements MasterDataRepository {
       await _dao.ensureBatch(
         itemId: itemId,
         batchNo: batchNo,
-        expiryDate: _asUtcDate(expiryDate),
+        expiryDate: _asCivilDate(expiryDate),
       ),
     );
   }
@@ -269,10 +270,10 @@ class DriftMasterDataRepository implements MasterDataRepository {
   }
 }
 
-DateTime _asUtcDate(DateTime value) {
-  final utc = value.toUtc();
-  return DateTime.utc(utc.year, utc.month, utc.day);
-}
+/// `expiry_date` is a civil date, not an instant: its calendar fields are kept
+/// verbatim (T-8/T-9). Converting through `toUtc()` here would move a date
+/// entered on a GMT+8 device back to the previous day.
+DateTime _asCivilDate(DateTime value) => DateOnly.from(value);
 
 MasterBranch _toBranch(Branch row) => MasterBranch(
   id: row.id,
@@ -319,7 +320,7 @@ MasterBatch _toBatch(ItemBatch row) => MasterBatch(
   id: row.id,
   itemId: row.itemId,
   batchNo: row.batchNo,
-  expiryDate: _asUtcDate(row.expiryDate),
+  expiryDate: _asCivilDate(row.expiryDate),
 );
 
 MasterLocation _toLocation(StockLocation row) => MasterLocation(

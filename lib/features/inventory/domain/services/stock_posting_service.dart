@@ -2,6 +2,9 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/quantity/quantity.dart';
+import '../../../../core/time/app_time_zone.dart';
+import '../../../../core/time/date_only.dart';
 import '../../../master/domain/models/master_models.dart';
 import '../../../master/domain/repositories/master_data_repository.dart';
 import '../models/inventory_models.dart';
@@ -14,6 +17,13 @@ import '../repositories/inventory_repository.dart';
 /// check sufficiency → append ledger row → decrease source → increase target.
 /// If any step throws, the transaction is rolled back and nothing is written —
 /// partial postings are impossible.
+///
+/// Every quantity is a [Quantity], so all arithmetic here is exact integer
+/// arithmetic on milli-units (Q-2): `0.1 + 0.2` is `0.3`, and splitting `1.5`
+/// across several batches always adds back up to `1.5` with no residue.
+///
+/// The clock is injected and always UTC; dates are compared in operational time
+/// through [AppTimeZone] so expiry never depends on the device timezone (T-7).
 class StockPostingService {
   StockPostingService({
     required this._inventory,
@@ -39,7 +49,7 @@ class StockPostingService {
     required String itemId,
     String? batchId,
     required String toLocationId,
-    required int qty,
+    required Quantity qty,
     required String actorUserId,
     String? refDocType,
     String? refDocId,
@@ -91,7 +101,7 @@ class StockPostingService {
     String? batchId,
     required String fromLocationId,
     required String toLocationId,
-    required int qty,
+    required Quantity qty,
     required StockMovementType movementType,
     required String actorUserId,
     String? refDocType,
@@ -168,14 +178,14 @@ class StockPostingService {
     required String locationId,
     required String itemId,
     String? batchId,
-    required int countedQty,
+    required Quantity countedQty,
     required String actorUserId,
     String? refDocType,
     String? refDocId,
     String? note,
   }) {
     return _inventory.runInTransaction(() async {
-      if (countedQty < 0) {
+      if (countedQty.isNegative) {
         throw const ValidationFailure(
           'Hasil hitung fisik tidak boleh negatif.',
         );
@@ -189,17 +199,20 @@ class StockPostingService {
         itemId: itemId,
         batchId: batchId,
       );
+      // The difference may legitimately be negative (Q-7); the movement itself
+      // still carries a positive qty and encodes the direction in its
+      // from/to location.
       final difference = countedQty - currentQty;
-      if (difference == 0) return null;
+      if (difference.isZero) return null;
 
       final movement = await _append(
         MovementDraft(
           id: _newId(),
           itemId: itemId,
           batchId: batchId,
-          fromLocationId: difference < 0 ? locationId : null,
-          toLocationId: difference > 0 ? locationId : null,
-          qty: difference.abs(),
+          fromLocationId: difference.isNegative ? locationId : null,
+          toLocationId: difference.isPositive ? locationId : null,
+          qty: difference.absolute,
           movementType: StockMovementType.opnameAdjustment,
           actorUserId: actorUserId,
           refDocType: refDocType ?? RefDocType.stockOpname,
@@ -224,7 +237,7 @@ class StockPostingService {
     required String locationId,
     required String itemId,
     String? batchId,
-    required int qty,
+    required Quantity qty,
     required String actorUserId,
     required String note,
     String? refDocType,
@@ -372,7 +385,7 @@ class StockPostingService {
   Future<List<FefoAllocation>> allocateFefo({
     required String locationId,
     required String itemId,
-    required int qty,
+    required Quantity qty,
     DateTime? asOf,
   }) async {
     _requirePositiveQty(qty);
@@ -386,25 +399,22 @@ class StockPostingService {
       );
     }
 
-    final reference = (asOf ?? _clock()).toUtc();
-    final today = DateTime.utc(reference.year, reference.month, reference.day);
+    // "Today" is the operational date in GMT+8, not the device's (T-3).
+    final today = AppTimeZone.operationalDate(asOf ?? _clock());
 
     final stocks = await _inventory.batchStocksForFefo(
       locationId: locationId,
       itemId: itemId,
     );
     final usable = stocks
-        .where((stock) => !stock.expiryDate.isBefore(today))
+        .where((stock) => !DateOnly.isBeforeDate(stock.expiryDate, today))
         .toList(growable: false);
 
-    final available = usable.fold<int>(
-      0,
-      (sum, stock) => sum + stock.qtyOnHand,
-    );
+    final available = Quantity.sum(usable.map((stock) => stock.qtyOnHand));
     if (available < qty) {
       throw InsufficientStockFailure(
         'Stok belum kedaluwarsa untuk ${item.name} tidak mencukupi '
-        '(tersedia $available, diminta $qty).',
+        '(tersedia ${available.format()}, diminta ${qty.format()}).',
         itemId: itemId,
         locationId: locationId,
         available: available,
@@ -412,11 +422,14 @@ class StockPostingService {
       );
     }
 
+    // Integer milli-unit arithmetic: taking min(remaining, on hand) from each
+    // batch in turn means the allocations always sum back to exactly [qty],
+    // even when the request splits across batches (1.5 → 1 + 0.5).
     final allocations = <FefoAllocation>[];
     var remaining = qty;
     for (final stock in usable) {
-      if (remaining == 0) break;
-      final take = remaining < stock.qtyOnHand ? remaining : stock.qtyOnHand;
+      if (remaining.isZero) break;
+      final take = Quantity.min(remaining, stock.qtyOnHand);
       allocations.add(
         FefoAllocation(
           batchId: stock.batchId,
@@ -435,10 +448,10 @@ class StockPostingService {
   Future<InventoryMovement> _append(MovementDraft draft) =>
       _inventory.appendMovement(draft);
 
-  void _requirePositiveQty(int qty) {
-    if (qty <= 0) {
+  void _requirePositiveQty(Quantity qty) {
+    if (!qty.isPositive) {
       throw ValidationFailure(
-        'Jumlah harus lebih besar dari 0 (diterima $qty).',
+        'Jumlah harus lebih besar dari 0 (diterima ${qty.format()}).',
       );
     }
   }
@@ -519,7 +532,7 @@ class StockPostingService {
     required String locationId,
     required String itemId,
     String? batchId,
-    required int qty,
+    required Quantity qty,
   }) async {
     final available = await _inventory.balanceQty(
       locationId: locationId,
@@ -528,7 +541,8 @@ class StockPostingService {
     );
     if (available < qty) {
       throw InsufficientStockFailure(
-        'Stok tidak mencukupi (tersedia $available, dibutuhkan $qty).',
+        'Stok tidak mencukupi (tersedia ${available.format()}, '
+        'dibutuhkan ${qty.format()}).',
         itemId: itemId,
         locationId: locationId,
         batchId: batchId,
@@ -542,7 +556,7 @@ class StockPostingService {
     required String locationId,
     required String itemId,
     String? batchId,
-    required int qty,
+    required Quantity qty,
   }) async {
     final current = await _inventory.balanceQty(
       locationId: locationId,
@@ -561,7 +575,7 @@ class StockPostingService {
     required String locationId,
     required String itemId,
     String? batchId,
-    required int qty,
+    required Quantity qty,
   }) async {
     final current = await _inventory.balanceQty(
       locationId: locationId,
@@ -580,16 +594,16 @@ class StockPostingService {
     required String locationId,
     required String itemId,
     String? batchId,
-    required int newQty,
+    required Quantity newQty,
   }) async {
     // Last line of defence before the database CHECK constraint (G-A2).
-    if (newQty < 0) {
+    if (newQty.isNegative) {
       throw InsufficientStockFailure(
         'Saldo stok tidak boleh negatif.',
         itemId: itemId,
         locationId: locationId,
         batchId: batchId,
-        available: 0,
+        available: Quantity.zero(),
         requested: -newQty,
       );
     }

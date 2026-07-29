@@ -1,15 +1,19 @@
+import '../../../../core/quantity/quantity.dart';
 import '../models/inventory_models.dart';
 
 /// Ledger and balance access, expressed in domain terms.
 ///
 /// Note the missing `updateMovement` / `deleteMovement`: the ledger is
 /// append-only (G-A1) and this contract makes that structurally impossible.
+///
+/// Quantities cross this boundary as [Quantity]; the milli-unit integers the
+/// database stores never leak past the repository implementation (Q-4).
 abstract interface class InventoryRepository {
   /// Runs [action] inside a single database transaction. Every stock posting
   /// must go through this so partial postings can never be committed.
   Future<T> runInTransaction<T>(Future<T> Function() action);
 
-  Future<int> balanceQty({
+  Future<Quantity> balanceQty({
     required String locationId,
     required String itemId,
     String? batchId,
@@ -19,7 +23,7 @@ abstract interface class InventoryRepository {
     required String locationId,
     required String itemId,
     String? batchId,
-    required int qtyOnHand,
+    required Quantity qtyOnHand,
   });
 
   Future<List<StockBalanceView>> balancesAtLocation(

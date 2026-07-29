@@ -2,9 +2,14 @@ import 'package:drift/drift.dart';
 
 import '../../../../core/db/app_database.dart';
 import '../../../../core/db/daos/inventory_dao.dart';
+import '../../../../core/quantity/quantity.dart';
+import '../../../../core/time/date_only.dart';
 import '../../domain/models/inventory_models.dart';
 import '../../domain/repositories/inventory_repository.dart';
 
+/// Translates between the database boundary (milli-unit integers, drift row
+/// classes) and the domain (`Quantity`, plain models). This is the only place
+/// where `Quantity.fromMilliUnits` / `milliUnits` may be used (Q-4).
 class DriftInventoryRepository implements InventoryRepository {
   DriftInventoryRepository(this._dao);
 
@@ -15,7 +20,7 @@ class DriftInventoryRepository implements InventoryRepository {
       _dao.transaction(action);
 
   @override
-  Future<int> balanceQty({
+  Future<Quantity> balanceQty({
     required String locationId,
     required String itemId,
     String? batchId,
@@ -25,7 +30,7 @@ class DriftInventoryRepository implements InventoryRepository {
       itemId: itemId,
       batchId: batchId,
     );
-    return row?.qtyOnHand ?? 0;
+    return Quantity.fromMilliUnits(row?.qtyOnHand ?? 0);
   }
 
   @override
@@ -33,12 +38,12 @@ class DriftInventoryRepository implements InventoryRepository {
     required String locationId,
     required String itemId,
     String? batchId,
-    required int qtyOnHand,
+    required Quantity qtyOnHand,
   }) => _dao.setBalanceQty(
     locationId: locationId,
     itemId: itemId,
     batchId: batchId,
-    qtyOnHand: qtyOnHand,
+    qtyOnHandMilliUnits: qtyOnHand.milliUnits,
   );
 
   @override
@@ -78,8 +83,8 @@ class DriftInventoryRepository implements InventoryRepository {
           return BatchStock(
             batchId: batch.id,
             batchNo: batch.batchNo,
-            expiryDate: _asUtcDate(batch.expiryDate),
-            qtyOnHand: row.balance.qtyOnHand,
+            expiryDate: DateOnly.from(batch.expiryDate),
+            qtyOnHand: Quantity.fromMilliUnits(row.balance.qtyOnHand),
           );
         })
         .toList(growable: false);
@@ -94,7 +99,7 @@ class DriftInventoryRepository implements InventoryRepository {
         batchId: Value(draft.batchId),
         fromLocationId: Value(draft.fromLocationId),
         toLocationId: Value(draft.toLocationId),
-        qty: draft.qty,
+        qty: draft.qty.milliUnits,
         movementType: draft.movementType,
         refDocType: Value(draft.refDocType),
         refDocId: Value(draft.refDocId),
@@ -145,11 +150,6 @@ class DriftInventoryRepository implements InventoryRepository {
   }
 }
 
-DateTime _asUtcDate(DateTime value) {
-  final utc = value.toUtc();
-  return DateTime.utc(utc.year, utc.month, utc.day);
-}
-
 StockBalanceView _toBalanceView(BalanceWithDetails row) => StockBalanceView(
   locationId: row.balance.locationId,
   itemId: row.balance.itemId,
@@ -158,10 +158,12 @@ StockBalanceView _toBalanceView(BalanceWithDetails row) => StockBalanceView(
   unit: row.item.unit,
   hasExpiry: row.item.hasExpiry,
   expiryAlertDays: row.item.expiryAlertDays,
-  qtyOnHand: row.balance.qtyOnHand,
+  qtyOnHand: Quantity.fromMilliUnits(row.balance.qtyOnHand),
+  updatedAt: row.balance.updatedAt,
   batchId: row.batch?.id,
   batchNo: row.batch?.batchNo,
-  expiryDate: row.batch == null ? null : _asUtcDate(row.batch!.expiryDate),
+  // `expiry_date` is a civil date: keep its calendar fields untouched (T-9).
+  expiryDate: row.batch == null ? null : DateOnly.from(row.batch!.expiryDate),
 );
 
 InventoryMovement _toMovement(StockMovement row) => InventoryMovement(
@@ -170,7 +172,7 @@ InventoryMovement _toMovement(StockMovement row) => InventoryMovement(
   batchId: row.batchId,
   fromLocationId: row.fromLocationId,
   toLocationId: row.toLocationId,
-  qty: row.qty,
+  qty: Quantity.fromMilliUnits(row.qty),
   movementType: row.movementType,
   actorUserId: row.actorUserId,
   refDocType: row.refDocType,
