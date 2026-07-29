@@ -1,0 +1,11 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # Timestamps are persisted as ISO-8601 text so the UTC offset survives a
+          # round-trip. With the default (unix seconds) drift hands back local-time
+          # DateTime instances, which would shift `expiry_date` across midnight and
+          # break the FEFO / expiry comparisons.
+          store_date_time_values_as_text: true
+          named_parameters: true

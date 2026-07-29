@@ -1,0 +1,58 @@
+import '../models/inventory_models.dart';
+
+/// Ledger and balance access, expressed in domain terms.
+///
+/// Note the missing `updateMovement` / `deleteMovement`: the ledger is
+/// append-only (G-A1) and this contract makes that structurally impossible.
+abstract interface class InventoryRepository {
+  /// Runs [action] inside a single database transaction. Every stock posting
+  /// must go through this so partial postings can never be committed.
+  Future<T> runInTransaction<T>(Future<T> Function() action);
+
+  Future<int> balanceQty({
+    required String locationId,
+    required String itemId,
+    String? batchId,
+  });
+
+  Future<void> setBalanceQty({
+    required String locationId,
+    required String itemId,
+    String? batchId,
+    required int qtyOnHand,
+  });
+
+  Future<List<StockBalanceView>> balancesAtLocation(
+    String locationId, {
+    bool positiveOnly,
+  });
+
+  Stream<List<StockBalanceView>> watchBalancesAtLocation(
+    String locationId, {
+    bool positiveOnly,
+  });
+
+  /// Positive batch balances at a location ordered by nearest expiry first.
+  Future<List<BatchStock>> batchStocksForFefo({
+    required String locationId,
+    required String itemId,
+  });
+
+  /// The single write path into the ledger.
+  Future<InventoryMovement> appendMovement(MovementDraft draft);
+
+  Future<InventoryMovement?> movementById(String id);
+
+  Future<List<InventoryMovement>> stockCard({
+    required String itemId,
+    String? locationId,
+    int? limit,
+  });
+
+  Future<List<InventoryMovement>> movementsByRef({
+    required String refDocType,
+    required String refDocId,
+  });
+
+  Future<List<InventoryMovement>> reversalsOf(String movementId);
+}
