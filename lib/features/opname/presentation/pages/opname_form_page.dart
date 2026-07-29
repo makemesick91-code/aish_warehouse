@@ -13,6 +13,7 @@ import '../../domain/models/opname_models.dart';
 import '../providers/opname_providers.dart';
 import '../widgets/category_filter_chips.dart';
 import '../widgets/document_timeline.dart';
+import '../widgets/historical_master_badge.dart';
 import '../widgets/opname_status_chip.dart';
 import '../widgets/searchable_item_dropdown.dart';
 import '../widgets/stock_opname_line_card.dart';
@@ -356,6 +357,8 @@ class _DocumentHeader extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              const SizedBox(height: AppSpacing.sm),
+              HistoricalMasterBadge.forSummary(detail.summary),
               const SizedBox(height: AppSpacing.sm),
               SyncStatusTag(status: opname.syncStatus),
               if (!opname.isDraft) ...[

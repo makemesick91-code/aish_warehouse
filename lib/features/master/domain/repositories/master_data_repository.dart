@@ -80,10 +80,30 @@ abstract interface class MasterDataRepository {
 
   Future<MasterLocation?> locationById(String id);
 
-  /// The stock location that holds a room's inventory.
-  Future<MasterLocation?> roomLocation(String roomId);
+  // Master lookups come in two flavours, and calling the wrong one is a bug in
+  // opposite directions — hence two named methods rather than one with a
+  // boolean (§7.4):
+  //
+  // * `active…` — for **new** work (create a document, add a line). Refuses
+  //   soft-deleted rows, and the caller additionally refuses inactive ones.
+  //   Loosening these is how a nurse starts a count against a room that no
+  //   longer exists.
+  // * `historical…` — for **completing** work that already exists (read or
+  //   review a `submitted` document). Returns soft-deleted rows too, because
+  //   the document cannot go back to `draft` and must not be strandable by an
+  //   administrator tidying up master data afterwards (§7.2).
 
-  Future<MasterRoom?> roomById(String id);
+  /// The stock location that holds a room's inventory, for new operations.
+  Future<MasterLocation?> activeRoomLocation(String roomId);
+
+  /// The stock location a historic document counted against, archived rows
+  /// included.
+  Future<MasterLocation?> historicalRoomLocation(String roomId);
+
+  Future<MasterRoom?> activeRoomById(String id);
+
+  /// The room a historic document names, soft-deleted rows included.
+  Future<MasterRoom?> historicalRoomById(String id);
 
   Future<MasterUser?> userById(String id);
 

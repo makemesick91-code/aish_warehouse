@@ -10,6 +10,7 @@ import '../../../../core/time/app_date_time_formatter.dart';
 import '../../../master/domain/models/master_models.dart';
 import '../../domain/models/opname_models.dart';
 import '../providers/opname_providers.dart';
+import '../widgets/historical_master_badge.dart';
 import '../widgets/opname_status_chip.dart';
 
 /// Stok Opname — Perawat's list of counts for their rooms (spec §4.2).
@@ -391,6 +392,14 @@ class _OpnameTile extends StatelessWidget {
                 Text(
                   '${summary.roomName} · Periode ${opname.periodLabel}',
                   style: theme.textTheme.bodySmall,
+                ),
+                // The list query filters neither `is_active` nor `deleted_at`,
+                // so a count of a retired room is still here — labelled rather
+                // than missing (§7.6).
+                const SizedBox(height: AppSpacing.xs),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: HistoricalMasterBadge.forSummary(summary),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(

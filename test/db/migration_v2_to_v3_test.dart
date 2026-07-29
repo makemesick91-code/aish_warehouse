@@ -129,12 +129,15 @@ void main() {
     return rows.map((row) => row.read<String>('name')).toSet();
   }
 
-  test('menaikkan versi schema menjadi 3', () async {
+  test('menaikkan versi schema ke versi terkini', () async {
     await createVersion2Database();
 
     final database = openDatabase();
     final row = await database.customSelect('PRAGMA user_version;').getSingle();
-    expect(row.read<int>('user_version'), 3);
+    // A v2 file reaches the head in one open: `from < 3` adds the opname
+    // tables and `from < 4` rebuilds `stock_opnames` without the lexical
+    // timestamp CHECK.
+    expect(row.read<int>('user_version'), 4);
 
     await database.close();
   });
@@ -297,7 +300,7 @@ void main() {
     await database.close();
   });
 
-  test('database v1 dapat bermigrasi hingga v3 melalui v2', () async {
+  test('database v1 dapat bermigrasi hingga versi terkini melalui v2', () async {
     // Same file, but declared as v1 with whole-unit quantities: the reopen has
     // to scale once *and* add the opname tables, in that order.
     await createVersion2Database();
@@ -319,7 +322,7 @@ void main() {
     final version = await database
         .customSelect('PRAGMA user_version;')
         .getSingle();
-    expect(version.read<int>('user_version'), 3);
+    expect(version.read<int>('user_version'), 4);
 
     // v1 → v2 scaling ran exactly once...
     final balance = await database
@@ -365,13 +368,15 @@ void main() {
     await second.close();
   });
 
-  test('langkah migrasi v3 aman dijalankan ulang', () async {
-    // The test above only proves the upgrade is *skipped* on a v3 file. This
-    // one forces the `from < 3` block to run against a database that already
-    // has the opname tables and indexes — the situation a partially applied or
-    // re-attempted migration produces. Without `IF NOT EXISTS` on both the
-    // tables and the indexes, the second pass throws
-    // `index … already exists` and the database cannot be opened at all.
+  test('langkah migrasi v3 dan v4 aman dijalankan ulang', () async {
+    // The test above only proves the upgrade is *skipped* on a current file.
+    // This one forces the `from < 3` and `from < 4` blocks to run against a
+    // database that already has the opname tables, their indexes and the
+    // rebuilt header table — the situation a partially applied or re-attempted
+    // migration produces. Without `IF NOT EXISTS` on both the tables and the
+    // indexes, the second pass throws `index … already exists` and the
+    // database cannot be opened at all; and the v4 rebuild has to survive
+    // being applied to a table it already rebuilt once.
     await createVersion2Database();
 
     final migrated = openDatabase();
@@ -385,11 +390,15 @@ void main() {
     final again = openDatabase();
     expect(await tableNames(again), contains('stock_opnames'));
     expect(await indexNames(again), contains('idx_stock_opname_lines_batched'));
+    // The v4 rebuild replaces `stock_opnames`; its own indexes have to come
+    // back with it, replay or not.
+    expect(await indexNames(again), contains('idx_stock_opnames_room_period'));
+    expect(await indexNames(again), contains('idx_stock_opnames_doc_number'));
 
     final version = await again
         .customSelect('PRAGMA user_version;')
         .getSingle();
-    expect(version.read<int>('user_version'), 3);
+    expect(version.read<int>('user_version'), 4);
 
     // And the quantities were still not rescaled by the replay.
     final balance = await again

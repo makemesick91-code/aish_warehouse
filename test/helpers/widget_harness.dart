@@ -1,3 +1,4 @@
+import 'package:aish_warehouse/app/router.dart';
 import 'package:aish_warehouse/app/theme.dart';
 import 'package:aish_warehouse/core/db/database_providers.dart';
 import 'package:aish_warehouse/core/session/current_user_session.dart';
@@ -12,11 +13,14 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'test_context.dart';
 
-/// A session controller pinned to one user, so a widget test acts as exactly
-/// the role it means to and never depends on which user the seed happened to
-/// create first.
-class _FixedSessionController extends DevelopmentSessionController {
-  _FixedSessionController(this._user);
+/// A session controller pinned to one user, so a test acts as exactly the role
+/// it means to and never depends on which user the seed happened to create
+/// first.
+///
+/// Public because the provider-level access tests build their own
+/// `ProviderContainer` rather than pumping a widget.
+class FixedSessionController extends DevelopmentSessionController {
+  FixedSessionController(this._user);
 
   final MasterUser _user;
 
@@ -41,7 +45,7 @@ Future<void> pumpOpnameWidget(
       overrides: [
         appDatabaseProvider.overrideWithValue(context.database),
         currentSessionProvider.overrideWith(
-          () => _FixedSessionController(actingAs),
+          () => FixedSessionController(actingAs),
         ),
         ...overrides,
       ],
@@ -49,6 +53,43 @@ Future<void> pumpOpnameWidget(
     ),
   );
   await tester.pumpAndSettle();
+}
+
+/// Pumps the **real** app — router, redirect and route guards included — and
+/// navigates straight to [location].
+///
+/// This is what makes the IDOR assertions mean something. Pumping a page
+/// directly with an id bypasses exactly the layer under test; typing the URL is
+/// the attack, so the test has to type the URL.
+Future<ProviderContainer> pumpAppAt(
+  WidgetTester tester, {
+  required TestContext context,
+  required MasterUser actingAs,
+  required String location,
+  List<Override> overrides = const <Override>[],
+}) async {
+  final container = ProviderContainer(
+    overrides: [
+      appDatabaseProvider.overrideWithValue(context.database),
+      currentSessionProvider.overrideWith(
+        () => FixedSessionController(actingAs),
+      ),
+      ...overrides,
+    ],
+  );
+  addTearDown(container.dispose);
+
+  final router = container.read(appRouterProvider);
+  router.go(location);
+
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
+    ),
+  );
+  await tester.pumpAndSettle();
+  return container;
 }
 
 /// Scrolls the list of counted lines until [finder] is built.

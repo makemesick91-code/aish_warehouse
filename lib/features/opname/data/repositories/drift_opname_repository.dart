@@ -100,8 +100,45 @@ class DriftOpnameRepository implements OpnameRepository {
   }
 
   @override
-  Future<StockOpnameDetail?> getDetail(String opnameId) async {
-    final context = await _dao.summaryById(opnameId);
+  Future<StockOpnameDetail?> getDetail(String opnameId) =>
+      _getDetail(opnameId, branchId: null);
+
+  @override
+  Stream<StockOpnameDetail?> watchDetail(String opnameId) =>
+      _watchDetail(opnameId, branchId: null);
+
+  @override
+  Future<StockOpnameDetail?> getDetailForBranch({
+    required String opnameId,
+    required String branchId,
+  }) => _getDetail(opnameId, branchId: branchId);
+
+  @override
+  Stream<StockOpnameDetail?> watchDetailForBranch({
+    required String opnameId,
+    required String branchId,
+  }) => _watchDetail(opnameId, branchId: branchId);
+
+  @override
+  Future<StockOpnameAccessScope?> findAccessScope({
+    required String opnameId,
+    required String branchId,
+  }) async {
+    final row = await _dao.accessScope(opnameId: opnameId, branchId: branchId);
+    if (row == null) return null;
+    return StockOpnameAccessScope(
+      opnameId: row.opnameId,
+      branchId: row.branchId,
+      status: row.status,
+      countedBy: row.countedBy,
+    );
+  }
+
+  Future<StockOpnameDetail?> _getDetail(
+    String opnameId, {
+    required String? branchId,
+  }) async {
+    final context = await _dao.summaryById(opnameId, branchId: branchId);
     if (context == null) return null;
     final lines = await _dao.detailLines(opnameId);
     return StockOpnameDetail(
@@ -110,13 +147,22 @@ class DriftOpnameRepository implements OpnameRepository {
     );
   }
 
-  @override
-  Stream<StockOpnameDetail?> watchDetail(String opnameId) {
+  Stream<StockOpnameDetail?> _watchDetail(
+    String opnameId, {
+    required String? branchId,
+  }) {
     // Two streams rather than one wide join: the header changes on every
     // status transition while the lines change on every keystroke that is
     // saved, and combining them keeps either from re-emitting the other's
     // rows.
-    return _dao.watchSummaryById(opnameId).asyncMap((context) async {
+    //
+    // The header query is also what carries the branch scope, and the lines
+    // are fetched only after it produced a row. A document outside [branchId]
+    // therefore costs one predicate in SQLite and never reaches a second
+    // query — its lines are not read even to be discarded.
+    return _dao.watchSummaryById(opnameId, branchId: branchId).asyncMap((
+      context,
+    ) async {
       if (context == null) return null;
       final lines = await _dao.detailLines(opnameId);
       return StockOpnameDetail(
@@ -279,6 +325,10 @@ class DriftOpnameRepository implements OpnameRepository {
   Future<int> countDifferenceLines(String opnameId) =>
       _dao.countDifferenceLines(opnameId);
 
+  @override
+  Future<List<String>> lineItemIds(String opnameId) =>
+      _dao.lineItemIds(opnameId);
+
   /// Re-reads a bare line row through the joined query so the returned domain
   /// model always carries its item and batch details.
   Future<StockOpnameLine?> _hydrateLine(StockOpnameLineRow row) async {
@@ -307,6 +357,11 @@ StockOpname _toOpname(StockOpnameRow row) => StockOpname(
   syncStatus: row.syncStatus,
 );
 
+/// The joins behind [OpnameWithContext] filter neither `is_active` nor
+/// `deleted_at`, which is what keeps a submitted document visible after its
+/// room or branch is retired (§7.6). The flags below turn that fact into
+/// something the screens can label, rather than into a document that quietly
+/// disappears from a list.
 StockOpnameSummary _toSummary(OpnameWithContext row) => StockOpnameSummary(
   opname: _toOpname(row.opname),
   roomCode: row.room.code,
@@ -316,7 +371,23 @@ StockOpnameSummary _toSummary(OpnameWithContext row) => StockOpnameSummary(
   reviewedByName: row.reviewedBy?.fullName,
   lineCount: row.lineCount,
   differenceLineCount: row.differenceLineCount,
+  branchIsHistorical: _isHistorical(row.branch.isActive, row.branch.deletedAt),
+  roomIsHistorical: _isHistorical(row.room.isActive, row.room.deletedAt),
+  countedByIsHistorical: _isHistorical(
+    row.countedBy.isActive,
+    row.countedBy.deletedAt,
+  ),
 );
+
+/// What "historic" means, in one place.
+///
+/// Deactivated (G-A4) and soft-deleted (G-A5) are separate states with the same
+/// consequence for a document that already references the row: it stays valid,
+/// stays readable and stays completable, but the row can no longer be picked
+/// for anything new. Spelling the disjunction out at each call site is how the
+/// four copies eventually stop agreeing.
+bool _isHistorical(bool isActive, DateTime? deletedAt) =>
+    !isActive || deletedAt != null;
 
 StockOpnameLine _toLine(OpnameLineWithDetails row) => StockOpnameLine(
   id: row.line.id,
@@ -338,6 +409,7 @@ StockOpnameLine _toLine(OpnameLineWithDetails row) => StockOpnameLine(
   // between the two would surface instead of being silently papered over.
   difference: Quantity.fromMilliUnits(row.line.difference),
   note: row.line.note,
+  itemIsHistorical: _isHistorical(row.item.isActive, row.item.deletedAt),
 );
 
 MasterItem _toItem(Item row) => MasterItem(

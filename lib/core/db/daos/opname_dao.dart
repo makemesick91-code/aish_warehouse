@@ -28,6 +28,22 @@ class OpnameWithContext {
   final int differenceLineCount;
 }
 
+/// The four columns [OpnameDao.accessScope] returns — everything an
+/// authorization check needs and nothing else.
+class StockOpnameAccessRow {
+  const StockOpnameAccessRow({
+    required this.opnameId,
+    required this.branchId,
+    required this.status,
+    required this.countedBy,
+  });
+
+  final String opnameId;
+  final String branchId;
+  final StockOpnameStatus status;
+  final String countedBy;
+}
+
 /// One opname line joined with its item and — for expiry-tracked items — batch.
 class OpnameLineWithDetails {
   const OpnameLineWithDetails({
@@ -183,10 +199,12 @@ class OpnameDao extends DatabaseAccessor<AppDatabase> with _$OpnameDaoMixin {
             status: Value(to),
             // Forced to UTC here rather than trusted from the caller (T-1).
             // Drift serialises a non-UTC DateTime with an offset suffix
-            // (`…+08:00`) instead of `…Z`, and the status/timestamp CHECK
-            // compares these as text — a mixed-format pair would compare
-            // lexicographically and could accept a review dated before its
-            // own submission.
+            // (`…+08:00`) instead of `…Z`, so a value that arrived in
+            // operational time would be *stored* as a different instant than
+            // the one the domain validated. Ordering itself is no longer a
+            // database concern — schema v4 dropped the lexical
+            // `reviewed_at >= submitted_at` CHECK and
+            // `DocumentTimestampPolicy` decides it on UTC instants instead.
             submittedAt: submittedAt == null
                 ? const Value.absent()
                 : Value(submittedAt.toUtc()),
@@ -229,6 +247,45 @@ class OpnameDao extends DatabaseAccessor<AppDatabase> with _$OpnameDaoMixin {
     stockOpnames,
   )..where((t) => t.id.equals(id) & t.deletedAt.isNull())).getSingleOrNull();
 
+  /// The four columns that decide whether somebody may open this document.
+  ///
+  /// Deliberately not `headerById`, and deliberately not the joined summary:
+  /// an authorization check must not be the reason a foreign document's room,
+  /// nurse, line count or document number is read out of the database. The
+  /// `branch_id` predicate is in the statement rather than applied afterwards,
+  /// so a row from another branch never leaves SQLite at all — the caller
+  /// cannot leak what it never received.
+  ///
+  /// Returns `null` both for "no such document" and for "not this branch", and
+  /// that ambiguity is the point (§6.5).
+  Future<StockOpnameAccessRow?> accessScope({
+    required String opnameId,
+    required String branchId,
+  }) async {
+    final row =
+        await (selectOnly(stockOpnames)
+              ..addColumns([
+                stockOpnames.id,
+                stockOpnames.branchId,
+                stockOpnames.status,
+                stockOpnames.countedBy,
+              ])
+              ..where(
+                stockOpnames.id.equals(opnameId) &
+                    stockOpnames.branchId.equals(branchId) &
+                    stockOpnames.deletedAt.isNull(),
+              ))
+            .getSingleOrNull();
+    if (row == null) return null;
+
+    return StockOpnameAccessRow(
+      opnameId: row.read(stockOpnames.id)!,
+      branchId: row.read(stockOpnames.branchId)!,
+      status: row.readWithConverter(stockOpnames.status)!,
+      countedBy: row.read(stockOpnames.countedBy)!,
+    );
+  }
+
   Future<bool> isDraft(String opnameId) async {
     final row = await headerById(opnameId);
     return row?.status == StockOpnameStatus.draft;
@@ -254,6 +311,32 @@ class OpnameDao extends DatabaseAccessor<AppDatabase> with _$OpnameDaoMixin {
   Future<List<StockOpnameLineRow>> linesOf(String opnameId) => (select(
     stockOpnameLines,
   )..where((t) => t.opnameId.equals(opnameId) & t.deletedAt.isNull())).get();
+
+  /// The item id of every live line, read **without joining `items`**.
+  ///
+  /// [detailLines] inner-joins the item so a line can render its name and
+  /// unit, which means a line whose item row is physically gone silently
+  /// vanishes from the result instead of raising anything. On a draft that is
+  /// merely wrong; on a review it would post a *subset* of the counted
+  /// positions and lock the document as if it had been done in full. This
+  /// query is the honest count the review checks itself against — the join can
+  /// hide a row, a plain select cannot.
+  ///
+  /// Duplicates are expected and meaningful: an expiry item is counted once per
+  /// batch.
+  Future<List<String>> lineItemIds(String opnameId) async {
+    final rows =
+        await (selectOnly(stockOpnameLines)
+              ..addColumns([stockOpnameLines.itemId])
+              ..where(
+                stockOpnameLines.opnameId.equals(opnameId) &
+                    stockOpnameLines.deletedAt.isNull(),
+              ))
+            .get();
+    return rows
+        .map((row) => row.read(stockOpnameLines.itemId)!)
+        .toList(growable: false);
+  }
 
   Future<StockOpnameLineRow?> lineById(String id) => (select(
     stockOpnameLines,
@@ -381,14 +464,35 @@ class OpnameDao extends DatabaseAccessor<AppDatabase> with _$OpnameDaoMixin {
         .toList(growable: false);
   }
 
-  Future<OpnameWithContext?> summaryById(String opnameId) async {
-    final rows = await _summaryQuery(stockOpnames.id.equals(opnameId)).get();
+  /// The document predicate, optionally pinned to one branch.
+  ///
+  /// When [branchId] is supplied the check happens **inside the statement**, so
+  /// a document from another branch is never read, never mapped and never
+  /// reaches a stream a widget could be listening to. Filtering the result in
+  /// Dart would look equivalent and would not be: the row would already have
+  /// been fetched, and every later refactor would be one `if` away from
+  /// emitting it.
+  Expression<bool> _document(String opnameId, String? branchId) {
+    final byId = stockOpnames.id.equals(opnameId);
+    return branchId == null
+        ? byId
+        : byId & stockOpnames.branchId.equals(branchId);
+  }
+
+  Future<OpnameWithContext?> summaryById(
+    String opnameId, {
+    String? branchId,
+  }) async {
+    final rows = await _summaryQuery(_document(opnameId, branchId)).get();
     return rows.isEmpty ? null : _mapSummaries(rows).single;
   }
 
-  Stream<OpnameWithContext?> watchSummaryById(String opnameId) {
+  Stream<OpnameWithContext?> watchSummaryById(
+    String opnameId, {
+    String? branchId,
+  }) {
     return _summaryQuery(
-      stockOpnames.id.equals(opnameId),
+      _document(opnameId, branchId),
     ).watch().map((rows) => rows.isEmpty ? null : _mapSummaries(rows).single);
   }
 

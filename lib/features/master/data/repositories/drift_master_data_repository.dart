@@ -245,14 +245,26 @@ class DriftMasterDataRepository implements MasterDataRepository {
   }
 
   @override
-  Future<MasterLocation?> roomLocation(String roomId) async {
-    final row = await _dao.locationForRoom(roomId);
+  Future<MasterLocation?> activeRoomLocation(String roomId) async {
+    final row = await _dao.activeLocationForRoom(roomId);
     return row == null ? null : _toLocation(row);
   }
 
   @override
-  Future<MasterRoom?> roomById(String id) async {
-    final row = await _dao.roomById(id);
+  Future<MasterLocation?> historicalRoomLocation(String roomId) async {
+    final row = await _dao.historicalLocationForRoom(roomId);
+    return row == null ? null : _toLocation(row);
+  }
+
+  @override
+  Future<MasterRoom?> activeRoomById(String id) async {
+    final row = await _dao.activeRoomById(id);
+    return row == null ? null : _toRoom(row);
+  }
+
+  @override
+  Future<MasterRoom?> historicalRoomById(String id) async {
+    final row = await _dao.historicalRoomById(id);
     return row == null ? null : _toRoom(row);
   }
 
@@ -299,6 +311,7 @@ MasterBranch _toBranch(Branch row) => MasterBranch(
   name: row.name,
   address: row.address,
   isActive: row.isActive,
+  isArchived: row.deletedAt != null,
 );
 
 MasterRoom _toRoom(Room row) => MasterRoom(
@@ -307,6 +320,7 @@ MasterRoom _toRoom(Room row) => MasterRoom(
   code: row.code,
   name: row.name,
   isActive: row.isActive,
+  isArchived: row.deletedAt != null,
 );
 
 MasterUser _toUser(AppUser row) => MasterUser(
@@ -347,4 +361,5 @@ MasterLocation _toLocation(StockLocation row) => MasterLocation(
   branchId: row.branchId,
   roomId: row.roomId,
   name: row.name,
+  isArchived: row.deletedAt != null,
 );

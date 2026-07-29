@@ -221,6 +221,192 @@ void main() {
     });
   });
 
+  group('otorisasi baca', () {
+    /// Source with `//` comments removed, so a rule can be *explained* in prose
+    /// without the test that enforces it reading the explanation as a
+    /// violation.
+    String codeOnly(File file) => file
+        .readAsStringSync()
+        .split('\n')
+        .where((line) => !line.trimLeft().startsWith('//'))
+        .join('\n');
+
+    test('halaman opname tidak memanggil DAO atau repository langsung', () {
+      for (final file in dartFilesUnder('lib/features/opname/presentation')) {
+        final imports = importsOf(file);
+        expect(
+          imports.any((import) => import.contains('db/daos/')),
+          isFalse,
+          reason: '${file.path} memanggil DAO langsung dari UI.',
+        );
+        // Pages go through providers; only the providers file wires the
+        // repository, and even it never constructs a DAO itself.
+        if (file.path.contains('/pages/') || file.path.contains('/widgets/')) {
+          expect(
+            imports.any((import) => import.contains('data/repositories/')),
+            isFalse,
+            reason:
+                '${file.path} mengimpor repository konkret. Halaman harus '
+                'lewat provider.',
+          );
+        }
+      }
+    });
+
+    test('presentation memakai read yang ter-scope cabang', () {
+      // `getDetail`/`watchDetail` are the unscoped reads, and they exist for
+      // the use cases — which apply `requireSameBranch` afterwards and can
+      // therefore afford to load first. A screen cannot: by the time it could
+      // check, another branch's document is already in the widget tree. This
+      // is the rule that keeps the two apart.
+      for (final file in dartFilesUnder('lib/features/opname/presentation')) {
+        final code = codeOnly(file);
+        for (final unscoped in [
+          '.watchDetail(',
+          '.getDetail(',
+          '.summaryById(',
+        ]) {
+          expect(
+            code.contains(unscoped),
+            isFalse,
+            reason:
+                '${file.path} memakai baca tanpa scope cabang ($unscoped). '
+                'Gunakan watchDetailForBranch/getDetailForBranch.',
+          );
+        }
+      }
+    });
+
+    test('provider detail mengikat cabang dari sesi', () {
+      final source = codeOnly(
+        File(
+          'lib/features/opname/presentation/providers/opname_providers.dart',
+        ),
+      );
+
+      // The branch must come from the session on every build, not from a
+      // parameter a caller could pass at will and not from a value captured
+      // once — otherwise switching user would keep serving the old branch.
+      expect(source, contains('watchDetailForBranch'));
+      expect(source, contains('currentSessionValueProvider'));
+      expect(
+        RegExp(
+          r'opnameDetailProvider\s*=\s*StreamProvider\.autoDispose',
+        ).hasMatch(source),
+        isTrue,
+        reason:
+            'opnameDetailProvider harus autoDispose agar dokumen yang pernah '
+            'dibuka tidak tertinggal di cache setelah sesi berganti.',
+      );
+    });
+
+    test('setiap rute ber-:id dibungkus penjaga akses', () {
+      final router = codeOnly(File('lib/app/router.dart'));
+
+      // Stated as an invariant over the routes that exist, not as a fixed
+      // count of guards. A count would keep passing the day somebody adds
+      // `/opname/:id/cetak` without a guard — precisely the "new call site
+      // misses it" failure the guard exists to prevent. Reading
+      // `pathParameters['id']` is what makes a route document-specific, so
+      // every such builder must be wrapped.
+      final idRoutes = RegExp(
+        r"pathParameters\['id'\]",
+      ).allMatches(router).length;
+      expect(idRoutes, greaterThan(0), reason: 'Pola tes usang.');
+      expect(
+        'OpnameRouteGuard'.allMatches(router).length,
+        idRoutes,
+        reason:
+            'Ditemukan $idRoutes rute ber-:id tetapi jumlah OpnameRouteGuard '
+            'tidak sama. Setiap rute dokumen harus dibungkus penjaga.',
+      );
+      expect(router, contains('OpnameRouteKind.document'));
+      expect(router, contains('OpnameRouteKind.reviewDocument'));
+    });
+
+    test('kebijakan akses bebas dari Flutter dan database', () {
+      final file = File(
+        'lib/features/opname/domain/services/opname_access_policy.dart',
+      );
+      final source = file.readAsStringSync();
+
+      // A rule that needs a widget tree or a query to be evaluated cannot be
+      // reused by the router, the providers and the tests alike.
+      expect(source, isNot(contains("package:flutter/")));
+      expect(source, isNot(contains("package:drift/")));
+      expect(source, isNot(contains('BuildContext')));
+      expect(source, isNot(contains('Future<')));
+    });
+  });
+
+  group('pemisahan lookup aktif dan historis', () {
+    test('review memakai lookup historis, bukan lookup aktif', () {
+      final source = File(
+        'lib/features/opname/domain/use_cases/'
+        'review_stock_opname_use_case.dart',
+      ).readAsStringSync();
+
+      expect(source, contains('requireHistoricalRoom('));
+      expect(source, contains('requireHistoricalRoomLocation('));
+      expect(source, contains('requireHistoricalLineBatch('));
+      expect(source, contains('requireEveryLineLoaded('));
+
+      // Every guard that demands *active* master data, named explicitly.
+      // Reaching for any of them here is what would strand a submitted
+      // document whose room, location or item was retired after the count.
+      for (final creationGuard in [
+        'requireRoomInActorBranch',
+        'requireRoomLocation',
+        'requireActiveItem',
+        'requireValidItemBatch',
+        // `requireItem` is not an active-only guard, but it reports a missing
+        // row as `EntityNotFoundFailure` — which reads as "wrong id" rather
+        // than "this document is stuck and needs an administrator".
+        'requireItem',
+      ]) {
+        expect(
+          RegExp('$creationGuard\\s*\\(').hasMatch(source),
+          isFalse,
+          reason:
+              'Review dokumen submitted tidak boleh memakai $creationGuard: '
+              'penjaga itu untuk pekerjaan baru, bukan untuk menyelesaikan '
+              'dokumen historis.',
+        );
+      }
+    });
+
+    test('pembuatan draft tetap menuntut master aktif', () {
+      final guards = File(
+        'lib/features/opname/domain/use_cases/opname_guards.dart',
+      ).readAsStringSync();
+
+      // The creation path still reads through the `active…` repository methods
+      // and still rejects a deactivated room.
+      expect(guards, contains('activeRoomById'));
+      expect(guards, contains('activeRoomLocation'));
+      expect(guards, contains('InactiveEntityFailure'));
+    });
+
+    test('tidak ada parameter boolean ambigu pada lookup master', () {
+      final repository = File(
+        'lib/features/master/domain/repositories/master_data_repository.dart',
+      ).readAsStringSync();
+
+      // §7.4: the two lookup modes are separate named methods, so a call site
+      // states which one it means instead of hiding it in a flag.
+      for (final ambiguous in [
+        'includeEverything',
+        'includeDeleted',
+        'includeInactive',
+        'bool includeAll',
+      ]) {
+        expect(repository, isNot(contains(ambiguous)));
+      }
+      expect(repository, contains('historicalRoomById'));
+      expect(repository, contains('historicalRoomLocation'));
+    });
+  });
+
   test('tidak ada TODO pada aturan inti Stok Opname', () {
     for (final file in [
       ...dartFilesUnder('lib/features/opname'),

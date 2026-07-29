@@ -154,7 +154,7 @@ void main() {
       final room = (await context.master.activeRooms()).firstWhere(
         (room) => room.code == 'R1',
       );
-      final location = await context.master.roomLocation(room.id);
+      final location = await context.master.activeRoomLocation(room.id);
       expect(location, isNotNull);
 
       final balances = await context.inventory.balancesAtLocation(location!.id);
@@ -170,7 +170,7 @@ void main() {
       final room = (await context.master.activeRooms()).firstWhere(
         (room) => room.code == 'R1',
       );
-      final location = await context.master.roomLocation(room.id);
+      final location = await context.master.activeRoomLocation(room.id);
       final balances = await context.inventory.balancesAtLocation(location!.id);
 
       final gloves = balances.firstWhere((b) => b.sku == 'DEN-0004');
@@ -187,7 +187,7 @@ void main() {
       final room = (await context.master.activeRooms()).firstWhere(
         (room) => room.code == 'R1',
       );
-      final location = await context.master.roomLocation(room.id);
+      final location = await context.master.activeRoomLocation(room.id);
       final balances = await context.inventory.balancesAtLocation(location!.id);
 
       final now = DateTime.now().toUtc();
@@ -218,7 +218,7 @@ void main() {
       final room = (await context.master.activeRooms()).firstWhere(
         (room) => room.code == 'R1',
       );
-      final location = await context.master.roomLocation(room.id);
+      final location = await context.master.activeRoomLocation(room.id);
       final balances = await context.inventory.balancesAtLocation(location!.id);
 
       for (final balance in balances) {

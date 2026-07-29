@@ -76,11 +76,17 @@ class OpnameGuards {
   };
 
   /// G-R1 — the room must exist, be active, and belong to the actor's branch.
+  ///
+  /// This is the **creation** guard: it deliberately refuses inactive and
+  /// soft-deleted rooms, because a new count must never start against master
+  /// data that is out of service. Completing a document that already exists
+  /// goes through [requireHistoricalRoom] instead, which is a different
+  /// question with a different answer (§7.2).
   Future<MasterRoom> requireRoomInActorBranch({
     required MasterUser actor,
     required String roomId,
   }) async {
-    final room = await _master.roomById(roomId);
+    final room = await _master.activeRoomById(roomId);
     if (room == null) {
       throw EntityNotFoundFailure(
         'Ruangan tidak ditemukan.',
@@ -119,9 +125,10 @@ class OpnameGuards {
     }
   }
 
-  /// The room's stock location — the place a count is compared against.
+  /// The room's stock location for a **new** count — the place the count will
+  /// be compared against.
   Future<MasterLocation> requireRoomLocation(MasterRoom room) async {
-    final location = await _master.roomLocation(room.id);
+    final location = await _master.activeRoomLocation(room.id);
     if (location == null) {
       throw InvalidLocationFailure(
         'Ruangan ${room.name} belum memiliki lokasi stok, sehingga belum '
@@ -129,6 +136,148 @@ class OpnameGuards {
       );
     }
     return location;
+  }
+
+  // --- historical recovery (§7.2) --------------------------------------------
+  //
+  // Everything below serves documents that are already `submitted`. They take
+  // the opname id so a broken reference can be reported against the document
+  // that is stuck, and they never check `is_active`: a branch, room, location
+  // or item that was deactivated after the count is still exactly the thing
+  // that was counted, and the review has to be able to finish. What they do
+  // enforce is that the row is physically *there* — a reference that resolves
+  // to nothing cannot be guessed at, substituted or invented (§7.3).
+
+  /// The room a submitted document names, deactivated or archived included.
+  Future<MasterRoom> requireHistoricalRoom({
+    required String opnameId,
+    required String roomId,
+  }) async {
+    final room = await _master.historicalRoomById(roomId);
+    if (room == null) {
+      throw HistoricalReferenceMissingFailure(
+        'Dokumen tidak dapat diselesaikan karena ruangan historis tidak '
+        'ditemukan. Hubungi administrator.',
+        entity: 'rooms',
+        id: roomId,
+        opnameId: opnameId,
+      );
+    }
+    return room;
+  }
+
+  /// The stock location a submitted document counted against, archived rows
+  /// included.
+  ///
+  /// Refusing an archived location here would be the difference between a
+  /// document a branch head can still close and one that is stuck forever
+  /// because somebody tidied up master data on a Friday afternoon.
+  Future<MasterLocation> requireHistoricalRoomLocation({
+    required String opnameId,
+    required MasterRoom room,
+  }) async {
+    final location = await _master.historicalRoomLocation(room.id);
+    if (location == null) {
+      throw HistoricalReferenceMissingFailure(
+        'Dokumen tidak dapat diselesaikan karena lokasi stok historis tidak '
+        'ditemukan. Hubungi administrator.',
+        entity: 'stock_locations',
+        id: room.id,
+        opnameId: opnameId,
+      );
+    }
+    return location;
+  }
+
+  /// The item a submitted line names. Deactivated items pass; missing ones do
+  /// not.
+  Future<MasterItem> requireHistoricalItem({
+    required String opnameId,
+    required String itemId,
+  }) async {
+    final item = await _master.itemById(itemId);
+    if (item == null) {
+      throw HistoricalReferenceMissingFailure(
+        'Dokumen tidak dapat diselesaikan karena barang historis tidak '
+        'ditemukan. Hubungi administrator.',
+        entity: 'items',
+        id: itemId,
+        opnameId: opnameId,
+      );
+    }
+    return item;
+  }
+
+  /// The batch/item pairing of a line on a submitted document.
+  ///
+  /// The pairing rules of G-E2 hold exactly as they do for a draft — an expiry
+  /// item is counted per batch, a non-expiry item never is, and the batch
+  /// belongs to its item — because a line that breaks them cannot be posted to
+  /// the ledger at all. Only the *existence* question is answered differently,
+  /// which is the one argument [_requireItemBatch] takes: on a draft a missing
+  /// batch is a validation error the nurse can fix, on a submitted document it
+  /// is a broken reference nobody can edit their way out of.
+  ///
+  /// Takes the line rather than a [MasterItem] because the line already carries
+  /// everything the rule needs. `StockOpnameLine` is built from a query that
+  /// inner-joins `items`, so its `sku` and `hasExpiry` *are* the item row,
+  /// already loaded — re-fetching it would be one `items` SELECT per line
+  /// inside the review transaction to learn what the caller was handed.
+  Future<MasterBatch?> requireHistoricalLineBatch({
+    required String opnameId,
+    required StockOpnameLine line,
+  }) {
+    return _requireItemBatch(
+      itemId: line.itemId,
+      sku: line.sku,
+      hasExpiry: line.hasExpiry,
+      batchId: line.batchId,
+      onMissingBatch: (batchId) => HistoricalReferenceMissingFailure(
+        'Dokumen tidak dapat diselesaikan karena batch historis tidak '
+        'ditemukan. Hubungi administrator.',
+        entity: 'item_batches',
+        id: batchId,
+        opnameId: opnameId,
+      ),
+    );
+  }
+
+  /// Refuses a document whose stored lines and loaded lines disagree.
+  ///
+  /// [StockOpnameDetail] is built from a query that inner-joins `items`, so a
+  /// line whose item row is physically gone is absent from it rather than
+  /// reported. Posting or submitting on that basis would treat the document as
+  /// complete while one counted position was never seen — no note demanded of
+  /// it at submit, no adjustment posted for it at review.
+  ///
+  /// [storedItemIds] comes from a plain select that no join can filter. The
+  /// comparison is a set difference in memory, so the healthy case — every
+  /// line loaded — costs no query at all; only a genuine gap is worth a
+  /// lookup, and then only to name the row an administrator has to repair.
+  Future<void> requireEveryLineLoaded({
+    required String opnameId,
+    required List<String> storedItemIds,
+    required Iterable<String> loadedItemIds,
+  }) async {
+    final missing = storedItemIds.toSet().difference(loadedItemIds.toSet());
+    if (missing.isEmpty) return;
+
+    // The overwhelmingly likely cause, and the one worth a precise message.
+    for (final itemId in missing) {
+      await requireHistoricalItem(opnameId: opnameId, itemId: itemId);
+    }
+
+    // Every id still resolves, so the join dropped the line for a reason this
+    // code cannot name. Refusing is still right: a document that does not
+    // agree with itself must not be posted on the strength of the half we can
+    // see.
+    throw HistoricalReferenceMissingFailure(
+      'Dokumen tidak dapat diselesaikan karena sebagian baris historis tidak '
+      'dapat dimuat. Hubungi administrator.',
+      entity: 'stock_opname_lines',
+      id: missing.first,
+      opnameId: opnameId,
+    );
   }
 
   /// G-S1/G-S2 — the document must currently be in [expected].
@@ -181,34 +330,58 @@ class OpnameGuards {
   Future<MasterBatch?> requireValidItemBatch({
     required MasterItem item,
     required String? batchId,
+  }) {
+    return _requireItemBatch(
+      itemId: item.id,
+      sku: item.sku,
+      hasExpiry: item.hasExpiry,
+      batchId: batchId,
+      onMissingBatch: (batchId) => EntityNotFoundFailure(
+        'Batch tidak ditemukan.',
+        entity: 'item_batches',
+        id: batchId,
+      ),
+    );
+  }
+
+  /// The G-E2 pairing rule itself, stated once.
+  ///
+  /// The rule does not change between a draft and a submitted document, and
+  /// writing it out twice is how the two copies eventually stop agreeing. What
+  /// genuinely differs is only [onMissingBatch]: the same missing row is a
+  /// fixable validation error on a draft and a broken historic reference on a
+  /// document nobody can edit.
+  ///
+  /// Takes the three item fields rather than a [MasterItem] so a caller that
+  /// already holds them — every opname line does, through the join — does not
+  /// have to re-read the row to satisfy a signature.
+  Future<MasterBatch?> _requireItemBatch({
+    required String itemId,
+    required String sku,
+    required bool hasExpiry,
+    required String? batchId,
+    required AppFailure Function(String batchId) onMissingBatch,
   }) async {
-    if (item.hasExpiry && batchId == null) {
+    if (hasExpiry && batchId == null) {
       throw BatchRequiredFailure(
-        'Barang ${item.sku} dilacak per batch, sehingga wajib dihitung '
-        'per batch.',
-        itemId: item.id,
+        'Barang $sku dilacak per batch, sehingga wajib dihitung per batch.',
+        itemId: itemId,
       );
     }
-    if (!item.hasExpiry && batchId != null) {
+    if (!hasExpiry && batchId != null) {
       throw BatchNotAllowedFailure(
-        'Barang ${item.sku} tidak memiliki tanggal kedaluwarsa, sehingga '
-        'tidak boleh dihitung per batch.',
-        itemId: item.id,
+        'Barang $sku tidak memiliki tanggal kedaluwarsa, sehingga tidak boleh '
+        'dihitung per batch.',
+        itemId: itemId,
       );
     }
     if (batchId == null) return null;
 
     final batch = await _master.batchById(batchId);
-    if (batch == null) {
-      throw EntityNotFoundFailure(
-        'Batch tidak ditemukan.',
-        entity: 'item_batches',
-        id: batchId,
-      );
-    }
-    if (batch.itemId != item.id) {
+    if (batch == null) throw onMissingBatch(batchId);
+    if (batch.itemId != itemId) {
       throw ValidationFailure(
-        'Batch ${batch.batchNo} bukan milik barang ${item.sku}.',
+        'Batch ${batch.batchNo} bukan milik barang $sku.',
       );
     }
     return batch;

@@ -37,8 +37,10 @@ class AppDatabase extends _$AppDatabase {
   /// * v1 — initial Milestone 1 schema, quantities in whole units.
   /// * v2 — Milestone 1.1, ledger quantities become fixed-point milli-units.
   /// * v3 — Milestone 2, Stok Opname (`stock_opnames`, `stock_opname_lines`).
+  /// * v4 — Milestone 2.1, Stok Opname hardening: `stock_opnames` is rebuilt
+  ///   without the lexical timestamp-order CHECK.
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -73,6 +75,31 @@ class AppDatabase extends _$AppDatabase {
         for (final statement in _v3OpnameIndexes) {
           await customStatement(statement);
         }
+      }
+      if (from < 4) {
+        // Milestone 2.1: drop the lexical timestamp-order CHECK from
+        // `stock_opnames` (see the note in `opname_tables.dart`). SQLite
+        // cannot remove a table CHECK in place, so the table has to be
+        // rebuilt.
+        //
+        // `alterTable` runs sqlite's own 12-step procedure, which is what
+        // makes this safe on a device that already holds documents *and*
+        // lines: it disables foreign keys for the duration, copies every row
+        // across, and re-creates the indexes by reading their DDL back out of
+        // `sqlite_master` — so the four opname indexes, partial `WHERE`
+        // clauses and all, come back exactly as this database had them rather
+        // than as some later version would write them. `stock_opname_lines` is
+        // untouched, and its `opname_id` foreign key still resolves because
+        // the rebuilt table takes the original name.
+        //
+        // Unlike the frozen index SQL below, this step *does* read the current
+        // Dart definition of `StockOpnames` — that is how it gets the shape
+        // without the CHECK. A future v5 that changes the table must therefore
+        // rebuild here too, or a device upgrading v3 → v5 would land on the v5
+        // shape and then have v5's own step applied on top of it.
+        // `migration_v3_to_v4_test.dart` pins the resulting SQL so that
+        // mistake fails the suite instead of shipping.
+        await m.alterTable(TableMigration(stockOpnames));
       }
     },
     beforeOpen: (details) async {

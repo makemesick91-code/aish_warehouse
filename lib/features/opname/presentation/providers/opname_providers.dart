@@ -166,9 +166,33 @@ final submittedOpnameListProvider = StreamProvider<List<StockOpnameSummary>>((
       .watchList(submittedForBranch(branchId));
 });
 
-final opnameDetailProvider = StreamProvider.family<StockOpnameDetail?, String>(
-  (ref, opnameId) => ref.watch(opnameRepositoryProvider).watchDetail(opnameId),
-);
+/// One document, scoped to the branch of whoever is acting.
+///
+/// Three properties keep this from becoming an IDOR:
+///
+/// * It `watch`es the session, so the branch is never a stale capture. Switching
+///   user rebuilds the provider and re-runs the query; the previous user's
+///   document cannot be served from cache to the next one.
+/// * The branch travels into the SQL predicate
+///   ([OpnameRepository.watchDetailForBranch]), so a document from elsewhere is
+///   not fetched and then withheld — it is not fetched.
+/// * `autoDispose` tears the subscription down with the screen, so a document
+///   opened once is not still cached behind a different session later.
+///
+/// Keying the family on the id alone is deliberate: adding the branch to the
+/// key would make two entries for the same document look independent while
+/// still being resolvable, and the leak this prevents is precisely the one
+/// where a stale key survives a session change.
+final opnameDetailProvider = StreamProvider.autoDispose
+    .family<StockOpnameDetail?, String>((ref, opnameId) {
+      final branchId = ref.watch(currentSessionValueProvider)?.branchId;
+      // No session or an unscoped role: nothing to show, and nothing queried.
+      if (branchId == null) return Stream.value(null);
+
+      return ref
+          .watch(opnameRepositoryProvider)
+          .watchDetailForBranch(opnameId: opnameId, branchId: branchId);
+    });
 
 /// Whether the given room already has a count this week — the reason
 /// "+ Opname Minggu Ini" is enabled or not (G-O1).

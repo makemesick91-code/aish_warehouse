@@ -121,6 +121,27 @@ class StockOpname {
   String toString() => 'StockOpname($docNumber, ${status.dbValue})';
 }
 
+/// The smallest fact set that decides whether somebody may open a document.
+///
+/// Deliberately tiny: an authorization check must not be the reason a
+/// document's contents are loaded. Nothing here identifies a room, an item, a
+/// quantity or a person by name — only the branch that owns the document, its
+/// status, and who counted it. A caller that is refused has therefore learned
+/// nothing beyond the answer it asked for.
+class StockOpnameAccessScope {
+  const StockOpnameAccessScope({
+    required this.opnameId,
+    required this.branchId,
+    required this.status,
+    required this.countedBy,
+  });
+
+  final String opnameId;
+  final String branchId;
+  final StockOpnameStatus status;
+  final String countedBy;
+}
+
 /// One counted position, enriched with the item and batch data the form needs.
 class StockOpnameLine {
   const StockOpnameLine({
@@ -140,6 +161,7 @@ class StockOpnameLine {
     required this.countedQty,
     required this.difference,
     this.note,
+    this.itemIsHistorical = false,
   });
 
   final String id;
@@ -154,6 +176,11 @@ class StockOpnameLine {
   final bool hasExpiry;
   final int expiryAlertDays;
   final String? batchNo;
+
+  /// The item was deactivated or archived after this line was counted. The
+  /// line stays visible and stays postable — the badge only explains why the
+  /// item can no longer be picked for a new count (§7.6).
+  final bool itemIsHistorical;
 
   /// Civil date — never timezone converted (T-8/T-9).
   final DateTime? expiryDate;
@@ -226,6 +253,11 @@ class StockOpnameLine {
 }
 
 /// A header plus the names needed to render a list row, without a second query.
+///
+/// The `…IsHistorical` flags exist so a screen can *say* that a document rests
+/// on master data that has since been deactivated or archived. They are never a
+/// reason to hide the row: a submitted count whose room was retired is exactly
+/// the document a branch head still has to act on (§7.6).
 class StockOpnameSummary {
   const StockOpnameSummary({
     required this.opname,
@@ -236,6 +268,9 @@ class StockOpnameSummary {
     this.reviewedByName,
     required this.lineCount,
     required this.differenceLineCount,
+    this.branchIsHistorical = false,
+    this.roomIsHistorical = false,
+    this.countedByIsHistorical = false,
   });
 
   final StockOpname opname;
@@ -247,11 +282,25 @@ class StockOpnameSummary {
   final int lineCount;
   final int differenceLineCount;
 
+  /// Branch deactivated or soft-deleted since the document was created.
+  final bool branchIsHistorical;
+
+  /// Room deactivated or soft-deleted since the count.
+  final bool roomIsHistorical;
+
+  /// The nurse who counted has been deactivated or removed since.
+  final bool countedByIsHistorical;
+
   String get id => opname.id;
 
   StockOpnameStatus get status => opname.status;
 
   bool get hasDifference => differenceLineCount > 0;
+
+  /// Whether anything on the header points at master data that is out of
+  /// service — the trigger for the "Data historis" badge.
+  bool get usesHistoricalMaster =>
+      branchIsHistorical || roomIsHistorical || countedByIsHistorical;
 }
 
 /// Everything the detail and review screens need about one document.

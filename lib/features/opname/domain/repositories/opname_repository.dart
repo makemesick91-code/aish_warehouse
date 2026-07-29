@@ -35,9 +35,45 @@ abstract interface class OpnameRepository {
 
   Future<StockOpname?> getById(String opnameId);
 
+  /// Unscoped read, for **use cases only**.
+  ///
+  /// A use case loads the document and then applies `requireSameBranch`, which
+  /// produces a precise `UnauthorizedBranchFailure` naming the document — the
+  /// right answer for somebody attempting a write. Presentation code must not
+  /// use this: by the time a widget could apply that check, the foreign
+  /// document has already been fetched and handed to the UI layer. Screens use
+  /// [getDetailForBranch] / [watchDetailForBranch] instead, and
+  /// `opname_architecture_test.dart` enforces the split.
   Future<StockOpnameDetail?> getDetail(String opnameId);
 
   Stream<StockOpnameDetail?> watchDetail(String opnameId);
+
+  /// Read authorization, answered without reading the document (§6.3).
+  ///
+  /// Returns `null` when [opnameId] does not name a live document **of
+  /// [branchId]** — one answer for "no such document" and for "another
+  /// branch's", so a caller cannot probe which ids exist elsewhere.
+  Future<StockOpnameAccessScope?> findAccessScope({
+    required String opnameId,
+    required String branchId,
+  });
+
+  /// The document, but only if it belongs to [branchId].
+  ///
+  /// The branch predicate is part of the query, so a foreign document is never
+  /// loaded rather than being loaded and then withheld.
+  Future<StockOpnameDetail?> getDetailForBranch({
+    required String opnameId,
+    required String branchId,
+  });
+
+  /// Live version of [getDetailForBranch]. A stream opened for one branch can
+  /// never emit another branch's document, whatever happens to the database
+  /// underneath it.
+  Stream<StockOpnameDetail?> watchDetailForBranch({
+    required String opnameId,
+    required String branchId,
+  });
 
   Future<List<StockOpnameSummary>> list(StockOpnameFilter filter);
 
@@ -110,6 +146,14 @@ abstract interface class OpnameRepository {
 
   /// Number of lines whose difference is not zero — used by list badges.
   Future<int> countDifferenceLines(String opnameId);
+
+  /// Item ids of every live line, read without joining `items`.
+  ///
+  /// [getDetail] joins the item so a line can be rendered, which means a line
+  /// whose item row is physically missing does not appear in the result at
+  /// all. This is how a caller finds out that happened instead of quietly
+  /// working with fewer lines than the document has (§7.3).
+  Future<List<String>> lineItemIds(String opnameId);
 }
 
 /// Convenience filter for the review inbox of one branch.

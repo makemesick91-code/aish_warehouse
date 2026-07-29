@@ -97,8 +97,17 @@ class StockOpnames extends Table with BusinessColumns {
         'AND reviewed_at IS NOT NULL AND reviewed_by IS NOT NULL))',
     // Segregation of duties (G-R4): nobody reviews their own count.
     'CHECK (reviewed_by IS NULL OR reviewed_by <> counted_by)',
-    'CHECK (reviewed_at IS NULL OR submitted_at IS NULL '
-        'OR reviewed_at >= submitted_at)',
+    // Deliberately absent, and removed in schema v4: a CHECK comparing
+    // `reviewed_at >= submitted_at`. Timestamps are stored as ISO-8601 TEXT,
+    // so that operator is a *lexical* comparison — it orders characters, not
+    // instants. Two equally valid serialisations of the same moment
+    // (`…000Z` against `…000000Z`, or a `+08:00` suffix against a `Z` one)
+    // would compare by their text, so the constraint could accept an
+    // out-of-order pair and reject a correct one for no reason the data can
+    // explain. Ordering is therefore decided by `DocumentTimestampPolicy` on
+    // UTC `DateTime` instants, and the database restricts itself to the
+    // question it can answer unambiguously: which timestamps a status must
+    // and must not carry (the CHECK above).
   ];
 }
 

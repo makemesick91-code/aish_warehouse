@@ -5,6 +5,7 @@ import '../../../../core/quantity/quantity.dart';
 import '../../../../core/time/app_date_time_formatter.dart';
 import '../../../../core/widgets/quantity_field.dart';
 import '../../domain/models/opname_models.dart';
+import 'historical_master_badge.dart';
 import 'stock_opname_difference_badge.dart';
 
 /// One counted position on the form.
@@ -147,6 +148,14 @@ class _StockOpnameLineCardState extends State<StockOpnameLineCard> {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
+                      // An item deactivated after this line was counted stays
+                      // on the sheet and stays postable — it is physically on
+                      // the shelf. The badge explains why it can no longer be
+                      // found in the "add item" search (§7.6).
+                      if (line.itemIsHistorical) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        const HistoricalMasterBadge.inactive(detail: 'Barang'),
+                      ],
                     ],
                   ),
                 ),

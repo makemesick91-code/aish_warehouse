@@ -17,6 +17,7 @@ import 'package:aish_warehouse/features/opname/domain/use_cases/create_stock_opn
 import 'package:aish_warehouse/features/opname/domain/use_cases/review_stock_opname_use_case.dart';
 import 'package:aish_warehouse/features/opname/domain/use_cases/submit_stock_opname_use_case.dart';
 import 'package:aish_warehouse/features/opname/domain/use_cases/update_stock_opname_line_use_case.dart';
+import 'package:drift/drift.dart' show Variable;
 import 'package:drift/native.dart';
 
 /// In-memory wiring of the whole inventory stack. Tests never touch a device
@@ -121,6 +122,65 @@ class TestContext {
   );
 
   Future<void> dispose() => database.close();
+
+  // --- master data lifecycle, for recovery tests ----------------------------
+  //
+  // Deliberately raw SQL rather than repository calls. The production API has
+  // no deactivate, no archive and no hard delete: master data is only ever
+  // written through the idempotent `ensure…` methods (G-A4/G-A5), and adding
+  // writers so a test could reach a state would mean shipping the very API the
+  // guardrails exist to withhold. These helpers reproduce what an
+  // administrator's back-office (or a future sync payload) would do to the
+  // rows, without giving the app a way to do it.
+
+  /// `is_active = 0` — deactivation (G-A4).
+  Future<void> deactivate(String table, String id) => database.customStatement(
+    'UPDATE $table SET is_active = 0 WHERE id = ?;',
+    [id],
+  );
+
+  /// `deleted_at = <now>` — soft delete (G-A5).
+  Future<void> archive(String table, String id) => database.customStatement(
+    'UPDATE $table SET deleted_at = ? WHERE id = ?;',
+    [DateTime.utc(2026, 7, 30).toIso8601String(), id],
+  );
+
+  /// Physically removes a row, simulating corruption rather than any supported
+  /// operation.
+  ///
+  /// Foreign keys are switched off for the statement, because the whole point
+  /// is to produce a state the constraints normally prevent: a document
+  /// pointing at a row that is gone. Nothing in `lib/` can reach this — it
+  /// exists so §7.3 ("what happens when the reference is genuinely broken")
+  /// can be tested rather than assumed.
+  Future<void> corruptByDeleting(String table, String id) async {
+    await database.customStatement('PRAGMA foreign_keys = OFF;');
+    await database.customStatement('DELETE FROM $table WHERE id = ?;', [id]);
+    await database.customStatement('PRAGMA foreign_keys = ON;');
+  }
+
+  /// Ledger rows written against one opname, read straight from the database
+  /// so a rollback assertion cannot be fooled by a cached repository read.
+  Future<int> movementCountFor(String opnameId) async {
+    final row = await database
+        .customSelect(
+          'SELECT COUNT(*) AS c FROM stock_movements WHERE ref_doc_id = ?;',
+          variables: [Variable<String>(opnameId)],
+        )
+        .getSingle();
+    return row.read<int>('c');
+  }
+
+  /// The stored status of one document, bypassing every Dart layer.
+  Future<String> statusOf(String opnameId) async {
+    final row = await database
+        .customSelect(
+          'SELECT status FROM stock_opnames WHERE id = ?;',
+          variables: [Variable<String>(opnameId)],
+        )
+        .getSingle();
+    return row.read<String>('status');
+  }
 }
 
 /// A minimal but complete fixture: one warehouse, one branch store, one room,
@@ -432,6 +492,53 @@ Future<OpnameFixture> buildOpnameFixture(
     expiredBatch: expiredBatch,
   );
 }
+
+/// Creates a document, counts one position short, and submits it.
+///
+/// The `create → find the plain item's line → count it low → submit` sequence
+/// is what almost every review-side test needs before it can begin, and it was
+/// being re-written in each file that needed it. The parameters are exactly the
+/// axes those copies actually varied along.
+///
+/// [countedQty] is deliberately below the fixture's opening `10.5 box`, so the
+/// document carries a real difference for a review to post; [note] satisfies
+/// G-O3 for it. [clock] stamps `submitted_at`, for tests that must pin the
+/// instant rather than take the wall clock (T-7).
+Future<String> submitOpnameFor(
+  TestContext context,
+  OpnameFixture fixture, {
+  String? roomId,
+  String countedQty = '8',
+  String note = 'Terpakai',
+  DateTime Function()? clock,
+}) async {
+  final opname = await context.createOpname().call(
+    actorUserId: fixture.nurse.id,
+    roomId: roomId ?? fixture.room.id,
+  );
+  final detail = await context.opnames.getDetail(opname.id);
+  final line = detail!.lines.firstWhere(
+    (line) => line.itemId == fixture.simpleItem.id,
+  );
+  await context.updateOpnameLine(
+    actorUserId: fixture.nurse.id,
+    lineId: line.id,
+    countedQty: Quantity.parse(countedQty),
+    note: note,
+  );
+  await context
+      .submitOpname(clock: clock)
+      .call(actorUserId: fixture.nurse.id, opnameId: opname.id);
+  return opname.id;
+}
+
+/// The room's balance of the fixture's non-expiry item — the quantity a review
+/// of [submitOpnameFor]'s document is expected to move.
+Future<Quantity> roomBalanceOf(TestContext context, OpnameFixture fixture) =>
+    context.inventory.balanceQty(
+      locationId: fixture.roomLocation.id,
+      itemId: fixture.simpleItem.id,
+    );
 
 /// A fixed UTC instant that always lands mid-week in operational time, so a
 /// test that adds or subtracts days stays inside one ISO week unless it means

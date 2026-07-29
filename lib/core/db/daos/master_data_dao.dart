@@ -269,10 +269,10 @@ class MasterDataDao extends DatabaseAccessor<AppDatabase>
   Future<StockLocation?> locationById(String id) =>
       (select(stockLocations)..where((t) => t.id.equals(id))).getSingleOrNull();
 
-  /// The stock location of one room. Every room has exactly one, created
-  /// alongside it; a room without one cannot hold stock and therefore cannot
-  /// be counted.
-  Future<StockLocation?> locationForRoom(String roomId) =>
+  /// The stock location of one room, for **new** operations. Every room has
+  /// exactly one, created alongside it; a room without one cannot hold stock
+  /// and therefore cannot be counted.
+  Future<StockLocation?> activeLocationForRoom(String roomId) =>
       (select(stockLocations)..where(
             (t) =>
                 t.roomId.equals(roomId) &
@@ -281,9 +281,41 @@ class MasterDataDao extends DatabaseAccessor<AppDatabase>
           ))
           .getSingleOrNull();
 
-  Future<Room?> roomById(String id) => (select(
+  /// The stock location of one room **including archived ones**.
+  ///
+  /// Used only to complete documents that already reference it. A soft-deleted
+  /// row is history, not absence: the balances it holds are real and a
+  /// submitted count posted against it must still be reviewable (§7.2). Hiding
+  /// it here would strand the document with no way forward, since `submitted`
+  /// has no transition back to `draft`.
+  /// A live location still wins when both exist: a room that was archived and
+  /// re-created has two rows, and the balances a review must adjust are the
+  /// ones on the live location. `getSingleOrNull` would throw on that pair,
+  /// which is why this orders and takes one instead.
+  Future<StockLocation?> historicalLocationForRoom(String roomId) =>
+      (select(stockLocations)
+            ..where(
+              (t) =>
+                  t.roomId.equals(roomId) &
+                  t.type.equalsValue(StockLocationType.room),
+            )
+            ..orderBy([
+              // `deleted_at IS NULL` is 1 for a live row, so descending puts
+              // the live one first; `created_at` keeps the rest deterministic.
+              (t) => OrderingTerm.desc(t.deletedAt.isNull()),
+              (t) => OrderingTerm.asc(t.createdAt),
+            ])
+            ..limit(1))
+          .getSingleOrNull();
+
+  /// A room for **new** operations: soft-deleted rows are invisible.
+  Future<Room?> activeRoomById(String id) => (select(
     rooms,
   )..where((t) => t.id.equals(id) & t.deletedAt.isNull())).getSingleOrNull();
+
+  /// A room a historic document points at, soft-deleted rows included.
+  Future<Room?> historicalRoomById(String id) =>
+      (select(rooms)..where((t) => t.id.equals(id))).getSingleOrNull();
 
   Future<AppUser?> userById(String id) => (select(
     users,

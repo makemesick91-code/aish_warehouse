@@ -22,4 +22,10 @@ abstract final class AppRoutes {
   /// Declared after `review` so `/opname/review` is never matched as an id.
   static const String opnameDetail = ':id';
   static const String opnameDetailName = 'opnameDetail';
+
+  // There is deliberately no `/akses-ditolak` route. A refused document route
+  // renders `AccessDeniedPage` *in place*, keeping the URL the user typed:
+  // redirecting to a dedicated path would tell them, by the address bar alone,
+  // that the id they guessed is one the app recognises — which is the thing
+  // §6.5 exists to withhold.
 }

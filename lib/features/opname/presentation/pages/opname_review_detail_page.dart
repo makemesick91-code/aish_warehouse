@@ -10,6 +10,7 @@ import '../../domain/models/opname_models.dart';
 import '../providers/opname_providers.dart';
 import '../widgets/category_filter_chips.dart';
 import '../widgets/document_timeline.dart';
+import '../widgets/historical_master_badge.dart';
 import '../widgets/opname_status_chip.dart';
 import '../widgets/stock_opname_line_card.dart';
 
@@ -243,6 +244,12 @@ class _ReviewHeader extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              // Shown, never hidden: a room or nurse deactivated after the
+              // count does not stop this document from needing a decision, and
+              // the reviewer should know the master data behind it has moved
+              // on (§7.6).
+              const SizedBox(height: AppSpacing.sm),
+              HistoricalMasterBadge.forSummary(detail.summary),
               const SizedBox(height: AppSpacing.md),
               const Divider(height: 1),
               const SizedBox(height: AppSpacing.md),

@@ -117,8 +117,8 @@ void main() {
 
     final database = openDatabase();
     // Opening is lazy; this query is what triggers the migration. A v1 file
-    // now travels all the way to v3 in one open.
-    expect(await readInt(database, 'PRAGMA user_version;', 'user_version'), 3);
+    // now travels all the way to the current version in one open.
+    expect(await readInt(database, 'PRAGMA user_version;', 'user_version'), 4);
 
     expect(
       await readInt(
@@ -252,11 +252,11 @@ void main() {
     },
   );
 
-  test('database baru dibuat langsung pada schema v3', () async {
+  test('database baru dibuat langsung pada schema terkini', () async {
     // No v1 file this time: onCreate must land on the current version without
     // running the upgrade path at all.
     final database = openDatabase();
-    expect(await readInt(database, 'PRAGMA user_version;', 'user_version'), 3);
+    expect(await readInt(database, 'PRAGMA user_version;', 'user_version'), 4);
     await database.close();
   });
 }

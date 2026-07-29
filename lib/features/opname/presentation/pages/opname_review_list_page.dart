@@ -9,6 +9,7 @@ import '../../../../core/session/current_user_session.dart';
 import '../../../../core/time/app_date_time_formatter.dart';
 import '../../domain/models/opname_models.dart';
 import '../providers/opname_providers.dart';
+import '../widgets/historical_master_badge.dart';
 import '../widgets/opname_status_chip.dart';
 
 /// Review Stok Opname — the Kepala Cabang's inbox (spec §4.2).
@@ -143,6 +144,14 @@ class _ReviewTile extends StatelessWidget {
                 Text(
                   '${summary.roomName} · ${summary.countedByName}',
                   style: theme.textTheme.bodySmall,
+                ),
+                // A submitted count never drops out of the inbox because its
+                // room or nurse was deactivated afterwards — it is exactly the
+                // document that still needs a decision (§7.6).
+                const SizedBox(height: AppSpacing.xs),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: HistoricalMasterBadge.forSummary(summary),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Row(

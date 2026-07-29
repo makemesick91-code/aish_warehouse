@@ -4,6 +4,18 @@ import '../../../../core/time/date_only.dart';
 
 /// Domain models for master data. They intentionally mirror only the business
 /// columns so the rest of the app never depends on Drift row classes.
+///
+/// Master rows carry two independent "no longer in use" signals, and the
+/// difference matters to every historic document that points at them:
+///
+/// * `isActive == false` — deactivated (G-A4). The row may not be chosen for
+///   anything new, but it is entirely intact.
+/// * `isArchived == true` — soft deleted (G-A5), i.e. `deleted_at IS NOT NULL`.
+///   Also intact; only hidden from the lists a user picks from.
+///
+/// Neither is deletion. A Stok Opname that is already `submitted` has no way
+/// back to `draft`, so it must stay readable and reviewable against both
+/// (§7.2) — the screens simply mark it as historic.
 class MasterBranch {
   const MasterBranch({
     required this.id,
@@ -11,6 +23,7 @@ class MasterBranch {
     required this.name,
     this.address,
     required this.isActive,
+    this.isArchived = false,
   });
 
   final String id;
@@ -18,6 +31,7 @@ class MasterBranch {
   final String name;
   final String? address;
   final bool isActive;
+  final bool isArchived;
 }
 
 class MasterRoom {
@@ -27,6 +41,7 @@ class MasterRoom {
     required this.code,
     required this.name,
     required this.isActive,
+    this.isArchived = false,
   });
 
   final String id;
@@ -34,6 +49,7 @@ class MasterRoom {
   final String code;
   final String name;
   final bool isActive;
+  final bool isArchived;
 }
 
 class MasterUser {
@@ -119,6 +135,7 @@ class MasterLocation {
     this.branchId,
     this.roomId,
     required this.name,
+    this.isArchived = false,
   });
 
   final String id;
@@ -126,6 +143,11 @@ class MasterLocation {
   final String? branchId;
   final String? roomId;
   final String name;
+
+  /// `deleted_at IS NOT NULL`. Locations have no `is_active` column, so this is
+  /// the only historic marker they carry — and it never means the balances
+  /// stored against it stopped existing.
+  final bool isArchived;
 }
 
 /// Row counts shown on the development home page.

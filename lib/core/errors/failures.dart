@@ -239,3 +239,59 @@ final class ConcurrentStockOpnameUpdateFailure extends AppFailure {
 
   final String opnameId;
 }
+
+// --- Stok Opname hardening (Milestone 2.1) ----------------------------------
+
+/// A master row a **submitted** document depends on is physically gone.
+///
+/// This is not the same thing as deactivation or soft deletion: a deactivated
+/// or soft-deleted row is still there and a historic document may still be
+/// completed against it (§7.2). This failure means the row cannot be found at
+/// all — the reference is broken, the review cannot be posted honestly, and
+/// nothing may be invented to paper over it (§7.3).
+final class HistoricalReferenceMissingFailure extends AppFailure {
+  const HistoricalReferenceMissingFailure(
+    super.message, {
+    required this.entity,
+    required this.id,
+    required this.opnameId,
+  });
+
+  /// The table whose row is missing: `rooms`, `stock_locations`, `items`…
+  final String entity;
+
+  /// The id the document still points at.
+  final String id;
+
+  final String opnameId;
+}
+
+/// The document timestamps would end up out of order.
+///
+/// Raised when the instant a review is being performed at lies **before** the
+/// instant the document was submitted — a device whose clock is set wrong.
+/// Both instants are UTC [DateTime]s and are compared as instants, never as
+/// text (§8.2/§8.3).
+final class InvalidDocumentTimestampFailure extends AppFailure {
+  const InvalidDocumentTimestampFailure(
+    super.message, {
+    required this.opnameId,
+    required this.earlierLabel,
+    required this.earlierUtc,
+    required this.laterLabel,
+    required this.laterUtc,
+  });
+
+  final String opnameId;
+
+  /// Name of the timestamp that must not be later, e.g. `submitted_at`.
+  final String earlierLabel;
+  final DateTime earlierUtc;
+
+  /// Name of the timestamp that must not be earlier, e.g. `reviewed_at`.
+  final String laterLabel;
+  final DateTime laterUtc;
+
+  /// How far the clock is behind. Always positive when this failure is thrown.
+  Duration get skew => earlierUtc.difference(laterUtc);
+}

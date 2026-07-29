@@ -301,6 +301,146 @@ void main() {
     });
   });
 
+  group('urutan timestamp bukan urusan database (schema v4)', () {
+    /// The CREATE TABLE statement SQLite actually holds, not the Dart source
+    /// that produced it. A constraint can only be proven absent by asking the
+    /// database what it has.
+    Future<String> stockOpnamesSql() async {
+      final row = await context.database
+          .customSelect(
+            "SELECT sql FROM sqlite_master "
+            "WHERE type = 'table' AND name = 'stock_opnames';",
+          )
+          .getSingle();
+      return row.read<String>('sql');
+    }
+
+    test('tidak ada CHECK perbandingan leksikal timestamp', () async {
+      final sql = (await stockOpnamesSql()).replaceAll(RegExp(r'\s+'), ' ');
+
+      // Every spelling of the ordering comparison, in both directions.
+      for (final forbidden in [
+        'reviewed_at >= submitted_at',
+        'reviewed_at > submitted_at',
+        'submitted_at <= reviewed_at',
+        'submitted_at < reviewed_at',
+      ]) {
+        expect(
+          sql,
+          isNot(contains(forbidden)),
+          reason:
+              'stock_opnames masih membandingkan timestamp sebagai teks: '
+              '$forbidden',
+        );
+      }
+    });
+
+    test('tidak ada julianday atau strftime pada constraint', () async {
+      final sql = (await stockOpnamesSql()).toLowerCase();
+
+      // Rewriting the comparison with a date function would move the rule back
+      // into SQL rather than fix it (§8.3).
+      expect(sql, isNot(contains('julianday')));
+      expect(sql, isNot(contains('strftime')));
+      expect(sql, isNot(contains('datetime(')));
+    });
+
+    test('constraint konsistensi status dan null tetap ada', () async {
+      final sql = (await stockOpnamesSql()).replaceAll(RegExp(r'\s+'), ' ');
+
+      // What the database *can* state unambiguously is still stated.
+      expect(sql, contains("status IN ('draft', 'submitted', 'reviewed')"));
+      expect(
+        sql,
+        contains(
+          "status = 'draft' AND submitted_at IS NULL "
+          'AND reviewed_at IS NULL AND reviewed_by IS NULL',
+        ),
+      );
+      expect(
+        sql,
+        contains(
+          "status = 'submitted' AND submitted_at IS NOT NULL "
+          'AND reviewed_at IS NULL AND reviewed_by IS NULL',
+        ),
+      );
+      expect(
+        sql,
+        contains(
+          "status = 'reviewed' AND submitted_at IS NOT NULL "
+          'AND reviewed_at IS NOT NULL AND reviewed_by IS NOT NULL',
+        ),
+      );
+      expect(sql, contains('reviewed_by IS NULL OR reviewed_by <> counted_by'));
+    });
+
+    test(
+      'database menerima reviewed_at lebih awal, domain yang menolak',
+      () async {
+        // The database deliberately no longer has an opinion about which
+        // timestamp came first — so this insert succeeds. Everything that stops
+        // a document reaching this state lives in `DocumentTimestampPolicy`,
+        // which `opname_timestamp_test.dart` exercises.
+        await insertOpname(
+          status: 'reviewed',
+          submittedAt: '2026-07-29T02:00:00.000Z',
+          reviewedAt: '2026-07-29T01:00:00.000Z',
+          reviewedBy: fixture.branchHead.id,
+        );
+
+        final row = await context.database
+            .customSelect("SELECT status FROM stock_opnames WHERE id = 'so-1';")
+            .getSingle();
+        expect(row.read<String>('status'), 'reviewed');
+      },
+    );
+
+    test('DAO tidak membandingkan timestamp lewat SQL', () {
+      // Comments are stripped first: the constraint that was removed is
+      // *described* in prose there, and a test that cannot tell an explanation
+      // from a statement would force the explanation to be deleted.
+      final dao = File('lib/core/db/daos/opname_dao.dart')
+          .readAsStringSync()
+          .split('\n')
+          .where((line) => !line.trimLeft().startsWith('//'))
+          .join('\n');
+
+      for (final forbidden in [
+        'reviewed_at >=',
+        'reviewed_at >',
+        'submitted_at <=',
+        'submitted_at <',
+        'julianday',
+        'strftime',
+      ]) {
+        expect(
+          dao,
+          isNot(contains(forbidden)),
+          reason: 'opname_dao.dart mengurutkan timestamp lewat SQL: $forbidden',
+        );
+      }
+    });
+
+    test('alur opname tidak memakai toLocal', () {
+      // T-4: the device timezone must never enter a display or calculation
+      // path. UTC in, GMT+8 out, and nothing in between.
+      for (final file in [
+        ...Directory('lib/features/opname')
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((file) => file.path.endsWith('.dart')),
+        File('lib/core/time/document_timestamp_policy.dart'),
+        File('lib/core/db/daos/opname_dao.dart'),
+      ]) {
+        expect(
+          file.readAsStringSync(),
+          isNot(contains('toLocal()')),
+          reason: '${file.path} memakai zona waktu perangkat.',
+        );
+      }
+    });
+  });
+
   group('constraint baris', () {
     setUp(() => insertOpname());
 

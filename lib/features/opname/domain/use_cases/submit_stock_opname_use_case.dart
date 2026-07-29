@@ -49,6 +49,19 @@ class SubmitStockOpnameUseCase {
         attempted: StockOpnameStatus.submitted,
       );
 
+      // The document must be validated in full, and `detail.lines` is only as
+      // complete as the join that produced it: it inner-joins `items`, so a
+      // line whose item row is physically gone is absent from it entirely.
+      // Submitting on that basis would freeze a document whose G-O3 check
+      // never saw one of its positions — an unexplained difference locked in
+      // permanently. Catching it here, while the document is still a draft,
+      // leaves a way forward that `submitted` would not have.
+      await _guards.requireEveryLineLoaded(
+        opnameId: opnameId,
+        storedItemIds: await _opnames.lineItemIds(opnameId),
+        loadedItemIds: detail.lines.map((line) => line.itemId),
+      );
+
       if (detail.isEmpty) {
         throw EmptyStockOpnameFailure(
           'Dokumen ${opname.docNumber} belum memiliki satu baris pun, '
@@ -100,8 +113,10 @@ class SubmitStockOpnameUseCase {
         );
       }
 
-      final item = await _guards.requireItem(line.itemId);
-      await _guards.requireValidItemBatch(item: item, batchId: line.batchId);
+      // Same reasoning as the review path: the line came through an inner join
+      // on `items`, so re-reading the row would be one SELECT per line to
+      // recover fields the line already carries.
+      await _guards.requireHistoricalLineBatch(opnameId: detail.id, line: line);
     }
 
     // G-O3: every difference needs a reason. All offending lines are reported
