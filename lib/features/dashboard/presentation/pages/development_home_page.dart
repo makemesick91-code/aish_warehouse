@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../app/routes.dart';
 import '../../../../app/theme.dart';
-import '../../../../core/errors/failures.dart';
+import '../../../../core/errors/failure_presenter.dart';
+import '../../../../core/session/current_user_session.dart';
 import '../../../../core/time/app_date_time_formatter.dart';
 import '../../../../core/widgets/status_card.dart';
 import '../../../inventory/domain/models/inventory_models.dart';
@@ -55,6 +58,8 @@ class DevelopmentHomePage extends ConsumerWidget {
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
             const _DatabaseStatusCard(),
+            const SizedBox(height: AppSpacing.md),
+            const _SessionCard(),
             const SizedBox(height: AppSpacing.md),
             summary.when(
               loading: () =>
@@ -143,6 +148,104 @@ class _DatabaseStatusCard extends ConsumerWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Development-only role switcher and the entry point into Stok Opname.
+///
+/// Authentication is not part of this milestone, so the acting user is chosen
+/// here instead of logged in. Switching between the seeded Perawat and Kepala
+/// Cabang is what makes the count → review handover demonstrable on one device.
+class _SessionCard extends ConsumerWidget {
+  const _SessionCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(currentSessionProvider);
+    final users = ref.watch(selectableSessionUsersProvider);
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.badge_outlined, color: AppColors.primary),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Text(
+                    'Sesi pengembangan',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            users.when(
+              loading: () => const LinearProgressIndicator(),
+              error: (error, _) => Text(describeFailure(error)),
+              data: (rows) {
+                if (rows.isEmpty) {
+                  return const Text(
+                    'Belum ada pengguna. Jalankan seed pengembangan terlebih '
+                    'dahulu.',
+                  );
+                }
+
+                return DropdownButtonFormField<String>(
+                  initialValue: session.value?.userId,
+                  decoration: const InputDecoration(
+                    labelText: 'Bertindak sebagai',
+                  ),
+                  items: [
+                    for (final user in rows)
+                      DropdownMenuItem(
+                        value: user.id,
+                        child: Text(
+                          '${user.fullName} · '
+                          '${CurrentUserSession(user).roleLabel}',
+                        ),
+                      ),
+                  ],
+                  onChanged: (value) {
+                    if (value == null) return;
+                    ref.read(currentSessionProvider.notifier).switchTo(value);
+                  },
+                );
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => context.pushNamed(AppRoutes.opnameName),
+                    icon: const Icon(Icons.fact_check_outlined),
+                    label: const Text('Stok Opname'),
+                  ),
+                ),
+                if (session.value?.canReviewOpname ?? false) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () =>
+                          context.pushNamed(AppRoutes.opnameReviewName),
+                      icon: const Icon(Icons.rule),
+                      label: const Text('Review'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -403,12 +506,4 @@ class _LoadingBlock extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Turns a thrown object into an Indonesian message. Business failures already
-/// carry one; anything else falls back to a generic sentence so users never see
-/// a raw stack trace.
-String describeFailure(Object error) {
-  if (error is AppFailure) return error.message;
-  return 'Terjadi kesalahan tak terduga. Silakan coba lagi.';
 }

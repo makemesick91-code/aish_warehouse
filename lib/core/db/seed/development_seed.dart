@@ -49,8 +49,22 @@ class _SeedBatch {
 
   final String batchNo;
 
-  /// Relative to the seed run so the data stays meaningful over time.
+  /// Relative to the seed run so the data stays meaningful over time. A
+  /// negative value seeds an already expired batch.
   final int daysUntilExpiry;
+  final String qty;
+}
+
+/// Opening stock placed into "Ruang Dental 1", so a Stok Opname has something
+/// to count from the first run (Milestone 2).
+class _SeedRoomStock {
+  const _SeedRoomStock({required this.sku, this.batchNo, required this.qty});
+
+  final String sku;
+
+  /// `null` for items without expiry.
+  final String? batchNo;
+
   final String qty;
 }
 
@@ -182,6 +196,11 @@ class DevelopmentSeed {
       // Half-unit opening stock: `0.5 botol`.
       batches: [
         _SeedBatch(batchNo: 'CHX-2402', daysUntilExpiry: 75, qty: '0.5'),
+        // Already expired. It carries no warehouse stock — expired goods may
+        // not be received or shipped (G-E4) — but the batch itself must exist
+        // so a Stok Opname can report the bottle still sitting in a room
+        // (G-E7).
+        _SeedBatch(batchNo: 'CHX-2301', daysUntilExpiry: -12, qty: '0'),
       ],
     ),
     _SeedItem(
@@ -204,6 +223,17 @@ class DevelopmentSeed {
       hasExpiry: false,
       openingQty: '40',
     ),
+  ];
+
+  /// Opening stock of Ruang Dental 1, including decimal quantities and one
+  /// expired batch, so the first Stok Opname has a realistic sheet to count.
+  static const _roomStock = <_SeedRoomStock>[
+    _SeedRoomStock(sku: 'DEN-0004', qty: '4.5'),
+    _SeedRoomStock(sku: 'DEN-0005', qty: '120'),
+    _SeedRoomStock(sku: 'DEN-0009', qty: '6'),
+    _SeedRoomStock(sku: 'DEN-0001', batchNo: 'KMP-2402', qty: '3'),
+    _SeedRoomStock(sku: 'DEN-0007', batchNo: 'LID-2407', qty: '12.5'),
+    _SeedRoomStock(sku: 'DEN-0008', batchNo: 'CHX-2301', qty: '0.5'),
   ];
 
   /// True when master data already exists, used by the UI to decide between the
@@ -236,6 +266,7 @@ class DevelopmentSeed {
       branchId: branch.id,
     );
 
+    MasterLocation? firstRoomLocation;
     for (final roomSpec in const [
       ('R1', 'Ruang Dental 1'),
       ('R2', 'Ruang Dental 2'),
@@ -246,12 +277,13 @@ class DevelopmentSeed {
         code: roomSpec.$1,
         name: roomSpec.$2,
       );
-      await _master.ensureLocation(
+      final location = await _master.ensureLocation(
         type: StockLocationType.room,
         name: room.name,
         branchId: branch.id,
         roomId: room.id,
       );
+      firstRoomLocation ??= location;
     }
 
     await _master.ensureUser(
@@ -323,6 +355,62 @@ class DevelopmentSeed {
         );
       }
     }
+
+    await _seedRoomStock(
+      roomLocation: firstRoomLocation!,
+      actorUserId: warehouseUser.id,
+    );
+  }
+
+  /// Places opening stock in Ruang Dental 1 so Stok Opname has something to
+  /// count on a fresh install.
+  ///
+  /// Posted through [StockPostingService.postOpnameAdjustment] rather than a
+  /// transfer from the warehouse: a transfer refuses expired batches (G-E4),
+  /// and one of the seeded positions is deliberately expired — that is exactly
+  /// the case an opname has to be able to surface (G-E7). The adjustment path
+  /// is the one that accepts it, and it writes a real ledger movement either
+  /// way, so `stock_balances` is still never touched directly.
+  Future<void> _seedRoomStock({
+    required MasterLocation roomLocation,
+    required String actorUserId,
+  }) async {
+    for (final spec in _roomStock) {
+      final refDocId = 'seed-room-${spec.sku}-${spec.batchNo ?? 'nobatch'}';
+      final existing = await _inventory.movementsByRef(
+        refDocType: RefDocType.seed,
+        refDocId: refDocId,
+      );
+      if (existing.isNotEmpty) continue;
+
+      final item = await _findItemBySku(spec.sku);
+      if (item == null) continue;
+
+      String? batchId;
+      if (spec.batchNo != null) {
+        final batches = await _master.batchesOfItem(item.id);
+        final match = batches.where((b) => b.batchNo == spec.batchNo);
+        if (match.isEmpty) continue;
+        batchId = match.first.id;
+      }
+
+      await _posting.postOpnameAdjustment(
+        locationId: roomLocation.id,
+        itemId: item.id,
+        batchId: batchId,
+        countedQty: Quantity.parse(spec.qty),
+        actorUserId: actorUserId,
+        refDocType: RefDocType.seed,
+        refDocId: refDocId,
+        note: 'Saldo awal ruangan seed pengembangan',
+      );
+    }
+  }
+
+  Future<MasterItem?> _findItemBySku(String sku) async {
+    final items = await _master.activeItems();
+    final match = items.where((item) => item.sku == sku);
+    return match.isEmpty ? null : match.first;
   }
 
   /// Posts an opening balance exactly once. The stable `ref_doc_id` is what

@@ -146,6 +146,94 @@ void main() {
     final summary = await context.master.summary();
     expect(summary.isEmpty, isTrue);
   });
+
+  group('saldo ruangan untuk Stok Opname', () {
+    test('ruang dental 1 memiliki saldo awal siap dihitung', () async {
+      await context.seed.run();
+
+      final room = (await context.master.activeRooms()).firstWhere(
+        (room) => room.code == 'R1',
+      );
+      final location = await context.master.roomLocation(room.id);
+      expect(location, isNotNull);
+
+      final balances = await context.inventory.balancesAtLocation(location!.id);
+      expect(balances, isNotEmpty);
+      // Both kinds of position, which is what makes the snapshot interesting.
+      expect(balances.any((b) => b.batchId == null), isTrue);
+      expect(balances.any((b) => b.batchId != null), isTrue);
+    });
+
+    test('saldo ruangan menyertakan kuantitas desimal', () async {
+      await context.seed.run();
+
+      final room = (await context.master.activeRooms()).firstWhere(
+        (room) => room.code == 'R1',
+      );
+      final location = await context.master.roomLocation(room.id);
+      final balances = await context.inventory.balancesAtLocation(location!.id);
+
+      final gloves = balances.firstWhere((b) => b.sku == 'DEN-0004');
+      expect(gloves.qtyOnHand, Quantity.parse('4.5'));
+      expect(gloves.qtyOnHand.format(), '4.5');
+
+      final anaesthetic = balances.firstWhere((b) => b.sku == 'DEN-0007');
+      expect(anaesthetic.qtyOnHand, Quantity.parse('12.5'));
+    });
+
+    test('terdapat batch kedaluwarsa yang tetap dapat dihitung', () async {
+      await context.seed.run();
+
+      final room = (await context.master.activeRooms()).firstWhere(
+        (room) => room.code == 'R1',
+      );
+      final location = await context.master.roomLocation(room.id);
+      final balances = await context.inventory.balancesAtLocation(location!.id);
+
+      final now = DateTime.now().toUtc();
+      final expired = balances.where((b) => b.isExpiredOn(now));
+      expect(
+        expired,
+        isNotEmpty,
+        reason:
+            'Stok opname harus bisa melaporkan barang kedaluwarsa yang masih '
+            'ada di ruangan (G-E7).',
+      );
+      expect(expired.first.batchNo, 'CHX-2301');
+      expect(expired.first.qtyOnHand, Quantity.parse('0.5'));
+    });
+
+    test('saldo ruangan idempoten pada seed kedua', () async {
+      await context.seed.run();
+      final first = await _countMovements(context);
+
+      await context.seed.run();
+
+      expect(await _countMovements(context), first);
+    });
+
+    test('saldo ruangan selalu berasal dari ledger', () async {
+      await context.seed.run();
+
+      final room = (await context.master.activeRooms()).firstWhere(
+        (room) => room.code == 'R1',
+      );
+      final location = await context.master.roomLocation(room.id);
+      final balances = await context.inventory.balancesAtLocation(location!.id);
+
+      for (final balance in balances) {
+        final movements = await context.inventory.stockCard(
+          itemId: balance.itemId,
+          locationId: location.id,
+        );
+        expect(
+          movements,
+          isNotEmpty,
+          reason: 'stock_balances tidak boleh ditulis tanpa movement (G-A1).',
+        );
+      }
+    });
+  });
 }
 
 Future<int> _countMovements(TestContext context) async {

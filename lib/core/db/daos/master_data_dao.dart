@@ -269,6 +269,26 @@ class MasterDataDao extends DatabaseAccessor<AppDatabase>
   Future<StockLocation?> locationById(String id) =>
       (select(stockLocations)..where((t) => t.id.equals(id))).getSingleOrNull();
 
+  /// The stock location of one room. Every room has exactly one, created
+  /// alongside it; a room without one cannot hold stock and therefore cannot
+  /// be counted.
+  Future<StockLocation?> locationForRoom(String roomId) =>
+      (select(stockLocations)..where(
+            (t) =>
+                t.roomId.equals(roomId) &
+                t.type.equalsValue(StockLocationType.room) &
+                t.deletedAt.isNull(),
+          ))
+          .getSingleOrNull();
+
+  Future<Room?> roomById(String id) => (select(
+    rooms,
+  )..where((t) => t.id.equals(id) & t.deletedAt.isNull())).getSingleOrNull();
+
+  Future<AppUser?> userById(String id) => (select(
+    users,
+  )..where((t) => t.id.equals(id) & t.deletedAt.isNull())).getSingleOrNull();
+
   Future<StockLocation?> warehouseLocation() =>
       (select(stockLocations)..where(
             (t) =>

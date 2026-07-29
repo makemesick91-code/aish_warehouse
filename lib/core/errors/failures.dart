@@ -1,3 +1,4 @@
+import '../enums/app_enums.dart';
 import '../quantity/quantity.dart';
 
 /// Business-rule failures for Aish Warehouse.
@@ -84,4 +85,157 @@ final class EntityNotFoundFailure extends AppFailure {
 
   final String entity;
   final String id;
+}
+
+/// A referenced row exists but has been deactivated (`is_active = false`).
+/// Historic documents keep pointing at it; new ones may not (G-A4).
+final class InactiveEntityFailure extends AppFailure {
+  const InactiveEntityFailure(
+    super.message, {
+    required this.entity,
+    required this.id,
+  });
+
+  final String entity;
+  final String id;
+}
+
+// --- Stok Opname (Milestone 2) ----------------------------------------------
+
+/// The Stok Opname document does not exist, or has been soft deleted.
+final class StockOpnameNotFoundFailure extends AppFailure {
+  const StockOpnameNotFoundFailure(super.message, {required this.opnameId});
+
+  final String opnameId;
+}
+
+/// The line does not exist on this document.
+final class StockOpnameLineNotFoundFailure extends AppFailure {
+  const StockOpnameLineNotFoundFailure(super.message, {required this.lineId});
+
+  final String lineId;
+}
+
+/// G-O1: this room already has an opname for this ISO week.
+final class StockOpnameAlreadyExistsFailure extends AppFailure {
+  const StockOpnameAlreadyExistsFailure(
+    super.message, {
+    required this.roomId,
+    required this.periodYear,
+    required this.periodWeek,
+    this.existingOpnameId,
+  });
+
+  final String roomId;
+  final int periodYear;
+  final int periodWeek;
+
+  /// Lets the UI jump straight to the document that is already there.
+  final String? existingOpnameId;
+}
+
+/// G-S1/G-S2: the requested transition or edit is not allowed from the status
+/// the document is actually in.
+final class InvalidStockOpnameStateFailure extends AppFailure {
+  const InvalidStockOpnameStateFailure(
+    super.message, {
+    required this.opnameId,
+    required this.currentStatus,
+    this.attemptedStatus,
+  });
+
+  final String opnameId;
+  final StockOpnameStatus currentStatus;
+  final StockOpnameStatus? attemptedStatus;
+}
+
+/// G-O3: a line whose difference is not zero was submitted without a reason.
+final class DifferenceNoteRequiredFailure extends AppFailure {
+  const DifferenceNoteRequiredFailure(super.message, {required this.lineIds});
+
+  /// Every offending line, so the form can mark them all at once instead of
+  /// making the nurse submit repeatedly.
+  final List<String> lineIds;
+}
+
+/// G-R1: the room does not belong to the actor's branch.
+final class UnauthorizedRoomFailure extends AppFailure {
+  const UnauthorizedRoomFailure(
+    super.message, {
+    required this.actorUserId,
+    required this.roomId,
+  });
+
+  final String actorUserId;
+  final String roomId;
+}
+
+/// G-R2: the document belongs to a different branch than the actor.
+final class UnauthorizedBranchFailure extends AppFailure {
+  const UnauthorizedBranchFailure(
+    super.message, {
+    required this.actorUserId,
+    required this.branchId,
+  });
+
+  final String actorUserId;
+  final String branchId;
+}
+
+/// The actor does not hold the role this action requires.
+final class InvalidReviewerFailure extends AppFailure {
+  const InvalidReviewerFailure(
+    super.message, {
+    required this.actorUserId,
+    required this.requiredRole,
+  });
+
+  final String actorUserId;
+  final UserRole requiredRole;
+}
+
+/// G-R4: whoever counted the stock may not also approve it.
+final class SelfReviewNotAllowedFailure extends AppFailure {
+  const SelfReviewNotAllowedFailure(
+    super.message, {
+    required this.opnameId,
+    required this.actorUserId,
+  });
+
+  final String opnameId;
+  final String actorUserId;
+}
+
+/// A document with no lines cannot be submitted — there would be nothing to
+/// review and nothing to post.
+final class EmptyStockOpnameFailure extends AppFailure {
+  const EmptyStockOpnameFailure(super.message, {required this.opnameId});
+
+  final String opnameId;
+}
+
+/// The same item/batch position was added to the document twice.
+final class DuplicateStockOpnameLineFailure extends AppFailure {
+  const DuplicateStockOpnameLineFailure(
+    super.message, {
+    required this.opnameId,
+    required this.itemId,
+    this.batchId,
+  });
+
+  final String opnameId;
+  final String itemId;
+  final String? batchId;
+}
+
+/// A guarded write affected no rows: somebody else changed the document
+/// between reading it and writing it. The caller must reload rather than
+/// retry blindly.
+final class ConcurrentStockOpnameUpdateFailure extends AppFailure {
+  const ConcurrentStockOpnameUpdateFailure(
+    super.message, {
+    required this.opnameId,
+  });
+
+  final String opnameId;
 }

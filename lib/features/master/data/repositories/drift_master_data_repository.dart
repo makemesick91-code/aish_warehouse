@@ -245,6 +245,24 @@ class DriftMasterDataRepository implements MasterDataRepository {
   }
 
   @override
+  Future<MasterLocation?> roomLocation(String roomId) async {
+    final row = await _dao.locationForRoom(roomId);
+    return row == null ? null : _toLocation(row);
+  }
+
+  @override
+  Future<MasterRoom?> roomById(String id) async {
+    final row = await _dao.roomById(id);
+    return row == null ? null : _toRoom(row);
+  }
+
+  @override
+  Future<MasterUser?> userById(String id) async {
+    final row = await _dao.userById(id);
+    return row == null ? null : _toUser(row);
+  }
+
+  @override
   Future<MasterLocation?> warehouseLocation() async {
     final row = await _dao.warehouseLocation();
     return row == null ? null : _toLocation(row);

@@ -15,10 +15,10 @@ void main() {
 
   tearDown(() => context.dispose());
 
-  test('schema version adalah 2', () {
-    // v2 introduced fixed-point milli-unit quantities. Stok Opname must bump
-    // this to v3 rather than reuse v2 (spec §6.3).
-    expect(context.database.schemaVersion, 2);
+  test('schema version adalah 3', () {
+    // v2 introduced fixed-point milli-unit quantities; v3 adds Stok Opname
+    // as its own version rather than extending v2 (spec §6.3).
+    expect(context.database.schemaVersion, 3);
   });
 
   test('kolom kuantitas ledger bertipe INTEGER, bukan REAL', () async {

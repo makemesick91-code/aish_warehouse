@@ -97,7 +97,12 @@ void main() {
       "'${actor.id}', 'mov-1');",
     );
 
-    // Finally declare the file to be schema v1.
+    // Roll the file back to a genuine v1. Creating the schema always produces
+    // the *current* tables, so the ones introduced later have to go before the
+    // version stamp — otherwise the upgrade would find v3 tables in a file
+    // claiming to be v1.
+    await database.customStatement('DROP TABLE stock_opname_lines;');
+    await database.customStatement('DROP TABLE stock_opnames;');
     await database.customStatement('PRAGMA user_version = 1;');
     await database.close();
   }
@@ -111,8 +116,9 @@ void main() {
     await createVersion1Database();
 
     final database = openDatabase();
-    // Opening is lazy; this query is what triggers the migration.
-    expect(await readInt(database, 'PRAGMA user_version;', 'user_version'), 2);
+    // Opening is lazy; this query is what triggers the migration. A v1 file
+    // now travels all the way to v3 in one open.
+    expect(await readInt(database, 'PRAGMA user_version;', 'user_version'), 3);
 
     expect(
       await readInt(
@@ -246,11 +252,11 @@ void main() {
     },
   );
 
-  test('database baru dibuat langsung pada schema v2', () async {
+  test('database baru dibuat langsung pada schema v3', () async {
     // No v1 file this time: onCreate must land on the current version without
     // running the upgrade path at all.
     final database = openDatabase();
-    expect(await readInt(database, 'PRAGMA user_version;', 'user_version'), 2);
+    expect(await readInt(database, 'PRAGMA user_version;', 'user_version'), 3);
     await database.close();
   });
 }

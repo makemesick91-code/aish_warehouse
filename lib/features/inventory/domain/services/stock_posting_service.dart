@@ -184,51 +184,140 @@ class StockPostingService {
     String? refDocId,
     String? note,
   }) {
-    return _inventory.runInTransaction(() async {
-      if (countedQty.isNegative) {
-        throw const ValidationFailure(
-          'Hasil hitung fisik tidak boleh negatif.',
-        );
-      }
-      final item = await _requireItem(itemId);
-      await _validateBatch(item: item, batchId: batchId);
-      await _requireLocation(locationId);
-
-      final currentQty = await _inventory.balanceQty(
+    return _inventory.runInTransaction(
+      () => _postOpnameAdjustment(
         locationId: locationId,
         itemId: itemId,
         batchId: batchId,
-      );
-      // The difference may legitimately be negative (Q-7); the movement itself
-      // still carries a positive qty and encodes the direction in its
-      // from/to location.
-      final difference = countedQty - currentQty;
-      if (difference.isZero) return null;
+        countedQty: countedQty,
+        actorUserId: actorUserId,
+        refDocType: refDocType,
+        refDocId: refDocId,
+        note: note,
+      ),
+    );
+  }
 
-      final movement = await _append(
-        MovementDraft(
-          id: _newId(),
-          itemId: itemId,
-          batchId: batchId,
-          fromLocationId: difference.isNegative ? locationId : null,
-          toLocationId: difference.isPositive ? locationId : null,
-          qty: difference.absolute,
-          movementType: StockMovementType.opnameAdjustment,
-          actorUserId: actorUserId,
-          refDocType: refDocType ?? RefDocType.stockOpname,
-          refDocId: refDocId,
-          note: note,
+  /// Posts every line of a Stok Opname review as **one** unit of work
+  /// (G-O5, G-T4).
+  ///
+  /// This method opens no transaction of its own: the caller — the review use
+  /// case — already owns one, and that is precisely the point. Locking the
+  /// document and adjusting the stock have to commit or roll back together, so
+  /// a failure on the last line cannot leave the first lines' movements behind.
+  /// Calling a per-line method that opened its own transaction would make that
+  /// impossible, which is why no such loop exists anywhere.
+  ///
+  /// Each line is posted against the balance **as it is right now**, not
+  /// against the `difference` snapshotted when the document was created: stock
+  /// may legitimately have moved between counting and reviewing, and the rule
+  /// is that the balance ends up equal to what was physically counted. The
+  /// closing assertion re-reads every balance and refuses to let the
+  /// transaction commit if any of them disagrees with its counted quantity.
+  Future<List<OpnameAdjustmentResult>> postOpnameAdjustmentsInTransaction({
+    required String locationId,
+    required List<OpnameAdjustmentLine> lines,
+    required String actorUserId,
+    required String opnameId,
+  }) async {
+    await _requireLocation(locationId);
+
+    final results = <OpnameAdjustmentResult>[];
+    for (final line in lines) {
+      final movement = await _postOpnameAdjustment(
+        locationId: locationId,
+        itemId: line.itemId,
+        batchId: line.batchId,
+        countedQty: line.countedQty,
+        actorUserId: actorUserId,
+        refDocType: RefDocType.stockOpname,
+        refDocId: opnameId,
+        note: line.note,
+      );
+      results.add(
+        OpnameAdjustmentResult(
+          lineId: line.lineId,
+          movement: movement,
+          countedQty: line.countedQty,
         ),
       );
+    }
 
-      await _writeBalance(
+    // Post-condition of G-O5, verified rather than assumed. `assert` would be
+    // compiled out of a release build, and this is exactly the invariant that
+    // must hold in production.
+    for (final line in lines) {
+      final finalQty = await _inventory.balanceQty(
         locationId: locationId,
+        itemId: line.itemId,
+        batchId: line.batchId,
+      );
+      if (finalQty != line.countedQty) {
+        throw ValidationFailure(
+          'Saldo setelah penyesuaian opname (${finalQty.format()}) tidak sama '
+          'dengan hasil hitung fisik (${line.countedQty.format()}). '
+          'Review dibatalkan.',
+        );
+      }
+    }
+
+    return results;
+  }
+
+  /// The transaction-free core of an opname adjustment. Every caller either
+  /// wraps it in a transaction ([postOpnameAdjustment]) or already runs inside
+  /// one ([postOpnameAdjustmentsInTransaction]).
+  Future<InventoryMovement?> _postOpnameAdjustment({
+    required String locationId,
+    required String itemId,
+    String? batchId,
+    required Quantity countedQty,
+    required String actorUserId,
+    String? refDocType,
+    String? refDocId,
+    String? note,
+  }) async {
+    if (countedQty.isNegative) {
+      throw const ValidationFailure('Hasil hitung fisik tidak boleh negatif.');
+    }
+    final item = await _requireItem(itemId);
+    await _validateBatch(item: item, batchId: batchId);
+    await _requireLocation(locationId);
+
+    final currentQty = await _inventory.balanceQty(
+      locationId: locationId,
+      itemId: itemId,
+      batchId: batchId,
+    );
+    // The difference may legitimately be negative (Q-7); the movement itself
+    // still carries a positive qty and encodes the direction in its
+    // from/to location.
+    final difference = countedQty - currentQty;
+    if (difference.isZero) return null;
+
+    final movement = await _append(
+      MovementDraft(
+        id: _newId(),
         itemId: itemId,
         batchId: batchId,
-        newQty: countedQty,
-      );
-      return movement;
-    });
+        fromLocationId: difference.isNegative ? locationId : null,
+        toLocationId: difference.isPositive ? locationId : null,
+        qty: difference.absolute,
+        movementType: StockMovementType.opnameAdjustment,
+        actorUserId: actorUserId,
+        refDocType: refDocType ?? RefDocType.stockOpname,
+        refDocId: refDocId,
+        note: note,
+      ),
+    );
+
+    await _writeBalance(
+      locationId: locationId,
+      itemId: itemId,
+      batchId: batchId,
+      newQty: countedQty,
+    );
+    return movement;
   }
 
   /// Removes expired or damaged stock from the system (G-E7). A reason is

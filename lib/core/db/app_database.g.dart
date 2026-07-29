@@ -5606,9 +5606,1585 @@ class StockMovementsCompanion extends UpdateCompanion<StockMovement> {
   }
 }
 
+class $StockOpnamesTable extends StockOpnames
+    with TableInfo<$StockOpnamesTable, StockOpnameRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $StockOpnamesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>($StockOpnamesTable.$convertersyncStatus);
+  static const VerificationMeta _docNumberMeta = const VerificationMeta(
+    'docNumber',
+  );
+  @override
+  late final GeneratedColumn<String> docNumber = GeneratedColumn<String>(
+    'doc_number',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _branchIdMeta = const VerificationMeta(
+    'branchId',
+  );
+  @override
+  late final GeneratedColumn<String> branchId = GeneratedColumn<String>(
+    'branch_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES branches (id)',
+    ),
+  );
+  static const VerificationMeta _roomIdMeta = const VerificationMeta('roomId');
+  @override
+  late final GeneratedColumn<String> roomId = GeneratedColumn<String>(
+    'room_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES rooms (id)',
+    ),
+  );
+  static const VerificationMeta _periodYearMeta = const VerificationMeta(
+    'periodYear',
+  );
+  @override
+  late final GeneratedColumn<int> periodYear = GeneratedColumn<int>(
+    'period_year',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _periodWeekMeta = const VerificationMeta(
+    'periodWeek',
+  );
+  @override
+  late final GeneratedColumn<int> periodWeek = GeneratedColumn<int>(
+    'period_week',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _countedByMeta = const VerificationMeta(
+    'countedBy',
+  );
+  @override
+  late final GeneratedColumn<String> countedBy = GeneratedColumn<String>(
+    'counted_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<StockOpnameStatus, String>
+  status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => StockOpnameStatus.draft.dbValue,
+  ).withConverter<StockOpnameStatus>($StockOpnamesTable.$converterstatus);
+  static const VerificationMeta _submittedAtMeta = const VerificationMeta(
+    'submittedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> submittedAt = GeneratedColumn<DateTime>(
+    'submitted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _reviewedAtMeta = const VerificationMeta(
+    'reviewedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> reviewedAt = GeneratedColumn<DateTime>(
+    'reviewed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _reviewedByMeta = const VerificationMeta(
+    'reviewedBy',
+  );
+  @override
+  late final GeneratedColumn<String> reviewedBy = GeneratedColumn<String>(
+    'reviewed_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    docNumber,
+    branchId,
+    roomId,
+    periodYear,
+    periodWeek,
+    countedBy,
+    status,
+    submittedAt,
+    reviewedAt,
+    reviewedBy,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'stock_opnames';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StockOpnameRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('doc_number')) {
+      context.handle(
+        _docNumberMeta,
+        docNumber.isAcceptableOrUnknown(data['doc_number']!, _docNumberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_docNumberMeta);
+    }
+    if (data.containsKey('branch_id')) {
+      context.handle(
+        _branchIdMeta,
+        branchId.isAcceptableOrUnknown(data['branch_id']!, _branchIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_branchIdMeta);
+    }
+    if (data.containsKey('room_id')) {
+      context.handle(
+        _roomIdMeta,
+        roomId.isAcceptableOrUnknown(data['room_id']!, _roomIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_roomIdMeta);
+    }
+    if (data.containsKey('period_year')) {
+      context.handle(
+        _periodYearMeta,
+        periodYear.isAcceptableOrUnknown(data['period_year']!, _periodYearMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_periodYearMeta);
+    }
+    if (data.containsKey('period_week')) {
+      context.handle(
+        _periodWeekMeta,
+        periodWeek.isAcceptableOrUnknown(data['period_week']!, _periodWeekMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_periodWeekMeta);
+    }
+    if (data.containsKey('counted_by')) {
+      context.handle(
+        _countedByMeta,
+        countedBy.isAcceptableOrUnknown(data['counted_by']!, _countedByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_countedByMeta);
+    }
+    if (data.containsKey('submitted_at')) {
+      context.handle(
+        _submittedAtMeta,
+        submittedAt.isAcceptableOrUnknown(
+          data['submitted_at']!,
+          _submittedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reviewed_at')) {
+      context.handle(
+        _reviewedAtMeta,
+        reviewedAt.isAcceptableOrUnknown(data['reviewed_at']!, _reviewedAtMeta),
+      );
+    }
+    if (data.containsKey('reviewed_by')) {
+      context.handle(
+        _reviewedByMeta,
+        reviewedBy.isAcceptableOrUnknown(data['reviewed_by']!, _reviewedByMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  StockOpnameRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StockOpnameRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $StockOpnamesTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      docNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}doc_number'],
+      )!,
+      branchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}branch_id'],
+      )!,
+      roomId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}room_id'],
+      )!,
+      periodYear: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}period_year'],
+      )!,
+      periodWeek: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}period_week'],
+      )!,
+      countedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}counted_by'],
+      )!,
+      status: $StockOpnamesTable.$converterstatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}status'],
+        )!,
+      ),
+      submittedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}submitted_at'],
+      ),
+      reviewedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}reviewed_at'],
+      ),
+      reviewedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reviewed_by'],
+      ),
+    );
+  }
+
+  @override
+  $StockOpnamesTable createAlias(String alias) {
+    return $StockOpnamesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+  static TypeConverter<StockOpnameStatus, String> $converterstatus =
+      const StockOpnameStatusConverter();
+}
+
+class StockOpnameRow extends DataClass implements Insertable<StockOpnameRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+
+  /// Temporary local number `TMP-SO-{uuid}` until a sync backend assigns the
+  /// final `SO-{cabang}-{yyyyMMdd}-{seq}` on submit (G-Y4). Inventing a
+  /// server-shaped number offline would produce duplicates across devices.
+  /// Uniqueness is enforced by the partial index above, not by `.unique()`:
+  /// a column-level UNIQUE would also bind soft-deleted rows.
+  final String docNumber;
+  final String branchId;
+  final String roomId;
+
+  /// ISO week-numbering year — differs from the calendar year around new year.
+  final int periodYear;
+
+  /// ISO week number, 1–53.
+  final int periodWeek;
+
+  /// The perawat who performs the count.
+  final String countedBy;
+  final StockOpnameStatus status;
+
+  /// UTC instants (T-1); the UI converts to GMT+8 for display.
+  final DateTime? submittedAt;
+  final DateTime? reviewedAt;
+
+  /// The kepala cabang who locked the document.
+  final String? reviewedBy;
+  const StockOpnameRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.docNumber,
+    required this.branchId,
+    required this.roomId,
+    required this.periodYear,
+    required this.periodWeek,
+    required this.countedBy,
+    required this.status,
+    this.submittedAt,
+    this.reviewedAt,
+    this.reviewedBy,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $StockOpnamesTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    map['doc_number'] = Variable<String>(docNumber);
+    map['branch_id'] = Variable<String>(branchId);
+    map['room_id'] = Variable<String>(roomId);
+    map['period_year'] = Variable<int>(periodYear);
+    map['period_week'] = Variable<int>(periodWeek);
+    map['counted_by'] = Variable<String>(countedBy);
+    {
+      map['status'] = Variable<String>(
+        $StockOpnamesTable.$converterstatus.toSql(status),
+      );
+    }
+    if (!nullToAbsent || submittedAt != null) {
+      map['submitted_at'] = Variable<DateTime>(submittedAt);
+    }
+    if (!nullToAbsent || reviewedAt != null) {
+      map['reviewed_at'] = Variable<DateTime>(reviewedAt);
+    }
+    if (!nullToAbsent || reviewedBy != null) {
+      map['reviewed_by'] = Variable<String>(reviewedBy);
+    }
+    return map;
+  }
+
+  StockOpnamesCompanion toCompanion(bool nullToAbsent) {
+    return StockOpnamesCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      docNumber: Value(docNumber),
+      branchId: Value(branchId),
+      roomId: Value(roomId),
+      periodYear: Value(periodYear),
+      periodWeek: Value(periodWeek),
+      countedBy: Value(countedBy),
+      status: Value(status),
+      submittedAt: submittedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(submittedAt),
+      reviewedAt: reviewedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reviewedAt),
+      reviewedBy: reviewedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reviewedBy),
+    );
+  }
+
+  factory StockOpnameRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StockOpnameRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      docNumber: serializer.fromJson<String>(json['docNumber']),
+      branchId: serializer.fromJson<String>(json['branchId']),
+      roomId: serializer.fromJson<String>(json['roomId']),
+      periodYear: serializer.fromJson<int>(json['periodYear']),
+      periodWeek: serializer.fromJson<int>(json['periodWeek']),
+      countedBy: serializer.fromJson<String>(json['countedBy']),
+      status: serializer.fromJson<StockOpnameStatus>(json['status']),
+      submittedAt: serializer.fromJson<DateTime?>(json['submittedAt']),
+      reviewedAt: serializer.fromJson<DateTime?>(json['reviewedAt']),
+      reviewedBy: serializer.fromJson<String?>(json['reviewedBy']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'docNumber': serializer.toJson<String>(docNumber),
+      'branchId': serializer.toJson<String>(branchId),
+      'roomId': serializer.toJson<String>(roomId),
+      'periodYear': serializer.toJson<int>(periodYear),
+      'periodWeek': serializer.toJson<int>(periodWeek),
+      'countedBy': serializer.toJson<String>(countedBy),
+      'status': serializer.toJson<StockOpnameStatus>(status),
+      'submittedAt': serializer.toJson<DateTime?>(submittedAt),
+      'reviewedAt': serializer.toJson<DateTime?>(reviewedAt),
+      'reviewedBy': serializer.toJson<String?>(reviewedBy),
+    };
+  }
+
+  StockOpnameRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    String? docNumber,
+    String? branchId,
+    String? roomId,
+    int? periodYear,
+    int? periodWeek,
+    String? countedBy,
+    StockOpnameStatus? status,
+    Value<DateTime?> submittedAt = const Value.absent(),
+    Value<DateTime?> reviewedAt = const Value.absent(),
+    Value<String?> reviewedBy = const Value.absent(),
+  }) => StockOpnameRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    docNumber: docNumber ?? this.docNumber,
+    branchId: branchId ?? this.branchId,
+    roomId: roomId ?? this.roomId,
+    periodYear: periodYear ?? this.periodYear,
+    periodWeek: periodWeek ?? this.periodWeek,
+    countedBy: countedBy ?? this.countedBy,
+    status: status ?? this.status,
+    submittedAt: submittedAt.present ? submittedAt.value : this.submittedAt,
+    reviewedAt: reviewedAt.present ? reviewedAt.value : this.reviewedAt,
+    reviewedBy: reviewedBy.present ? reviewedBy.value : this.reviewedBy,
+  );
+  StockOpnameRow copyWithCompanion(StockOpnamesCompanion data) {
+    return StockOpnameRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      docNumber: data.docNumber.present ? data.docNumber.value : this.docNumber,
+      branchId: data.branchId.present ? data.branchId.value : this.branchId,
+      roomId: data.roomId.present ? data.roomId.value : this.roomId,
+      periodYear: data.periodYear.present
+          ? data.periodYear.value
+          : this.periodYear,
+      periodWeek: data.periodWeek.present
+          ? data.periodWeek.value
+          : this.periodWeek,
+      countedBy: data.countedBy.present ? data.countedBy.value : this.countedBy,
+      status: data.status.present ? data.status.value : this.status,
+      submittedAt: data.submittedAt.present
+          ? data.submittedAt.value
+          : this.submittedAt,
+      reviewedAt: data.reviewedAt.present
+          ? data.reviewedAt.value
+          : this.reviewedAt,
+      reviewedBy: data.reviewedBy.present
+          ? data.reviewedBy.value
+          : this.reviewedBy,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StockOpnameRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('docNumber: $docNumber, ')
+          ..write('branchId: $branchId, ')
+          ..write('roomId: $roomId, ')
+          ..write('periodYear: $periodYear, ')
+          ..write('periodWeek: $periodWeek, ')
+          ..write('countedBy: $countedBy, ')
+          ..write('status: $status, ')
+          ..write('submittedAt: $submittedAt, ')
+          ..write('reviewedAt: $reviewedAt, ')
+          ..write('reviewedBy: $reviewedBy')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    docNumber,
+    branchId,
+    roomId,
+    periodYear,
+    periodWeek,
+    countedBy,
+    status,
+    submittedAt,
+    reviewedAt,
+    reviewedBy,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StockOpnameRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.docNumber == this.docNumber &&
+          other.branchId == this.branchId &&
+          other.roomId == this.roomId &&
+          other.periodYear == this.periodYear &&
+          other.periodWeek == this.periodWeek &&
+          other.countedBy == this.countedBy &&
+          other.status == this.status &&
+          other.submittedAt == this.submittedAt &&
+          other.reviewedAt == this.reviewedAt &&
+          other.reviewedBy == this.reviewedBy);
+}
+
+class StockOpnamesCompanion extends UpdateCompanion<StockOpnameRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<String> docNumber;
+  final Value<String> branchId;
+  final Value<String> roomId;
+  final Value<int> periodYear;
+  final Value<int> periodWeek;
+  final Value<String> countedBy;
+  final Value<StockOpnameStatus> status;
+  final Value<DateTime?> submittedAt;
+  final Value<DateTime?> reviewedAt;
+  final Value<String?> reviewedBy;
+  final Value<int> rowid;
+  const StockOpnamesCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.docNumber = const Value.absent(),
+    this.branchId = const Value.absent(),
+    this.roomId = const Value.absent(),
+    this.periodYear = const Value.absent(),
+    this.periodWeek = const Value.absent(),
+    this.countedBy = const Value.absent(),
+    this.status = const Value.absent(),
+    this.submittedAt = const Value.absent(),
+    this.reviewedAt = const Value.absent(),
+    this.reviewedBy = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  StockOpnamesCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String docNumber,
+    required String branchId,
+    required String roomId,
+    required int periodYear,
+    required int periodWeek,
+    required String countedBy,
+    this.status = const Value.absent(),
+    this.submittedAt = const Value.absent(),
+    this.reviewedAt = const Value.absent(),
+    this.reviewedBy = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : docNumber = Value(docNumber),
+       branchId = Value(branchId),
+       roomId = Value(roomId),
+       periodYear = Value(periodYear),
+       periodWeek = Value(periodWeek),
+       countedBy = Value(countedBy);
+  static Insertable<StockOpnameRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? docNumber,
+    Expression<String>? branchId,
+    Expression<String>? roomId,
+    Expression<int>? periodYear,
+    Expression<int>? periodWeek,
+    Expression<String>? countedBy,
+    Expression<String>? status,
+    Expression<DateTime>? submittedAt,
+    Expression<DateTime>? reviewedAt,
+    Expression<String>? reviewedBy,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (docNumber != null) 'doc_number': docNumber,
+      if (branchId != null) 'branch_id': branchId,
+      if (roomId != null) 'room_id': roomId,
+      if (periodYear != null) 'period_year': periodYear,
+      if (periodWeek != null) 'period_week': periodWeek,
+      if (countedBy != null) 'counted_by': countedBy,
+      if (status != null) 'status': status,
+      if (submittedAt != null) 'submitted_at': submittedAt,
+      if (reviewedAt != null) 'reviewed_at': reviewedAt,
+      if (reviewedBy != null) 'reviewed_by': reviewedBy,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  StockOpnamesCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<String>? docNumber,
+    Value<String>? branchId,
+    Value<String>? roomId,
+    Value<int>? periodYear,
+    Value<int>? periodWeek,
+    Value<String>? countedBy,
+    Value<StockOpnameStatus>? status,
+    Value<DateTime?>? submittedAt,
+    Value<DateTime?>? reviewedAt,
+    Value<String?>? reviewedBy,
+    Value<int>? rowid,
+  }) {
+    return StockOpnamesCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      docNumber: docNumber ?? this.docNumber,
+      branchId: branchId ?? this.branchId,
+      roomId: roomId ?? this.roomId,
+      periodYear: periodYear ?? this.periodYear,
+      periodWeek: periodWeek ?? this.periodWeek,
+      countedBy: countedBy ?? this.countedBy,
+      status: status ?? this.status,
+      submittedAt: submittedAt ?? this.submittedAt,
+      reviewedAt: reviewedAt ?? this.reviewedAt,
+      reviewedBy: reviewedBy ?? this.reviewedBy,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $StockOpnamesTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (docNumber.present) {
+      map['doc_number'] = Variable<String>(docNumber.value);
+    }
+    if (branchId.present) {
+      map['branch_id'] = Variable<String>(branchId.value);
+    }
+    if (roomId.present) {
+      map['room_id'] = Variable<String>(roomId.value);
+    }
+    if (periodYear.present) {
+      map['period_year'] = Variable<int>(periodYear.value);
+    }
+    if (periodWeek.present) {
+      map['period_week'] = Variable<int>(periodWeek.value);
+    }
+    if (countedBy.present) {
+      map['counted_by'] = Variable<String>(countedBy.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(
+        $StockOpnamesTable.$converterstatus.toSql(status.value),
+      );
+    }
+    if (submittedAt.present) {
+      map['submitted_at'] = Variable<DateTime>(submittedAt.value);
+    }
+    if (reviewedAt.present) {
+      map['reviewed_at'] = Variable<DateTime>(reviewedAt.value);
+    }
+    if (reviewedBy.present) {
+      map['reviewed_by'] = Variable<String>(reviewedBy.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StockOpnamesCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('docNumber: $docNumber, ')
+          ..write('branchId: $branchId, ')
+          ..write('roomId: $roomId, ')
+          ..write('periodYear: $periodYear, ')
+          ..write('periodWeek: $periodWeek, ')
+          ..write('countedBy: $countedBy, ')
+          ..write('status: $status, ')
+          ..write('submittedAt: $submittedAt, ')
+          ..write('reviewedAt: $reviewedAt, ')
+          ..write('reviewedBy: $reviewedBy, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $StockOpnameLinesTable extends StockOpnameLines
+    with TableInfo<$StockOpnameLinesTable, StockOpnameLineRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $StockOpnameLinesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>($StockOpnameLinesTable.$convertersyncStatus);
+  static const VerificationMeta _opnameIdMeta = const VerificationMeta(
+    'opnameId',
+  );
+  @override
+  late final GeneratedColumn<String> opnameId = GeneratedColumn<String>(
+    'opname_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_opnames (id)',
+    ),
+  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+    'item_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES items (id)',
+    ),
+  );
+  static const VerificationMeta _batchIdMeta = const VerificationMeta(
+    'batchId',
+  );
+  @override
+  late final GeneratedColumn<String> batchId = GeneratedColumn<String>(
+    'batch_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES item_batches (id)',
+    ),
+  );
+  static const VerificationMeta _systemQtyMeta = const VerificationMeta(
+    'systemQty',
+  );
+  @override
+  late final GeneratedColumn<int> systemQty = GeneratedColumn<int>(
+    'system_qty',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _countedQtyMeta = const VerificationMeta(
+    'countedQty',
+  );
+  @override
+  late final GeneratedColumn<int> countedQty = GeneratedColumn<int>(
+    'counted_qty',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _differenceMeta = const VerificationMeta(
+    'difference',
+  );
+  @override
+  late final GeneratedColumn<int> difference = GeneratedColumn<int>(
+    'difference',
+    aliasedName,
+    false,
+    generatedAs: GeneratedAs(countedQty - systemQty, true),
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    opnameId,
+    itemId,
+    batchId,
+    systemQty,
+    countedQty,
+    difference,
+    note,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'stock_opname_lines';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StockOpnameLineRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('opname_id')) {
+      context.handle(
+        _opnameIdMeta,
+        opnameId.isAcceptableOrUnknown(data['opname_id']!, _opnameIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_opnameIdMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('batch_id')) {
+      context.handle(
+        _batchIdMeta,
+        batchId.isAcceptableOrUnknown(data['batch_id']!, _batchIdMeta),
+      );
+    }
+    if (data.containsKey('system_qty')) {
+      context.handle(
+        _systemQtyMeta,
+        systemQty.isAcceptableOrUnknown(data['system_qty']!, _systemQtyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_systemQtyMeta);
+    }
+    if (data.containsKey('counted_qty')) {
+      context.handle(
+        _countedQtyMeta,
+        countedQty.isAcceptableOrUnknown(data['counted_qty']!, _countedQtyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_countedQtyMeta);
+    }
+    if (data.containsKey('difference')) {
+      context.handle(
+        _differenceMeta,
+        difference.isAcceptableOrUnknown(data['difference']!, _differenceMeta),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  StockOpnameLineRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StockOpnameLineRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $StockOpnameLinesTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      opnameId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}opname_id'],
+      )!,
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}item_id'],
+      )!,
+      batchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}batch_id'],
+      ),
+      systemQty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}system_qty'],
+      )!,
+      countedQty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}counted_qty'],
+      )!,
+      difference: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}difference'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+    );
+  }
+
+  @override
+  $StockOpnameLinesTable createAlias(String alias) {
+    return $StockOpnameLinesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+}
+
+class StockOpnameLineRow extends DataClass
+    implements Insertable<StockOpnameLineRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+  final String opnameId;
+  final String itemId;
+  final String? batchId;
+
+  /// Snapshot of the room balance at the moment the opname was created (G-O2).
+  /// Nothing in the application updates this column after the insert.
+  final int systemQty;
+
+  /// Physically counted quantity in milli-units — `0.5` arrives here as 500.
+  final int countedQty;
+
+  /// `counted_qty - system_qty`, computed by SQLite. Negative means stock is
+  /// missing, positive means there is more on the shelf than the system knew.
+  final int difference;
+
+  /// Reason for the difference. Mandatory when the difference is non-zero, but
+  /// only *at submit time* (G-O3) — see the note on constraints below.
+  final String? note;
+  const StockOpnameLineRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.opnameId,
+    required this.itemId,
+    this.batchId,
+    required this.systemQty,
+    required this.countedQty,
+    required this.difference,
+    this.note,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $StockOpnameLinesTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    map['opname_id'] = Variable<String>(opnameId);
+    map['item_id'] = Variable<String>(itemId);
+    if (!nullToAbsent || batchId != null) {
+      map['batch_id'] = Variable<String>(batchId);
+    }
+    map['system_qty'] = Variable<int>(systemQty);
+    map['counted_qty'] = Variable<int>(countedQty);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    return map;
+  }
+
+  StockOpnameLinesCompanion toCompanion(bool nullToAbsent) {
+    return StockOpnameLinesCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      opnameId: Value(opnameId),
+      itemId: Value(itemId),
+      batchId: batchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(batchId),
+      systemQty: Value(systemQty),
+      countedQty: Value(countedQty),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+    );
+  }
+
+  factory StockOpnameLineRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StockOpnameLineRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      opnameId: serializer.fromJson<String>(json['opnameId']),
+      itemId: serializer.fromJson<String>(json['itemId']),
+      batchId: serializer.fromJson<String?>(json['batchId']),
+      systemQty: serializer.fromJson<int>(json['systemQty']),
+      countedQty: serializer.fromJson<int>(json['countedQty']),
+      difference: serializer.fromJson<int>(json['difference']),
+      note: serializer.fromJson<String?>(json['note']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'opnameId': serializer.toJson<String>(opnameId),
+      'itemId': serializer.toJson<String>(itemId),
+      'batchId': serializer.toJson<String?>(batchId),
+      'systemQty': serializer.toJson<int>(systemQty),
+      'countedQty': serializer.toJson<int>(countedQty),
+      'difference': serializer.toJson<int>(difference),
+      'note': serializer.toJson<String?>(note),
+    };
+  }
+
+  StockOpnameLineRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    String? opnameId,
+    String? itemId,
+    Value<String?> batchId = const Value.absent(),
+    int? systemQty,
+    int? countedQty,
+    int? difference,
+    Value<String?> note = const Value.absent(),
+  }) => StockOpnameLineRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    opnameId: opnameId ?? this.opnameId,
+    itemId: itemId ?? this.itemId,
+    batchId: batchId.present ? batchId.value : this.batchId,
+    systemQty: systemQty ?? this.systemQty,
+    countedQty: countedQty ?? this.countedQty,
+    difference: difference ?? this.difference,
+    note: note.present ? note.value : this.note,
+  );
+  @override
+  String toString() {
+    return (StringBuffer('StockOpnameLineRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('opnameId: $opnameId, ')
+          ..write('itemId: $itemId, ')
+          ..write('batchId: $batchId, ')
+          ..write('systemQty: $systemQty, ')
+          ..write('countedQty: $countedQty, ')
+          ..write('difference: $difference, ')
+          ..write('note: $note')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    opnameId,
+    itemId,
+    batchId,
+    systemQty,
+    countedQty,
+    difference,
+    note,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StockOpnameLineRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.opnameId == this.opnameId &&
+          other.itemId == this.itemId &&
+          other.batchId == this.batchId &&
+          other.systemQty == this.systemQty &&
+          other.countedQty == this.countedQty &&
+          other.difference == this.difference &&
+          other.note == this.note);
+}
+
+class StockOpnameLinesCompanion extends UpdateCompanion<StockOpnameLineRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<String> opnameId;
+  final Value<String> itemId;
+  final Value<String?> batchId;
+  final Value<int> systemQty;
+  final Value<int> countedQty;
+  final Value<String?> note;
+  final Value<int> rowid;
+  const StockOpnameLinesCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.opnameId = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.batchId = const Value.absent(),
+    this.systemQty = const Value.absent(),
+    this.countedQty = const Value.absent(),
+    this.note = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  StockOpnameLinesCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String opnameId,
+    required String itemId,
+    this.batchId = const Value.absent(),
+    required int systemQty,
+    required int countedQty,
+    this.note = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : opnameId = Value(opnameId),
+       itemId = Value(itemId),
+       systemQty = Value(systemQty),
+       countedQty = Value(countedQty);
+  static Insertable<StockOpnameLineRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? opnameId,
+    Expression<String>? itemId,
+    Expression<String>? batchId,
+    Expression<int>? systemQty,
+    Expression<int>? countedQty,
+    Expression<String>? note,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (opnameId != null) 'opname_id': opnameId,
+      if (itemId != null) 'item_id': itemId,
+      if (batchId != null) 'batch_id': batchId,
+      if (systemQty != null) 'system_qty': systemQty,
+      if (countedQty != null) 'counted_qty': countedQty,
+      if (note != null) 'note': note,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  StockOpnameLinesCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<String>? opnameId,
+    Value<String>? itemId,
+    Value<String?>? batchId,
+    Value<int>? systemQty,
+    Value<int>? countedQty,
+    Value<String?>? note,
+    Value<int>? rowid,
+  }) {
+    return StockOpnameLinesCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      opnameId: opnameId ?? this.opnameId,
+      itemId: itemId ?? this.itemId,
+      batchId: batchId ?? this.batchId,
+      systemQty: systemQty ?? this.systemQty,
+      countedQty: countedQty ?? this.countedQty,
+      note: note ?? this.note,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $StockOpnameLinesTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (opnameId.present) {
+      map['opname_id'] = Variable<String>(opnameId.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (batchId.present) {
+      map['batch_id'] = Variable<String>(batchId.value);
+    }
+    if (systemQty.present) {
+      map['system_qty'] = Variable<int>(systemQty.value);
+    }
+    if (countedQty.present) {
+      map['counted_qty'] = Variable<int>(countedQty.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StockOpnameLinesCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('opnameId: $opnameId, ')
+          ..write('itemId: $itemId, ')
+          ..write('batchId: $batchId, ')
+          ..write('systemQty: $systemQty, ')
+          ..write('countedQty: $countedQty, ')
+          ..write('note: $note, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
-  $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $BranchesTable branches = $BranchesTable(this);
   late final $RoomsTable rooms = $RoomsTable(this);
   late final $UsersTable users = $UsersTable(this);
@@ -5618,6 +7194,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $StockLocationsTable stockLocations = $StockLocationsTable(this);
   late final $StockBalancesTable stockBalances = $StockBalancesTable(this);
   late final $StockMovementsTable stockMovements = $StockMovementsTable(this);
+  late final $StockOpnamesTable stockOpnames = $StockOpnamesTable(this);
+  late final $StockOpnameLinesTable stockOpnameLines = $StockOpnameLinesTable(
+    this,
+  );
   late final Index idxStockBalancesBatched = Index(
     'idx_stock_balances_batched',
     'CREATE UNIQUE INDEX idx_stock_balances_batched ON stock_balances (location_id, item_id, batch_id) WHERE batch_id IS NOT NULL',
@@ -5634,8 +7214,41 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_stock_movements_ref',
     'CREATE INDEX idx_stock_movements_ref ON stock_movements (ref_doc_type, ref_doc_id)',
   );
+  late final Index idxStockOpnamesBranchStatus = Index(
+    'idx_stock_opnames_branch_status',
+    'CREATE INDEX idx_stock_opnames_branch_status ON stock_opnames (branch_id, status)',
+  );
+  late final Index idxStockOpnamesRoomPeriod = Index(
+    'idx_stock_opnames_room_period',
+    'CREATE UNIQUE INDEX idx_stock_opnames_room_period ON stock_opnames (room_id, period_year, period_week) WHERE deleted_at IS NULL',
+  );
+  late final Index idxStockOpnamesCountedByStatus = Index(
+    'idx_stock_opnames_counted_by_status',
+    'CREATE INDEX idx_stock_opnames_counted_by_status ON stock_opnames (counted_by, status)',
+  );
+  late final Index idxStockOpnamesDocNumber = Index(
+    'idx_stock_opnames_doc_number',
+    'CREATE UNIQUE INDEX idx_stock_opnames_doc_number ON stock_opnames (doc_number) WHERE deleted_at IS NULL',
+  );
+  late final Index idxStockOpnameLinesOpname = Index(
+    'idx_stock_opname_lines_opname',
+    'CREATE INDEX idx_stock_opname_lines_opname ON stock_opname_lines (opname_id)',
+  );
+  late final Index idxStockOpnameLinesItem = Index(
+    'idx_stock_opname_lines_item',
+    'CREATE INDEX idx_stock_opname_lines_item ON stock_opname_lines (item_id)',
+  );
+  late final Index idxStockOpnameLinesBatched = Index(
+    'idx_stock_opname_lines_batched',
+    'CREATE UNIQUE INDEX idx_stock_opname_lines_batched ON stock_opname_lines (opname_id, item_id, batch_id) WHERE batch_id IS NOT NULL AND deleted_at IS NULL',
+  );
+  late final Index idxStockOpnameLinesUnbatched = Index(
+    'idx_stock_opname_lines_unbatched',
+    'CREATE UNIQUE INDEX idx_stock_opname_lines_unbatched ON stock_opname_lines (opname_id, item_id) WHERE batch_id IS NULL AND deleted_at IS NULL',
+  );
   late final MasterDataDao masterDataDao = MasterDataDao(this as AppDatabase);
   late final InventoryDao inventoryDao = InventoryDao(this as AppDatabase);
+  late final OpnameDao opnameDao = OpnameDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5650,5671 +7263,22 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     stockLocations,
     stockBalances,
     stockMovements,
+    stockOpnames,
+    stockOpnameLines,
     idxStockBalancesBatched,
     idxStockBalancesUnbatched,
     idxStockMovementsItem,
     idxStockMovementsRef,
+    idxStockOpnamesBranchStatus,
+    idxStockOpnamesRoomPeriod,
+    idxStockOpnamesCountedByStatus,
+    idxStockOpnamesDocNumber,
+    idxStockOpnameLinesOpname,
+    idxStockOpnameLinesItem,
+    idxStockOpnameLinesBatched,
+    idxStockOpnameLinesUnbatched,
   ];
   @override
   DriftDatabaseOptions get options =>
       const DriftDatabaseOptions(storeDateTimeAsText: true);
-}
-
-typedef $$BranchesTableCreateCompanionBuilder =
-    BranchesCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<SyncStatus> syncStatus,
-      required String code,
-      required String name,
-      Value<String?> address,
-      Value<bool> isActive,
-      Value<int> rowid,
-    });
-typedef $$BranchesTableUpdateCompanionBuilder =
-    BranchesCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<SyncStatus> syncStatus,
-      Value<String> code,
-      Value<String> name,
-      Value<String?> address,
-      Value<bool> isActive,
-      Value<int> rowid,
-    });
-
-final class $$BranchesTableReferences
-    extends BaseReferences<_$AppDatabase, $BranchesTable, Branch> {
-  $$BranchesTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static MultiTypedResultKey<$RoomsTable, List<Room>> _roomsRefsTable(
-    _$AppDatabase db,
-  ) => MultiTypedResultKey.fromTable(
-    db.rooms,
-    aliasName: 'branches__id__rooms__branch_id',
-  );
-
-  $$RoomsTableProcessedTableManager get roomsRefs {
-    final manager = $$RoomsTableTableManager(
-      $_db,
-      $_db.rooms,
-    ).filter((f) => f.branchId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_roomsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$UsersTable, List<AppUser>> _usersRefsTable(
-    _$AppDatabase db,
-  ) => MultiTypedResultKey.fromTable(
-    db.users,
-    aliasName: 'branches__id__users__branch_id',
-  );
-
-  $$UsersTableProcessedTableManager get usersRefs {
-    final manager = $$UsersTableTableManager(
-      $_db,
-      $_db.users,
-    ).filter((f) => f.branchId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_usersRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$StockLocationsTable, List<StockLocation>>
-  _stockLocationsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.stockLocations,
-    aliasName: 'branches__id__stock_locations__branch_id',
-  );
-
-  $$StockLocationsTableProcessedTableManager get stockLocationsRefs {
-    final manager = $$StockLocationsTableTableManager(
-      $_db,
-      $_db.stockLocations,
-    ).filter((f) => f.branchId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_stockLocationsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
-
-class $$BranchesTableFilterComposer
-    extends Composer<_$AppDatabase, $BranchesTable> {
-  $$BranchesTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnWithTypeConverterFilters<SyncStatus, SyncStatus, String>
-  get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
-
-  ColumnFilters<String> get code => $composableBuilder(
-    column: $table.code,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get address => $composableBuilder(
-    column: $table.address,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get isActive => $composableBuilder(
-    column: $table.isActive,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  Expression<bool> roomsRefs(
-    Expression<bool> Function($$RoomsTableFilterComposer f) f,
-  ) {
-    final $$RoomsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.rooms,
-      getReferencedColumn: (t) => t.branchId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RoomsTableFilterComposer(
-            $db: $db,
-            $table: $db.rooms,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> usersRefs(
-    Expression<bool> Function($$UsersTableFilterComposer f) f,
-  ) {
-    final $$UsersTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.users,
-      getReferencedColumn: (t) => t.branchId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$UsersTableFilterComposer(
-            $db: $db,
-            $table: $db.users,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> stockLocationsRefs(
-    Expression<bool> Function($$StockLocationsTableFilterComposer f) f,
-  ) {
-    final $$StockLocationsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockLocations,
-      getReferencedColumn: (t) => t.branchId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockLocationsTableFilterComposer(
-            $db: $db,
-            $table: $db.stockLocations,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$BranchesTableOrderingComposer
-    extends Composer<_$AppDatabase, $BranchesTable> {
-  $$BranchesTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get code => $composableBuilder(
-    column: $table.code,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get address => $composableBuilder(
-    column: $table.address,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get isActive => $composableBuilder(
-    column: $table.isActive,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$BranchesTableAnnotationComposer
-    extends Composer<_$AppDatabase, $BranchesTable> {
-  $$BranchesTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get updatedAt =>
-      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get deletedAt =>
-      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
-
-  GeneratedColumnWithTypeConverter<SyncStatus, String> get syncStatus =>
-      $composableBuilder(
-        column: $table.syncStatus,
-        builder: (column) => column,
-      );
-
-  GeneratedColumn<String> get code =>
-      $composableBuilder(column: $table.code, builder: (column) => column);
-
-  GeneratedColumn<String> get name =>
-      $composableBuilder(column: $table.name, builder: (column) => column);
-
-  GeneratedColumn<String> get address =>
-      $composableBuilder(column: $table.address, builder: (column) => column);
-
-  GeneratedColumn<bool> get isActive =>
-      $composableBuilder(column: $table.isActive, builder: (column) => column);
-
-  Expression<T> roomsRefs<T extends Object>(
-    Expression<T> Function($$RoomsTableAnnotationComposer a) f,
-  ) {
-    final $$RoomsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.rooms,
-      getReferencedColumn: (t) => t.branchId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RoomsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.rooms,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> usersRefs<T extends Object>(
-    Expression<T> Function($$UsersTableAnnotationComposer a) f,
-  ) {
-    final $$UsersTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.users,
-      getReferencedColumn: (t) => t.branchId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$UsersTableAnnotationComposer(
-            $db: $db,
-            $table: $db.users,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> stockLocationsRefs<T extends Object>(
-    Expression<T> Function($$StockLocationsTableAnnotationComposer a) f,
-  ) {
-    final $$StockLocationsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockLocations,
-      getReferencedColumn: (t) => t.branchId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockLocationsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.stockLocations,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$BranchesTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $BranchesTable,
-          Branch,
-          $$BranchesTableFilterComposer,
-          $$BranchesTableOrderingComposer,
-          $$BranchesTableAnnotationComposer,
-          $$BranchesTableCreateCompanionBuilder,
-          $$BranchesTableUpdateCompanionBuilder,
-          (Branch, $$BranchesTableReferences),
-          Branch,
-          PrefetchHooks Function({
-            bool roomsRefs,
-            bool usersRefs,
-            bool stockLocationsRefs,
-          })
-        > {
-  $$BranchesTableTableManager(_$AppDatabase db, $BranchesTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$BranchesTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$BranchesTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$BranchesTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<SyncStatus> syncStatus = const Value.absent(),
-                Value<String> code = const Value.absent(),
-                Value<String> name = const Value.absent(),
-                Value<String?> address = const Value.absent(),
-                Value<bool> isActive = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => BranchesCompanion(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                syncStatus: syncStatus,
-                code: code,
-                name: name,
-                address: address,
-                isActive: isActive,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<SyncStatus> syncStatus = const Value.absent(),
-                required String code,
-                required String name,
-                Value<String?> address = const Value.absent(),
-                Value<bool> isActive = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => BranchesCompanion.insert(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                syncStatus: syncStatus,
-                code: code,
-                name: name,
-                address: address,
-                isActive: isActive,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$BranchesTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback:
-              ({
-                roomsRefs = false,
-                usersRefs = false,
-                stockLocationsRefs = false,
-              }) {
-                return PrefetchHooks(
-                  db: db,
-                  explicitlyWatchedTables: [
-                    if (roomsRefs) db.rooms,
-                    if (usersRefs) db.users,
-                    if (stockLocationsRefs) db.stockLocations,
-                  ],
-                  addJoins: null,
-                  getPrefetchedDataCallback: (items) async {
-                    return [
-                      if (roomsRefs)
-                        await $_getPrefetchedData<Branch, $BranchesTable, Room>(
-                          currentTable: table,
-                          referencedTable: $$BranchesTableReferences
-                              ._roomsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$BranchesTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).roomsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.branchId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (usersRefs)
-                        await $_getPrefetchedData<
-                          Branch,
-                          $BranchesTable,
-                          AppUser
-                        >(
-                          currentTable: table,
-                          referencedTable: $$BranchesTableReferences
-                              ._usersRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$BranchesTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).usersRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.branchId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (stockLocationsRefs)
-                        await $_getPrefetchedData<
-                          Branch,
-                          $BranchesTable,
-                          StockLocation
-                        >(
-                          currentTable: table,
-                          referencedTable: $$BranchesTableReferences
-                              ._stockLocationsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$BranchesTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).stockLocationsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.branchId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                    ];
-                  },
-                );
-              },
-        ),
-      );
-}
-
-typedef $$BranchesTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $BranchesTable,
-      Branch,
-      $$BranchesTableFilterComposer,
-      $$BranchesTableOrderingComposer,
-      $$BranchesTableAnnotationComposer,
-      $$BranchesTableCreateCompanionBuilder,
-      $$BranchesTableUpdateCompanionBuilder,
-      (Branch, $$BranchesTableReferences),
-      Branch,
-      PrefetchHooks Function({
-        bool roomsRefs,
-        bool usersRefs,
-        bool stockLocationsRefs,
-      })
-    >;
-typedef $$RoomsTableCreateCompanionBuilder =
-    RoomsCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<SyncStatus> syncStatus,
-      required String branchId,
-      required String code,
-      required String name,
-      Value<bool> isActive,
-      Value<int> rowid,
-    });
-typedef $$RoomsTableUpdateCompanionBuilder =
-    RoomsCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<SyncStatus> syncStatus,
-      Value<String> branchId,
-      Value<String> code,
-      Value<String> name,
-      Value<bool> isActive,
-      Value<int> rowid,
-    });
-
-final class $$RoomsTableReferences
-    extends BaseReferences<_$AppDatabase, $RoomsTable, Room> {
-  $$RoomsTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $BranchesTable _branchIdTable(_$AppDatabase db) =>
-      db.branches.createAlias('rooms__branch_id__branches__id');
-
-  $$BranchesTableProcessedTableManager get branchId {
-    final $_column = $_itemColumn<String>('branch_id')!;
-
-    final manager = $$BranchesTableTableManager(
-      $_db,
-      $_db.branches,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_branchIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static MultiTypedResultKey<$StockLocationsTable, List<StockLocation>>
-  _stockLocationsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.stockLocations,
-    aliasName: 'rooms__id__stock_locations__room_id',
-  );
-
-  $$StockLocationsTableProcessedTableManager get stockLocationsRefs {
-    final manager = $$StockLocationsTableTableManager(
-      $_db,
-      $_db.stockLocations,
-    ).filter((f) => f.roomId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_stockLocationsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
-
-class $$RoomsTableFilterComposer extends Composer<_$AppDatabase, $RoomsTable> {
-  $$RoomsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnWithTypeConverterFilters<SyncStatus, SyncStatus, String>
-  get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
-
-  ColumnFilters<String> get code => $composableBuilder(
-    column: $table.code,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get isActive => $composableBuilder(
-    column: $table.isActive,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$BranchesTableFilterComposer get branchId {
-    final $$BranchesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.branchId,
-      referencedTable: $db.branches,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$BranchesTableFilterComposer(
-            $db: $db,
-            $table: $db.branches,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  Expression<bool> stockLocationsRefs(
-    Expression<bool> Function($$StockLocationsTableFilterComposer f) f,
-  ) {
-    final $$StockLocationsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockLocations,
-      getReferencedColumn: (t) => t.roomId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockLocationsTableFilterComposer(
-            $db: $db,
-            $table: $db.stockLocations,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$RoomsTableOrderingComposer
-    extends Composer<_$AppDatabase, $RoomsTable> {
-  $$RoomsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get code => $composableBuilder(
-    column: $table.code,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get isActive => $composableBuilder(
-    column: $table.isActive,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$BranchesTableOrderingComposer get branchId {
-    final $$BranchesTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.branchId,
-      referencedTable: $db.branches,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$BranchesTableOrderingComposer(
-            $db: $db,
-            $table: $db.branches,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$RoomsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $RoomsTable> {
-  $$RoomsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get updatedAt =>
-      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get deletedAt =>
-      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
-
-  GeneratedColumnWithTypeConverter<SyncStatus, String> get syncStatus =>
-      $composableBuilder(
-        column: $table.syncStatus,
-        builder: (column) => column,
-      );
-
-  GeneratedColumn<String> get code =>
-      $composableBuilder(column: $table.code, builder: (column) => column);
-
-  GeneratedColumn<String> get name =>
-      $composableBuilder(column: $table.name, builder: (column) => column);
-
-  GeneratedColumn<bool> get isActive =>
-      $composableBuilder(column: $table.isActive, builder: (column) => column);
-
-  $$BranchesTableAnnotationComposer get branchId {
-    final $$BranchesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.branchId,
-      referencedTable: $db.branches,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$BranchesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.branches,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  Expression<T> stockLocationsRefs<T extends Object>(
-    Expression<T> Function($$StockLocationsTableAnnotationComposer a) f,
-  ) {
-    final $$StockLocationsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockLocations,
-      getReferencedColumn: (t) => t.roomId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockLocationsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.stockLocations,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$RoomsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $RoomsTable,
-          Room,
-          $$RoomsTableFilterComposer,
-          $$RoomsTableOrderingComposer,
-          $$RoomsTableAnnotationComposer,
-          $$RoomsTableCreateCompanionBuilder,
-          $$RoomsTableUpdateCompanionBuilder,
-          (Room, $$RoomsTableReferences),
-          Room,
-          PrefetchHooks Function({bool branchId, bool stockLocationsRefs})
-        > {
-  $$RoomsTableTableManager(_$AppDatabase db, $RoomsTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$RoomsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$RoomsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$RoomsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<SyncStatus> syncStatus = const Value.absent(),
-                Value<String> branchId = const Value.absent(),
-                Value<String> code = const Value.absent(),
-                Value<String> name = const Value.absent(),
-                Value<bool> isActive = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => RoomsCompanion(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                syncStatus: syncStatus,
-                branchId: branchId,
-                code: code,
-                name: name,
-                isActive: isActive,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<SyncStatus> syncStatus = const Value.absent(),
-                required String branchId,
-                required String code,
-                required String name,
-                Value<bool> isActive = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => RoomsCompanion.insert(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                syncStatus: syncStatus,
-                branchId: branchId,
-                code: code,
-                name: name,
-                isActive: isActive,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) =>
-                    (e.readTable(table), $$RoomsTableReferences(db, table, e)),
-              )
-              .toList(),
-          prefetchHooksCallback:
-              ({branchId = false, stockLocationsRefs = false}) {
-                return PrefetchHooks(
-                  db: db,
-                  explicitlyWatchedTables: [
-                    if (stockLocationsRefs) db.stockLocations,
-                  ],
-                  addJoins:
-                      <
-                        T extends TableManagerState<
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic
-                        >
-                      >(state) {
-                        if (branchId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.branchId,
-                                    referencedTable: $$RoomsTableReferences
-                                        ._branchIdTable(db),
-                                    referencedColumn: $$RoomsTableReferences
-                                        ._branchIdTable(db)
-                                        .id,
-                                  )
-                                  as T;
-                        }
-
-                        return state;
-                      },
-                  getPrefetchedDataCallback: (items) async {
-                    return [
-                      if (stockLocationsRefs)
-                        await $_getPrefetchedData<
-                          Room,
-                          $RoomsTable,
-                          StockLocation
-                        >(
-                          currentTable: table,
-                          referencedTable: $$RoomsTableReferences
-                              ._stockLocationsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$RoomsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).stockLocationsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.roomId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                    ];
-                  },
-                );
-              },
-        ),
-      );
-}
-
-typedef $$RoomsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $RoomsTable,
-      Room,
-      $$RoomsTableFilterComposer,
-      $$RoomsTableOrderingComposer,
-      $$RoomsTableAnnotationComposer,
-      $$RoomsTableCreateCompanionBuilder,
-      $$RoomsTableUpdateCompanionBuilder,
-      (Room, $$RoomsTableReferences),
-      Room,
-      PrefetchHooks Function({bool branchId, bool stockLocationsRefs})
-    >;
-typedef $$UsersTableCreateCompanionBuilder =
-    UsersCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<SyncStatus> syncStatus,
-      required String fullName,
-      required String email,
-      required UserRole role,
-      Value<String?> branchId,
-      Value<bool> isActive,
-      Value<int> rowid,
-    });
-typedef $$UsersTableUpdateCompanionBuilder =
-    UsersCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<SyncStatus> syncStatus,
-      Value<String> fullName,
-      Value<String> email,
-      Value<UserRole> role,
-      Value<String?> branchId,
-      Value<bool> isActive,
-      Value<int> rowid,
-    });
-
-final class $$UsersTableReferences
-    extends BaseReferences<_$AppDatabase, $UsersTable, AppUser> {
-  $$UsersTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $BranchesTable _branchIdTable(_$AppDatabase db) =>
-      db.branches.createAlias('users__branch_id__branches__id');
-
-  $$BranchesTableProcessedTableManager? get branchId {
-    final $_column = $_itemColumn<String>('branch_id');
-    if ($_column == null) return null;
-    final manager = $$BranchesTableTableManager(
-      $_db,
-      $_db.branches,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_branchIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static MultiTypedResultKey<$StockMovementsTable, List<StockMovement>>
-  _stockMovementsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.stockMovements,
-    aliasName: 'users__id__stock_movements__actor_user_id',
-  );
-
-  $$StockMovementsTableProcessedTableManager get stockMovementsRefs {
-    final manager = $$StockMovementsTableTableManager(
-      $_db,
-      $_db.stockMovements,
-    ).filter((f) => f.actorUserId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_stockMovementsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
-
-class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
-  $$UsersTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnWithTypeConverterFilters<SyncStatus, SyncStatus, String>
-  get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
-
-  ColumnFilters<String> get fullName => $composableBuilder(
-    column: $table.fullName,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get email => $composableBuilder(
-    column: $table.email,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnWithTypeConverterFilters<UserRole, UserRole, String> get role =>
-      $composableBuilder(
-        column: $table.role,
-        builder: (column) => ColumnWithTypeConverterFilters(column),
-      );
-
-  ColumnFilters<bool> get isActive => $composableBuilder(
-    column: $table.isActive,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$BranchesTableFilterComposer get branchId {
-    final $$BranchesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.branchId,
-      referencedTable: $db.branches,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$BranchesTableFilterComposer(
-            $db: $db,
-            $table: $db.branches,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  Expression<bool> stockMovementsRefs(
-    Expression<bool> Function($$StockMovementsTableFilterComposer f) f,
-  ) {
-    final $$StockMovementsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockMovements,
-      getReferencedColumn: (t) => t.actorUserId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockMovementsTableFilterComposer(
-            $db: $db,
-            $table: $db.stockMovements,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$UsersTableOrderingComposer
-    extends Composer<_$AppDatabase, $UsersTable> {
-  $$UsersTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get fullName => $composableBuilder(
-    column: $table.fullName,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get email => $composableBuilder(
-    column: $table.email,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get role => $composableBuilder(
-    column: $table.role,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get isActive => $composableBuilder(
-    column: $table.isActive,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$BranchesTableOrderingComposer get branchId {
-    final $$BranchesTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.branchId,
-      referencedTable: $db.branches,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$BranchesTableOrderingComposer(
-            $db: $db,
-            $table: $db.branches,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$UsersTableAnnotationComposer
-    extends Composer<_$AppDatabase, $UsersTable> {
-  $$UsersTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get updatedAt =>
-      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get deletedAt =>
-      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
-
-  GeneratedColumnWithTypeConverter<SyncStatus, String> get syncStatus =>
-      $composableBuilder(
-        column: $table.syncStatus,
-        builder: (column) => column,
-      );
-
-  GeneratedColumn<String> get fullName =>
-      $composableBuilder(column: $table.fullName, builder: (column) => column);
-
-  GeneratedColumn<String> get email =>
-      $composableBuilder(column: $table.email, builder: (column) => column);
-
-  GeneratedColumnWithTypeConverter<UserRole, String> get role =>
-      $composableBuilder(column: $table.role, builder: (column) => column);
-
-  GeneratedColumn<bool> get isActive =>
-      $composableBuilder(column: $table.isActive, builder: (column) => column);
-
-  $$BranchesTableAnnotationComposer get branchId {
-    final $$BranchesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.branchId,
-      referencedTable: $db.branches,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$BranchesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.branches,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  Expression<T> stockMovementsRefs<T extends Object>(
-    Expression<T> Function($$StockMovementsTableAnnotationComposer a) f,
-  ) {
-    final $$StockMovementsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockMovements,
-      getReferencedColumn: (t) => t.actorUserId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockMovementsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.stockMovements,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$UsersTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $UsersTable,
-          AppUser,
-          $$UsersTableFilterComposer,
-          $$UsersTableOrderingComposer,
-          $$UsersTableAnnotationComposer,
-          $$UsersTableCreateCompanionBuilder,
-          $$UsersTableUpdateCompanionBuilder,
-          (AppUser, $$UsersTableReferences),
-          AppUser,
-          PrefetchHooks Function({bool branchId, bool stockMovementsRefs})
-        > {
-  $$UsersTableTableManager(_$AppDatabase db, $UsersTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$UsersTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$UsersTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$UsersTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<SyncStatus> syncStatus = const Value.absent(),
-                Value<String> fullName = const Value.absent(),
-                Value<String> email = const Value.absent(),
-                Value<UserRole> role = const Value.absent(),
-                Value<String?> branchId = const Value.absent(),
-                Value<bool> isActive = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => UsersCompanion(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                syncStatus: syncStatus,
-                fullName: fullName,
-                email: email,
-                role: role,
-                branchId: branchId,
-                isActive: isActive,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<SyncStatus> syncStatus = const Value.absent(),
-                required String fullName,
-                required String email,
-                required UserRole role,
-                Value<String?> branchId = const Value.absent(),
-                Value<bool> isActive = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => UsersCompanion.insert(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                syncStatus: syncStatus,
-                fullName: fullName,
-                email: email,
-                role: role,
-                branchId: branchId,
-                isActive: isActive,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) =>
-                    (e.readTable(table), $$UsersTableReferences(db, table, e)),
-              )
-              .toList(),
-          prefetchHooksCallback:
-              ({branchId = false, stockMovementsRefs = false}) {
-                return PrefetchHooks(
-                  db: db,
-                  explicitlyWatchedTables: [
-                    if (stockMovementsRefs) db.stockMovements,
-                  ],
-                  addJoins:
-                      <
-                        T extends TableManagerState<
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic
-                        >
-                      >(state) {
-                        if (branchId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.branchId,
-                                    referencedTable: $$UsersTableReferences
-                                        ._branchIdTable(db),
-                                    referencedColumn: $$UsersTableReferences
-                                        ._branchIdTable(db)
-                                        .id,
-                                  )
-                                  as T;
-                        }
-
-                        return state;
-                      },
-                  getPrefetchedDataCallback: (items) async {
-                    return [
-                      if (stockMovementsRefs)
-                        await $_getPrefetchedData<
-                          AppUser,
-                          $UsersTable,
-                          StockMovement
-                        >(
-                          currentTable: table,
-                          referencedTable: $$UsersTableReferences
-                              ._stockMovementsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$UsersTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).stockMovementsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.actorUserId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                    ];
-                  },
-                );
-              },
-        ),
-      );
-}
-
-typedef $$UsersTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $UsersTable,
-      AppUser,
-      $$UsersTableFilterComposer,
-      $$UsersTableOrderingComposer,
-      $$UsersTableAnnotationComposer,
-      $$UsersTableCreateCompanionBuilder,
-      $$UsersTableUpdateCompanionBuilder,
-      (AppUser, $$UsersTableReferences),
-      AppUser,
-      PrefetchHooks Function({bool branchId, bool stockMovementsRefs})
-    >;
-typedef $$ItemCategoriesTableCreateCompanionBuilder =
-    ItemCategoriesCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<SyncStatus> syncStatus,
-      required String name,
-      Value<int> rowid,
-    });
-typedef $$ItemCategoriesTableUpdateCompanionBuilder =
-    ItemCategoriesCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<SyncStatus> syncStatus,
-      Value<String> name,
-      Value<int> rowid,
-    });
-
-final class $$ItemCategoriesTableReferences
-    extends BaseReferences<_$AppDatabase, $ItemCategoriesTable, ItemCategory> {
-  $$ItemCategoriesTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static MultiTypedResultKey<$ItemsTable, List<Item>> _itemsRefsTable(
-    _$AppDatabase db,
-  ) => MultiTypedResultKey.fromTable(
-    db.items,
-    aliasName: 'item_categories__id__items__category_id',
-  );
-
-  $$ItemsTableProcessedTableManager get itemsRefs {
-    final manager = $$ItemsTableTableManager(
-      $_db,
-      $_db.items,
-    ).filter((f) => f.categoryId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_itemsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
-
-class $$ItemCategoriesTableFilterComposer
-    extends Composer<_$AppDatabase, $ItemCategoriesTable> {
-  $$ItemCategoriesTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnWithTypeConverterFilters<SyncStatus, SyncStatus, String>
-  get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
-
-  ColumnFilters<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  Expression<bool> itemsRefs(
-    Expression<bool> Function($$ItemsTableFilterComposer f) f,
-  ) {
-    final $$ItemsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.items,
-      getReferencedColumn: (t) => t.categoryId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemsTableFilterComposer(
-            $db: $db,
-            $table: $db.items,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$ItemCategoriesTableOrderingComposer
-    extends Composer<_$AppDatabase, $ItemCategoriesTable> {
-  $$ItemCategoriesTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$ItemCategoriesTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ItemCategoriesTable> {
-  $$ItemCategoriesTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get updatedAt =>
-      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get deletedAt =>
-      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
-
-  GeneratedColumnWithTypeConverter<SyncStatus, String> get syncStatus =>
-      $composableBuilder(
-        column: $table.syncStatus,
-        builder: (column) => column,
-      );
-
-  GeneratedColumn<String> get name =>
-      $composableBuilder(column: $table.name, builder: (column) => column);
-
-  Expression<T> itemsRefs<T extends Object>(
-    Expression<T> Function($$ItemsTableAnnotationComposer a) f,
-  ) {
-    final $$ItemsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.items,
-      getReferencedColumn: (t) => t.categoryId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.items,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$ItemCategoriesTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $ItemCategoriesTable,
-          ItemCategory,
-          $$ItemCategoriesTableFilterComposer,
-          $$ItemCategoriesTableOrderingComposer,
-          $$ItemCategoriesTableAnnotationComposer,
-          $$ItemCategoriesTableCreateCompanionBuilder,
-          $$ItemCategoriesTableUpdateCompanionBuilder,
-          (ItemCategory, $$ItemCategoriesTableReferences),
-          ItemCategory,
-          PrefetchHooks Function({bool itemsRefs})
-        > {
-  $$ItemCategoriesTableTableManager(
-    _$AppDatabase db,
-    $ItemCategoriesTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$ItemCategoriesTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$ItemCategoriesTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$ItemCategoriesTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<SyncStatus> syncStatus = const Value.absent(),
-                Value<String> name = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ItemCategoriesCompanion(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                syncStatus: syncStatus,
-                name: name,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<SyncStatus> syncStatus = const Value.absent(),
-                required String name,
-                Value<int> rowid = const Value.absent(),
-              }) => ItemCategoriesCompanion.insert(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                syncStatus: syncStatus,
-                name: name,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$ItemCategoriesTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({itemsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (itemsRefs) db.items],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (itemsRefs)
-                    await $_getPrefetchedData<
-                      ItemCategory,
-                      $ItemCategoriesTable,
-                      Item
-                    >(
-                      currentTable: table,
-                      referencedTable: $$ItemCategoriesTableReferences
-                          ._itemsRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$ItemCategoriesTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).itemsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.categoryId == item.id),
-                      typedResults: items,
-                    ),
-                ];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$ItemCategoriesTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $ItemCategoriesTable,
-      ItemCategory,
-      $$ItemCategoriesTableFilterComposer,
-      $$ItemCategoriesTableOrderingComposer,
-      $$ItemCategoriesTableAnnotationComposer,
-      $$ItemCategoriesTableCreateCompanionBuilder,
-      $$ItemCategoriesTableUpdateCompanionBuilder,
-      (ItemCategory, $$ItemCategoriesTableReferences),
-      ItemCategory,
-      PrefetchHooks Function({bool itemsRefs})
-    >;
-typedef $$ItemsTableCreateCompanionBuilder =
-    ItemsCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<SyncStatus> syncStatus,
-      required String sku,
-      required String name,
-      required String categoryId,
-      required String unit,
-      Value<int> minStockRoom,
-      Value<int> minStockBranch,
-      Value<bool> hasExpiry,
-      Value<int> expiryAlertDays,
-      Value<bool> isActive,
-      Value<int> rowid,
-    });
-typedef $$ItemsTableUpdateCompanionBuilder =
-    ItemsCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<SyncStatus> syncStatus,
-      Value<String> sku,
-      Value<String> name,
-      Value<String> categoryId,
-      Value<String> unit,
-      Value<int> minStockRoom,
-      Value<int> minStockBranch,
-      Value<bool> hasExpiry,
-      Value<int> expiryAlertDays,
-      Value<bool> isActive,
-      Value<int> rowid,
-    });
-
-final class $$ItemsTableReferences
-    extends BaseReferences<_$AppDatabase, $ItemsTable, Item> {
-  $$ItemsTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $ItemCategoriesTable _categoryIdTable(_$AppDatabase db) =>
-      db.itemCategories.createAlias('items__category_id__item_categories__id');
-
-  $$ItemCategoriesTableProcessedTableManager get categoryId {
-    final $_column = $_itemColumn<String>('category_id')!;
-
-    final manager = $$ItemCategoriesTableTableManager(
-      $_db,
-      $_db.itemCategories,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_categoryIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static MultiTypedResultKey<$ItemBatchesTable, List<ItemBatch>>
-  _itemBatchesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.itemBatches,
-    aliasName: 'items__id__item_batches__item_id',
-  );
-
-  $$ItemBatchesTableProcessedTableManager get itemBatchesRefs {
-    final manager = $$ItemBatchesTableTableManager(
-      $_db,
-      $_db.itemBatches,
-    ).filter((f) => f.itemId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_itemBatchesRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$StockBalancesTable, List<StockBalance>>
-  _stockBalancesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.stockBalances,
-    aliasName: 'items__id__stock_balances__item_id',
-  );
-
-  $$StockBalancesTableProcessedTableManager get stockBalancesRefs {
-    final manager = $$StockBalancesTableTableManager(
-      $_db,
-      $_db.stockBalances,
-    ).filter((f) => f.itemId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_stockBalancesRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$StockMovementsTable, List<StockMovement>>
-  _stockMovementsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.stockMovements,
-    aliasName: 'items__id__stock_movements__item_id',
-  );
-
-  $$StockMovementsTableProcessedTableManager get stockMovementsRefs {
-    final manager = $$StockMovementsTableTableManager(
-      $_db,
-      $_db.stockMovements,
-    ).filter((f) => f.itemId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_stockMovementsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
-
-class $$ItemsTableFilterComposer extends Composer<_$AppDatabase, $ItemsTable> {
-  $$ItemsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnWithTypeConverterFilters<SyncStatus, SyncStatus, String>
-  get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
-
-  ColumnFilters<String> get sku => $composableBuilder(
-    column: $table.sku,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get unit => $composableBuilder(
-    column: $table.unit,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get minStockRoom => $composableBuilder(
-    column: $table.minStockRoom,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get minStockBranch => $composableBuilder(
-    column: $table.minStockBranch,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get hasExpiry => $composableBuilder(
-    column: $table.hasExpiry,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get expiryAlertDays => $composableBuilder(
-    column: $table.expiryAlertDays,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get isActive => $composableBuilder(
-    column: $table.isActive,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$ItemCategoriesTableFilterComposer get categoryId {
-    final $$ItemCategoriesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.categoryId,
-      referencedTable: $db.itemCategories,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemCategoriesTableFilterComposer(
-            $db: $db,
-            $table: $db.itemCategories,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  Expression<bool> itemBatchesRefs(
-    Expression<bool> Function($$ItemBatchesTableFilterComposer f) f,
-  ) {
-    final $$ItemBatchesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.itemBatches,
-      getReferencedColumn: (t) => t.itemId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemBatchesTableFilterComposer(
-            $db: $db,
-            $table: $db.itemBatches,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> stockBalancesRefs(
-    Expression<bool> Function($$StockBalancesTableFilterComposer f) f,
-  ) {
-    final $$StockBalancesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockBalances,
-      getReferencedColumn: (t) => t.itemId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockBalancesTableFilterComposer(
-            $db: $db,
-            $table: $db.stockBalances,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> stockMovementsRefs(
-    Expression<bool> Function($$StockMovementsTableFilterComposer f) f,
-  ) {
-    final $$StockMovementsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockMovements,
-      getReferencedColumn: (t) => t.itemId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockMovementsTableFilterComposer(
-            $db: $db,
-            $table: $db.stockMovements,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$ItemsTableOrderingComposer
-    extends Composer<_$AppDatabase, $ItemsTable> {
-  $$ItemsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get sku => $composableBuilder(
-    column: $table.sku,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get unit => $composableBuilder(
-    column: $table.unit,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get minStockRoom => $composableBuilder(
-    column: $table.minStockRoom,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get minStockBranch => $composableBuilder(
-    column: $table.minStockBranch,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get hasExpiry => $composableBuilder(
-    column: $table.hasExpiry,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get expiryAlertDays => $composableBuilder(
-    column: $table.expiryAlertDays,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get isActive => $composableBuilder(
-    column: $table.isActive,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$ItemCategoriesTableOrderingComposer get categoryId {
-    final $$ItemCategoriesTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.categoryId,
-      referencedTable: $db.itemCategories,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemCategoriesTableOrderingComposer(
-            $db: $db,
-            $table: $db.itemCategories,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ItemsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ItemsTable> {
-  $$ItemsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get updatedAt =>
-      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get deletedAt =>
-      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
-
-  GeneratedColumnWithTypeConverter<SyncStatus, String> get syncStatus =>
-      $composableBuilder(
-        column: $table.syncStatus,
-        builder: (column) => column,
-      );
-
-  GeneratedColumn<String> get sku =>
-      $composableBuilder(column: $table.sku, builder: (column) => column);
-
-  GeneratedColumn<String> get name =>
-      $composableBuilder(column: $table.name, builder: (column) => column);
-
-  GeneratedColumn<String> get unit =>
-      $composableBuilder(column: $table.unit, builder: (column) => column);
-
-  GeneratedColumn<int> get minStockRoom => $composableBuilder(
-    column: $table.minStockRoom,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get minStockBranch => $composableBuilder(
-    column: $table.minStockBranch,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<bool> get hasExpiry =>
-      $composableBuilder(column: $table.hasExpiry, builder: (column) => column);
-
-  GeneratedColumn<int> get expiryAlertDays => $composableBuilder(
-    column: $table.expiryAlertDays,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<bool> get isActive =>
-      $composableBuilder(column: $table.isActive, builder: (column) => column);
-
-  $$ItemCategoriesTableAnnotationComposer get categoryId {
-    final $$ItemCategoriesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.categoryId,
-      referencedTable: $db.itemCategories,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemCategoriesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.itemCategories,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  Expression<T> itemBatchesRefs<T extends Object>(
-    Expression<T> Function($$ItemBatchesTableAnnotationComposer a) f,
-  ) {
-    final $$ItemBatchesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.itemBatches,
-      getReferencedColumn: (t) => t.itemId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemBatchesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.itemBatches,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> stockBalancesRefs<T extends Object>(
-    Expression<T> Function($$StockBalancesTableAnnotationComposer a) f,
-  ) {
-    final $$StockBalancesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockBalances,
-      getReferencedColumn: (t) => t.itemId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockBalancesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.stockBalances,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> stockMovementsRefs<T extends Object>(
-    Expression<T> Function($$StockMovementsTableAnnotationComposer a) f,
-  ) {
-    final $$StockMovementsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockMovements,
-      getReferencedColumn: (t) => t.itemId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockMovementsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.stockMovements,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$ItemsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $ItemsTable,
-          Item,
-          $$ItemsTableFilterComposer,
-          $$ItemsTableOrderingComposer,
-          $$ItemsTableAnnotationComposer,
-          $$ItemsTableCreateCompanionBuilder,
-          $$ItemsTableUpdateCompanionBuilder,
-          (Item, $$ItemsTableReferences),
-          Item,
-          PrefetchHooks Function({
-            bool categoryId,
-            bool itemBatchesRefs,
-            bool stockBalancesRefs,
-            bool stockMovementsRefs,
-          })
-        > {
-  $$ItemsTableTableManager(_$AppDatabase db, $ItemsTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$ItemsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$ItemsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$ItemsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<SyncStatus> syncStatus = const Value.absent(),
-                Value<String> sku = const Value.absent(),
-                Value<String> name = const Value.absent(),
-                Value<String> categoryId = const Value.absent(),
-                Value<String> unit = const Value.absent(),
-                Value<int> minStockRoom = const Value.absent(),
-                Value<int> minStockBranch = const Value.absent(),
-                Value<bool> hasExpiry = const Value.absent(),
-                Value<int> expiryAlertDays = const Value.absent(),
-                Value<bool> isActive = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ItemsCompanion(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                syncStatus: syncStatus,
-                sku: sku,
-                name: name,
-                categoryId: categoryId,
-                unit: unit,
-                minStockRoom: minStockRoom,
-                minStockBranch: minStockBranch,
-                hasExpiry: hasExpiry,
-                expiryAlertDays: expiryAlertDays,
-                isActive: isActive,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<SyncStatus> syncStatus = const Value.absent(),
-                required String sku,
-                required String name,
-                required String categoryId,
-                required String unit,
-                Value<int> minStockRoom = const Value.absent(),
-                Value<int> minStockBranch = const Value.absent(),
-                Value<bool> hasExpiry = const Value.absent(),
-                Value<int> expiryAlertDays = const Value.absent(),
-                Value<bool> isActive = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ItemsCompanion.insert(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                syncStatus: syncStatus,
-                sku: sku,
-                name: name,
-                categoryId: categoryId,
-                unit: unit,
-                minStockRoom: minStockRoom,
-                minStockBranch: minStockBranch,
-                hasExpiry: hasExpiry,
-                expiryAlertDays: expiryAlertDays,
-                isActive: isActive,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) =>
-                    (e.readTable(table), $$ItemsTableReferences(db, table, e)),
-              )
-              .toList(),
-          prefetchHooksCallback:
-              ({
-                categoryId = false,
-                itemBatchesRefs = false,
-                stockBalancesRefs = false,
-                stockMovementsRefs = false,
-              }) {
-                return PrefetchHooks(
-                  db: db,
-                  explicitlyWatchedTables: [
-                    if (itemBatchesRefs) db.itemBatches,
-                    if (stockBalancesRefs) db.stockBalances,
-                    if (stockMovementsRefs) db.stockMovements,
-                  ],
-                  addJoins:
-                      <
-                        T extends TableManagerState<
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic
-                        >
-                      >(state) {
-                        if (categoryId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.categoryId,
-                                    referencedTable: $$ItemsTableReferences
-                                        ._categoryIdTable(db),
-                                    referencedColumn: $$ItemsTableReferences
-                                        ._categoryIdTable(db)
-                                        .id,
-                                  )
-                                  as T;
-                        }
-
-                        return state;
-                      },
-                  getPrefetchedDataCallback: (items) async {
-                    return [
-                      if (itemBatchesRefs)
-                        await $_getPrefetchedData<Item, $ItemsTable, ItemBatch>(
-                          currentTable: table,
-                          referencedTable: $$ItemsTableReferences
-                              ._itemBatchesRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$ItemsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).itemBatchesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.itemId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (stockBalancesRefs)
-                        await $_getPrefetchedData<
-                          Item,
-                          $ItemsTable,
-                          StockBalance
-                        >(
-                          currentTable: table,
-                          referencedTable: $$ItemsTableReferences
-                              ._stockBalancesRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$ItemsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).stockBalancesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.itemId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (stockMovementsRefs)
-                        await $_getPrefetchedData<
-                          Item,
-                          $ItemsTable,
-                          StockMovement
-                        >(
-                          currentTable: table,
-                          referencedTable: $$ItemsTableReferences
-                              ._stockMovementsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$ItemsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).stockMovementsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.itemId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                    ];
-                  },
-                );
-              },
-        ),
-      );
-}
-
-typedef $$ItemsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $ItemsTable,
-      Item,
-      $$ItemsTableFilterComposer,
-      $$ItemsTableOrderingComposer,
-      $$ItemsTableAnnotationComposer,
-      $$ItemsTableCreateCompanionBuilder,
-      $$ItemsTableUpdateCompanionBuilder,
-      (Item, $$ItemsTableReferences),
-      Item,
-      PrefetchHooks Function({
-        bool categoryId,
-        bool itemBatchesRefs,
-        bool stockBalancesRefs,
-        bool stockMovementsRefs,
-      })
-    >;
-typedef $$ItemBatchesTableCreateCompanionBuilder =
-    ItemBatchesCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<SyncStatus> syncStatus,
-      required String itemId,
-      required String batchNo,
-      required DateTime expiryDate,
-      Value<int> rowid,
-    });
-typedef $$ItemBatchesTableUpdateCompanionBuilder =
-    ItemBatchesCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<SyncStatus> syncStatus,
-      Value<String> itemId,
-      Value<String> batchNo,
-      Value<DateTime> expiryDate,
-      Value<int> rowid,
-    });
-
-final class $$ItemBatchesTableReferences
-    extends BaseReferences<_$AppDatabase, $ItemBatchesTable, ItemBatch> {
-  $$ItemBatchesTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $ItemsTable _itemIdTable(_$AppDatabase db) =>
-      db.items.createAlias('item_batches__item_id__items__id');
-
-  $$ItemsTableProcessedTableManager get itemId {
-    final $_column = $_itemColumn<String>('item_id')!;
-
-    final manager = $$ItemsTableTableManager(
-      $_db,
-      $_db.items,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_itemIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static MultiTypedResultKey<$StockBalancesTable, List<StockBalance>>
-  _stockBalancesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.stockBalances,
-    aliasName: 'item_batches__id__stock_balances__batch_id',
-  );
-
-  $$StockBalancesTableProcessedTableManager get stockBalancesRefs {
-    final manager = $$StockBalancesTableTableManager(
-      $_db,
-      $_db.stockBalances,
-    ).filter((f) => f.batchId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_stockBalancesRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$StockMovementsTable, List<StockMovement>>
-  _stockMovementsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.stockMovements,
-    aliasName: 'item_batches__id__stock_movements__batch_id',
-  );
-
-  $$StockMovementsTableProcessedTableManager get stockMovementsRefs {
-    final manager = $$StockMovementsTableTableManager(
-      $_db,
-      $_db.stockMovements,
-    ).filter((f) => f.batchId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_stockMovementsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
-
-class $$ItemBatchesTableFilterComposer
-    extends Composer<_$AppDatabase, $ItemBatchesTable> {
-  $$ItemBatchesTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnWithTypeConverterFilters<SyncStatus, SyncStatus, String>
-  get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
-
-  ColumnFilters<String> get batchNo => $composableBuilder(
-    column: $table.batchNo,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get expiryDate => $composableBuilder(
-    column: $table.expiryDate,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$ItemsTableFilterComposer get itemId {
-    final $$ItemsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.itemId,
-      referencedTable: $db.items,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemsTableFilterComposer(
-            $db: $db,
-            $table: $db.items,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  Expression<bool> stockBalancesRefs(
-    Expression<bool> Function($$StockBalancesTableFilterComposer f) f,
-  ) {
-    final $$StockBalancesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockBalances,
-      getReferencedColumn: (t) => t.batchId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockBalancesTableFilterComposer(
-            $db: $db,
-            $table: $db.stockBalances,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> stockMovementsRefs(
-    Expression<bool> Function($$StockMovementsTableFilterComposer f) f,
-  ) {
-    final $$StockMovementsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockMovements,
-      getReferencedColumn: (t) => t.batchId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockMovementsTableFilterComposer(
-            $db: $db,
-            $table: $db.stockMovements,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$ItemBatchesTableOrderingComposer
-    extends Composer<_$AppDatabase, $ItemBatchesTable> {
-  $$ItemBatchesTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get batchNo => $composableBuilder(
-    column: $table.batchNo,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get expiryDate => $composableBuilder(
-    column: $table.expiryDate,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$ItemsTableOrderingComposer get itemId {
-    final $$ItemsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.itemId,
-      referencedTable: $db.items,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemsTableOrderingComposer(
-            $db: $db,
-            $table: $db.items,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ItemBatchesTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ItemBatchesTable> {
-  $$ItemBatchesTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get updatedAt =>
-      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get deletedAt =>
-      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
-
-  GeneratedColumnWithTypeConverter<SyncStatus, String> get syncStatus =>
-      $composableBuilder(
-        column: $table.syncStatus,
-        builder: (column) => column,
-      );
-
-  GeneratedColumn<String> get batchNo =>
-      $composableBuilder(column: $table.batchNo, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get expiryDate => $composableBuilder(
-    column: $table.expiryDate,
-    builder: (column) => column,
-  );
-
-  $$ItemsTableAnnotationComposer get itemId {
-    final $$ItemsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.itemId,
-      referencedTable: $db.items,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.items,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  Expression<T> stockBalancesRefs<T extends Object>(
-    Expression<T> Function($$StockBalancesTableAnnotationComposer a) f,
-  ) {
-    final $$StockBalancesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockBalances,
-      getReferencedColumn: (t) => t.batchId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockBalancesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.stockBalances,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> stockMovementsRefs<T extends Object>(
-    Expression<T> Function($$StockMovementsTableAnnotationComposer a) f,
-  ) {
-    final $$StockMovementsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockMovements,
-      getReferencedColumn: (t) => t.batchId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockMovementsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.stockMovements,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$ItemBatchesTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $ItemBatchesTable,
-          ItemBatch,
-          $$ItemBatchesTableFilterComposer,
-          $$ItemBatchesTableOrderingComposer,
-          $$ItemBatchesTableAnnotationComposer,
-          $$ItemBatchesTableCreateCompanionBuilder,
-          $$ItemBatchesTableUpdateCompanionBuilder,
-          (ItemBatch, $$ItemBatchesTableReferences),
-          ItemBatch,
-          PrefetchHooks Function({
-            bool itemId,
-            bool stockBalancesRefs,
-            bool stockMovementsRefs,
-          })
-        > {
-  $$ItemBatchesTableTableManager(_$AppDatabase db, $ItemBatchesTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$ItemBatchesTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$ItemBatchesTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$ItemBatchesTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<SyncStatus> syncStatus = const Value.absent(),
-                Value<String> itemId = const Value.absent(),
-                Value<String> batchNo = const Value.absent(),
-                Value<DateTime> expiryDate = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ItemBatchesCompanion(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                syncStatus: syncStatus,
-                itemId: itemId,
-                batchNo: batchNo,
-                expiryDate: expiryDate,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<SyncStatus> syncStatus = const Value.absent(),
-                required String itemId,
-                required String batchNo,
-                required DateTime expiryDate,
-                Value<int> rowid = const Value.absent(),
-              }) => ItemBatchesCompanion.insert(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                syncStatus: syncStatus,
-                itemId: itemId,
-                batchNo: batchNo,
-                expiryDate: expiryDate,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$ItemBatchesTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback:
-              ({
-                itemId = false,
-                stockBalancesRefs = false,
-                stockMovementsRefs = false,
-              }) {
-                return PrefetchHooks(
-                  db: db,
-                  explicitlyWatchedTables: [
-                    if (stockBalancesRefs) db.stockBalances,
-                    if (stockMovementsRefs) db.stockMovements,
-                  ],
-                  addJoins:
-                      <
-                        T extends TableManagerState<
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic
-                        >
-                      >(state) {
-                        if (itemId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.itemId,
-                                    referencedTable:
-                                        $$ItemBatchesTableReferences
-                                            ._itemIdTable(db),
-                                    referencedColumn:
-                                        $$ItemBatchesTableReferences
-                                            ._itemIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
-                        }
-
-                        return state;
-                      },
-                  getPrefetchedDataCallback: (items) async {
-                    return [
-                      if (stockBalancesRefs)
-                        await $_getPrefetchedData<
-                          ItemBatch,
-                          $ItemBatchesTable,
-                          StockBalance
-                        >(
-                          currentTable: table,
-                          referencedTable: $$ItemBatchesTableReferences
-                              ._stockBalancesRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$ItemBatchesTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).stockBalancesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.batchId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (stockMovementsRefs)
-                        await $_getPrefetchedData<
-                          ItemBatch,
-                          $ItemBatchesTable,
-                          StockMovement
-                        >(
-                          currentTable: table,
-                          referencedTable: $$ItemBatchesTableReferences
-                              ._stockMovementsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$ItemBatchesTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).stockMovementsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.batchId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                    ];
-                  },
-                );
-              },
-        ),
-      );
-}
-
-typedef $$ItemBatchesTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $ItemBatchesTable,
-      ItemBatch,
-      $$ItemBatchesTableFilterComposer,
-      $$ItemBatchesTableOrderingComposer,
-      $$ItemBatchesTableAnnotationComposer,
-      $$ItemBatchesTableCreateCompanionBuilder,
-      $$ItemBatchesTableUpdateCompanionBuilder,
-      (ItemBatch, $$ItemBatchesTableReferences),
-      ItemBatch,
-      PrefetchHooks Function({
-        bool itemId,
-        bool stockBalancesRefs,
-        bool stockMovementsRefs,
-      })
-    >;
-typedef $$StockLocationsTableCreateCompanionBuilder =
-    StockLocationsCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<SyncStatus> syncStatus,
-      required StockLocationType type,
-      Value<String?> branchId,
-      Value<String?> roomId,
-      required String name,
-      Value<int> rowid,
-    });
-typedef $$StockLocationsTableUpdateCompanionBuilder =
-    StockLocationsCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<SyncStatus> syncStatus,
-      Value<StockLocationType> type,
-      Value<String?> branchId,
-      Value<String?> roomId,
-      Value<String> name,
-      Value<int> rowid,
-    });
-
-final class $$StockLocationsTableReferences
-    extends BaseReferences<_$AppDatabase, $StockLocationsTable, StockLocation> {
-  $$StockLocationsTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $BranchesTable _branchIdTable(_$AppDatabase db) =>
-      db.branches.createAlias('stock_locations__branch_id__branches__id');
-
-  $$BranchesTableProcessedTableManager? get branchId {
-    final $_column = $_itemColumn<String>('branch_id');
-    if ($_column == null) return null;
-    final manager = $$BranchesTableTableManager(
-      $_db,
-      $_db.branches,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_branchIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static $RoomsTable _roomIdTable(_$AppDatabase db) =>
-      db.rooms.createAlias('stock_locations__room_id__rooms__id');
-
-  $$RoomsTableProcessedTableManager? get roomId {
-    final $_column = $_itemColumn<String>('room_id');
-    if ($_column == null) return null;
-    final manager = $$RoomsTableTableManager(
-      $_db,
-      $_db.rooms,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_roomIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static MultiTypedResultKey<$StockBalancesTable, List<StockBalance>>
-  _stockBalancesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.stockBalances,
-    aliasName: 'stock_locations__id__stock_balances__location_id',
-  );
-
-  $$StockBalancesTableProcessedTableManager get stockBalancesRefs {
-    final manager = $$StockBalancesTableTableManager(
-      $_db,
-      $_db.stockBalances,
-    ).filter((f) => f.locationId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_stockBalancesRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$StockMovementsTable, List<StockMovement>>
-  _outgoingMovementsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.stockMovements,
-    aliasName: 'stock_locations__id__stock_movements__from_location_id',
-  );
-
-  $$StockMovementsTableProcessedTableManager get outgoingMovements {
-    final manager = $$StockMovementsTableTableManager(
-      $_db,
-      $_db.stockMovements,
-    ).filter((f) => f.fromLocationId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_outgoingMovementsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$StockMovementsTable, List<StockMovement>>
-  _incomingMovementsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.stockMovements,
-    aliasName: 'stock_locations__id__stock_movements__to_location_id',
-  );
-
-  $$StockMovementsTableProcessedTableManager get incomingMovements {
-    final manager = $$StockMovementsTableTableManager(
-      $_db,
-      $_db.stockMovements,
-    ).filter((f) => f.toLocationId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_incomingMovementsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
-
-class $$StockLocationsTableFilterComposer
-    extends Composer<_$AppDatabase, $StockLocationsTable> {
-  $$StockLocationsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnWithTypeConverterFilters<SyncStatus, SyncStatus, String>
-  get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
-
-  ColumnWithTypeConverterFilters<StockLocationType, StockLocationType, String>
-  get type => $composableBuilder(
-    column: $table.type,
-    builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
-
-  ColumnFilters<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$BranchesTableFilterComposer get branchId {
-    final $$BranchesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.branchId,
-      referencedTable: $db.branches,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$BranchesTableFilterComposer(
-            $db: $db,
-            $table: $db.branches,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$RoomsTableFilterComposer get roomId {
-    final $$RoomsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.roomId,
-      referencedTable: $db.rooms,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RoomsTableFilterComposer(
-            $db: $db,
-            $table: $db.rooms,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  Expression<bool> stockBalancesRefs(
-    Expression<bool> Function($$StockBalancesTableFilterComposer f) f,
-  ) {
-    final $$StockBalancesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockBalances,
-      getReferencedColumn: (t) => t.locationId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockBalancesTableFilterComposer(
-            $db: $db,
-            $table: $db.stockBalances,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> outgoingMovements(
-    Expression<bool> Function($$StockMovementsTableFilterComposer f) f,
-  ) {
-    final $$StockMovementsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockMovements,
-      getReferencedColumn: (t) => t.fromLocationId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockMovementsTableFilterComposer(
-            $db: $db,
-            $table: $db.stockMovements,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> incomingMovements(
-    Expression<bool> Function($$StockMovementsTableFilterComposer f) f,
-  ) {
-    final $$StockMovementsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockMovements,
-      getReferencedColumn: (t) => t.toLocationId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockMovementsTableFilterComposer(
-            $db: $db,
-            $table: $db.stockMovements,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$StockLocationsTableOrderingComposer
-    extends Composer<_$AppDatabase, $StockLocationsTable> {
-  $$StockLocationsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get type => $composableBuilder(
-    column: $table.type,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$BranchesTableOrderingComposer get branchId {
-    final $$BranchesTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.branchId,
-      referencedTable: $db.branches,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$BranchesTableOrderingComposer(
-            $db: $db,
-            $table: $db.branches,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$RoomsTableOrderingComposer get roomId {
-    final $$RoomsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.roomId,
-      referencedTable: $db.rooms,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RoomsTableOrderingComposer(
-            $db: $db,
-            $table: $db.rooms,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$StockLocationsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $StockLocationsTable> {
-  $$StockLocationsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get updatedAt =>
-      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get deletedAt =>
-      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
-
-  GeneratedColumnWithTypeConverter<SyncStatus, String> get syncStatus =>
-      $composableBuilder(
-        column: $table.syncStatus,
-        builder: (column) => column,
-      );
-
-  GeneratedColumnWithTypeConverter<StockLocationType, String> get type =>
-      $composableBuilder(column: $table.type, builder: (column) => column);
-
-  GeneratedColumn<String> get name =>
-      $composableBuilder(column: $table.name, builder: (column) => column);
-
-  $$BranchesTableAnnotationComposer get branchId {
-    final $$BranchesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.branchId,
-      referencedTable: $db.branches,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$BranchesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.branches,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$RoomsTableAnnotationComposer get roomId {
-    final $$RoomsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.roomId,
-      referencedTable: $db.rooms,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RoomsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.rooms,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  Expression<T> stockBalancesRefs<T extends Object>(
-    Expression<T> Function($$StockBalancesTableAnnotationComposer a) f,
-  ) {
-    final $$StockBalancesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockBalances,
-      getReferencedColumn: (t) => t.locationId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockBalancesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.stockBalances,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> outgoingMovements<T extends Object>(
-    Expression<T> Function($$StockMovementsTableAnnotationComposer a) f,
-  ) {
-    final $$StockMovementsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockMovements,
-      getReferencedColumn: (t) => t.fromLocationId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockMovementsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.stockMovements,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> incomingMovements<T extends Object>(
-    Expression<T> Function($$StockMovementsTableAnnotationComposer a) f,
-  ) {
-    final $$StockMovementsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stockMovements,
-      getReferencedColumn: (t) => t.toLocationId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockMovementsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.stockMovements,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$StockLocationsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $StockLocationsTable,
-          StockLocation,
-          $$StockLocationsTableFilterComposer,
-          $$StockLocationsTableOrderingComposer,
-          $$StockLocationsTableAnnotationComposer,
-          $$StockLocationsTableCreateCompanionBuilder,
-          $$StockLocationsTableUpdateCompanionBuilder,
-          (StockLocation, $$StockLocationsTableReferences),
-          StockLocation,
-          PrefetchHooks Function({
-            bool branchId,
-            bool roomId,
-            bool stockBalancesRefs,
-            bool outgoingMovements,
-            bool incomingMovements,
-          })
-        > {
-  $$StockLocationsTableTableManager(
-    _$AppDatabase db,
-    $StockLocationsTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$StockLocationsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$StockLocationsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$StockLocationsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<SyncStatus> syncStatus = const Value.absent(),
-                Value<StockLocationType> type = const Value.absent(),
-                Value<String?> branchId = const Value.absent(),
-                Value<String?> roomId = const Value.absent(),
-                Value<String> name = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => StockLocationsCompanion(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                syncStatus: syncStatus,
-                type: type,
-                branchId: branchId,
-                roomId: roomId,
-                name: name,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<SyncStatus> syncStatus = const Value.absent(),
-                required StockLocationType type,
-                Value<String?> branchId = const Value.absent(),
-                Value<String?> roomId = const Value.absent(),
-                required String name,
-                Value<int> rowid = const Value.absent(),
-              }) => StockLocationsCompanion.insert(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                syncStatus: syncStatus,
-                type: type,
-                branchId: branchId,
-                roomId: roomId,
-                name: name,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$StockLocationsTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback:
-              ({
-                branchId = false,
-                roomId = false,
-                stockBalancesRefs = false,
-                outgoingMovements = false,
-                incomingMovements = false,
-              }) {
-                return PrefetchHooks(
-                  db: db,
-                  explicitlyWatchedTables: [
-                    if (stockBalancesRefs) db.stockBalances,
-                    if (outgoingMovements) db.stockMovements,
-                    if (incomingMovements) db.stockMovements,
-                  ],
-                  addJoins:
-                      <
-                        T extends TableManagerState<
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic
-                        >
-                      >(state) {
-                        if (branchId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.branchId,
-                                    referencedTable:
-                                        $$StockLocationsTableReferences
-                                            ._branchIdTable(db),
-                                    referencedColumn:
-                                        $$StockLocationsTableReferences
-                                            ._branchIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
-                        }
-                        if (roomId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.roomId,
-                                    referencedTable:
-                                        $$StockLocationsTableReferences
-                                            ._roomIdTable(db),
-                                    referencedColumn:
-                                        $$StockLocationsTableReferences
-                                            ._roomIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
-                        }
-
-                        return state;
-                      },
-                  getPrefetchedDataCallback: (items) async {
-                    return [
-                      if (stockBalancesRefs)
-                        await $_getPrefetchedData<
-                          StockLocation,
-                          $StockLocationsTable,
-                          StockBalance
-                        >(
-                          currentTable: table,
-                          referencedTable: $$StockLocationsTableReferences
-                              ._stockBalancesRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$StockLocationsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).stockBalancesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.locationId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (outgoingMovements)
-                        await $_getPrefetchedData<
-                          StockLocation,
-                          $StockLocationsTable,
-                          StockMovement
-                        >(
-                          currentTable: table,
-                          referencedTable: $$StockLocationsTableReferences
-                              ._outgoingMovementsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$StockLocationsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).outgoingMovements,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.fromLocationId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (incomingMovements)
-                        await $_getPrefetchedData<
-                          StockLocation,
-                          $StockLocationsTable,
-                          StockMovement
-                        >(
-                          currentTable: table,
-                          referencedTable: $$StockLocationsTableReferences
-                              ._incomingMovementsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$StockLocationsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).incomingMovements,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.toLocationId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                    ];
-                  },
-                );
-              },
-        ),
-      );
-}
-
-typedef $$StockLocationsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $StockLocationsTable,
-      StockLocation,
-      $$StockLocationsTableFilterComposer,
-      $$StockLocationsTableOrderingComposer,
-      $$StockLocationsTableAnnotationComposer,
-      $$StockLocationsTableCreateCompanionBuilder,
-      $$StockLocationsTableUpdateCompanionBuilder,
-      (StockLocation, $$StockLocationsTableReferences),
-      StockLocation,
-      PrefetchHooks Function({
-        bool branchId,
-        bool roomId,
-        bool stockBalancesRefs,
-        bool outgoingMovements,
-        bool incomingMovements,
-      })
-    >;
-typedef $$StockBalancesTableCreateCompanionBuilder =
-    StockBalancesCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<SyncStatus> syncStatus,
-      required String locationId,
-      required String itemId,
-      Value<String?> batchId,
-      required int qtyOnHand,
-      Value<int> rowid,
-    });
-typedef $$StockBalancesTableUpdateCompanionBuilder =
-    StockBalancesCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<SyncStatus> syncStatus,
-      Value<String> locationId,
-      Value<String> itemId,
-      Value<String?> batchId,
-      Value<int> qtyOnHand,
-      Value<int> rowid,
-    });
-
-final class $$StockBalancesTableReferences
-    extends BaseReferences<_$AppDatabase, $StockBalancesTable, StockBalance> {
-  $$StockBalancesTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $StockLocationsTable _locationIdTable(_$AppDatabase db) => db
-      .stockLocations
-      .createAlias('stock_balances__location_id__stock_locations__id');
-
-  $$StockLocationsTableProcessedTableManager get locationId {
-    final $_column = $_itemColumn<String>('location_id')!;
-
-    final manager = $$StockLocationsTableTableManager(
-      $_db,
-      $_db.stockLocations,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_locationIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static $ItemsTable _itemIdTable(_$AppDatabase db) =>
-      db.items.createAlias('stock_balances__item_id__items__id');
-
-  $$ItemsTableProcessedTableManager get itemId {
-    final $_column = $_itemColumn<String>('item_id')!;
-
-    final manager = $$ItemsTableTableManager(
-      $_db,
-      $_db.items,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_itemIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static $ItemBatchesTable _batchIdTable(_$AppDatabase db) =>
-      db.itemBatches.createAlias('stock_balances__batch_id__item_batches__id');
-
-  $$ItemBatchesTableProcessedTableManager? get batchId {
-    final $_column = $_itemColumn<String>('batch_id');
-    if ($_column == null) return null;
-    final manager = $$ItemBatchesTableTableManager(
-      $_db,
-      $_db.itemBatches,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_batchIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$StockBalancesTableFilterComposer
-    extends Composer<_$AppDatabase, $StockBalancesTable> {
-  $$StockBalancesTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnWithTypeConverterFilters<SyncStatus, SyncStatus, String>
-  get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
-
-  ColumnFilters<int> get qtyOnHand => $composableBuilder(
-    column: $table.qtyOnHand,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$StockLocationsTableFilterComposer get locationId {
-    final $$StockLocationsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.locationId,
-      referencedTable: $db.stockLocations,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockLocationsTableFilterComposer(
-            $db: $db,
-            $table: $db.stockLocations,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$ItemsTableFilterComposer get itemId {
-    final $$ItemsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.itemId,
-      referencedTable: $db.items,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemsTableFilterComposer(
-            $db: $db,
-            $table: $db.items,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$ItemBatchesTableFilterComposer get batchId {
-    final $$ItemBatchesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.batchId,
-      referencedTable: $db.itemBatches,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemBatchesTableFilterComposer(
-            $db: $db,
-            $table: $db.itemBatches,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$StockBalancesTableOrderingComposer
-    extends Composer<_$AppDatabase, $StockBalancesTable> {
-  $$StockBalancesTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get qtyOnHand => $composableBuilder(
-    column: $table.qtyOnHand,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$StockLocationsTableOrderingComposer get locationId {
-    final $$StockLocationsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.locationId,
-      referencedTable: $db.stockLocations,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockLocationsTableOrderingComposer(
-            $db: $db,
-            $table: $db.stockLocations,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$ItemsTableOrderingComposer get itemId {
-    final $$ItemsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.itemId,
-      referencedTable: $db.items,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemsTableOrderingComposer(
-            $db: $db,
-            $table: $db.items,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$ItemBatchesTableOrderingComposer get batchId {
-    final $$ItemBatchesTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.batchId,
-      referencedTable: $db.itemBatches,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemBatchesTableOrderingComposer(
-            $db: $db,
-            $table: $db.itemBatches,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$StockBalancesTableAnnotationComposer
-    extends Composer<_$AppDatabase, $StockBalancesTable> {
-  $$StockBalancesTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get updatedAt =>
-      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get deletedAt =>
-      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
-
-  GeneratedColumnWithTypeConverter<SyncStatus, String> get syncStatus =>
-      $composableBuilder(
-        column: $table.syncStatus,
-        builder: (column) => column,
-      );
-
-  GeneratedColumn<int> get qtyOnHand =>
-      $composableBuilder(column: $table.qtyOnHand, builder: (column) => column);
-
-  $$StockLocationsTableAnnotationComposer get locationId {
-    final $$StockLocationsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.locationId,
-      referencedTable: $db.stockLocations,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockLocationsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.stockLocations,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$ItemsTableAnnotationComposer get itemId {
-    final $$ItemsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.itemId,
-      referencedTable: $db.items,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.items,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$ItemBatchesTableAnnotationComposer get batchId {
-    final $$ItemBatchesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.batchId,
-      referencedTable: $db.itemBatches,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemBatchesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.itemBatches,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$StockBalancesTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $StockBalancesTable,
-          StockBalance,
-          $$StockBalancesTableFilterComposer,
-          $$StockBalancesTableOrderingComposer,
-          $$StockBalancesTableAnnotationComposer,
-          $$StockBalancesTableCreateCompanionBuilder,
-          $$StockBalancesTableUpdateCompanionBuilder,
-          (StockBalance, $$StockBalancesTableReferences),
-          StockBalance,
-          PrefetchHooks Function({bool locationId, bool itemId, bool batchId})
-        > {
-  $$StockBalancesTableTableManager(_$AppDatabase db, $StockBalancesTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$StockBalancesTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$StockBalancesTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$StockBalancesTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<SyncStatus> syncStatus = const Value.absent(),
-                Value<String> locationId = const Value.absent(),
-                Value<String> itemId = const Value.absent(),
-                Value<String?> batchId = const Value.absent(),
-                Value<int> qtyOnHand = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => StockBalancesCompanion(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                syncStatus: syncStatus,
-                locationId: locationId,
-                itemId: itemId,
-                batchId: batchId,
-                qtyOnHand: qtyOnHand,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<SyncStatus> syncStatus = const Value.absent(),
-                required String locationId,
-                required String itemId,
-                Value<String?> batchId = const Value.absent(),
-                required int qtyOnHand,
-                Value<int> rowid = const Value.absent(),
-              }) => StockBalancesCompanion.insert(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                syncStatus: syncStatus,
-                locationId: locationId,
-                itemId: itemId,
-                batchId: batchId,
-                qtyOnHand: qtyOnHand,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$StockBalancesTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback:
-              ({locationId = false, itemId = false, batchId = false}) {
-                return PrefetchHooks(
-                  db: db,
-                  explicitlyWatchedTables: [],
-                  addJoins:
-                      <
-                        T extends TableManagerState<
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic
-                        >
-                      >(state) {
-                        if (locationId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.locationId,
-                                    referencedTable:
-                                        $$StockBalancesTableReferences
-                                            ._locationIdTable(db),
-                                    referencedColumn:
-                                        $$StockBalancesTableReferences
-                                            ._locationIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
-                        }
-                        if (itemId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.itemId,
-                                    referencedTable:
-                                        $$StockBalancesTableReferences
-                                            ._itemIdTable(db),
-                                    referencedColumn:
-                                        $$StockBalancesTableReferences
-                                            ._itemIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
-                        }
-                        if (batchId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.batchId,
-                                    referencedTable:
-                                        $$StockBalancesTableReferences
-                                            ._batchIdTable(db),
-                                    referencedColumn:
-                                        $$StockBalancesTableReferences
-                                            ._batchIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
-                        }
-
-                        return state;
-                      },
-                  getPrefetchedDataCallback: (items) async {
-                    return [];
-                  },
-                );
-              },
-        ),
-      );
-}
-
-typedef $$StockBalancesTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $StockBalancesTable,
-      StockBalance,
-      $$StockBalancesTableFilterComposer,
-      $$StockBalancesTableOrderingComposer,
-      $$StockBalancesTableAnnotationComposer,
-      $$StockBalancesTableCreateCompanionBuilder,
-      $$StockBalancesTableUpdateCompanionBuilder,
-      (StockBalance, $$StockBalancesTableReferences),
-      StockBalance,
-      PrefetchHooks Function({bool locationId, bool itemId, bool batchId})
-    >;
-typedef $$StockMovementsTableCreateCompanionBuilder =
-    StockMovementsCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<SyncStatus> syncStatus,
-      required String itemId,
-      Value<String?> batchId,
-      Value<String?> fromLocationId,
-      Value<String?> toLocationId,
-      required int qty,
-      required StockMovementType movementType,
-      Value<String?> refDocType,
-      Value<String?> refDocId,
-      required String actorUserId,
-      Value<String?> note,
-      Value<String?> reversalOfMovementId,
-      Value<int> rowid,
-    });
-typedef $$StockMovementsTableUpdateCompanionBuilder =
-    StockMovementsCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<SyncStatus> syncStatus,
-      Value<String> itemId,
-      Value<String?> batchId,
-      Value<String?> fromLocationId,
-      Value<String?> toLocationId,
-      Value<int> qty,
-      Value<StockMovementType> movementType,
-      Value<String?> refDocType,
-      Value<String?> refDocId,
-      Value<String> actorUserId,
-      Value<String?> note,
-      Value<String?> reversalOfMovementId,
-      Value<int> rowid,
-    });
-
-final class $$StockMovementsTableReferences
-    extends BaseReferences<_$AppDatabase, $StockMovementsTable, StockMovement> {
-  $$StockMovementsTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $ItemsTable _itemIdTable(_$AppDatabase db) =>
-      db.items.createAlias('stock_movements__item_id__items__id');
-
-  $$ItemsTableProcessedTableManager get itemId {
-    final $_column = $_itemColumn<String>('item_id')!;
-
-    final manager = $$ItemsTableTableManager(
-      $_db,
-      $_db.items,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_itemIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static $ItemBatchesTable _batchIdTable(_$AppDatabase db) =>
-      db.itemBatches.createAlias('stock_movements__batch_id__item_batches__id');
-
-  $$ItemBatchesTableProcessedTableManager? get batchId {
-    final $_column = $_itemColumn<String>('batch_id');
-    if ($_column == null) return null;
-    final manager = $$ItemBatchesTableTableManager(
-      $_db,
-      $_db.itemBatches,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_batchIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static $StockLocationsTable _fromLocationIdTable(_$AppDatabase db) => db
-      .stockLocations
-      .createAlias('stock_movements__from_location_id__stock_locations__id');
-
-  $$StockLocationsTableProcessedTableManager? get fromLocationId {
-    final $_column = $_itemColumn<String>('from_location_id');
-    if ($_column == null) return null;
-    final manager = $$StockLocationsTableTableManager(
-      $_db,
-      $_db.stockLocations,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_fromLocationIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static $StockLocationsTable _toLocationIdTable(_$AppDatabase db) => db
-      .stockLocations
-      .createAlias('stock_movements__to_location_id__stock_locations__id');
-
-  $$StockLocationsTableProcessedTableManager? get toLocationId {
-    final $_column = $_itemColumn<String>('to_location_id');
-    if ($_column == null) return null;
-    final manager = $$StockLocationsTableTableManager(
-      $_db,
-      $_db.stockLocations,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_toLocationIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static $UsersTable _actorUserIdTable(_$AppDatabase db) =>
-      db.users.createAlias('stock_movements__actor_user_id__users__id');
-
-  $$UsersTableProcessedTableManager get actorUserId {
-    final $_column = $_itemColumn<String>('actor_user_id')!;
-
-    final manager = $$UsersTableTableManager(
-      $_db,
-      $_db.users,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_actorUserIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static $StockMovementsTable _reversalOfMovementIdTable(_$AppDatabase db) =>
-      db.stockMovements.createAlias(
-        'stock_movements__reversal_of_movement_id__stock_movements__id',
-      );
-
-  $$StockMovementsTableProcessedTableManager? get reversalOfMovementId {
-    final $_column = $_itemColumn<String>('reversal_of_movement_id');
-    if ($_column == null) return null;
-    final manager = $$StockMovementsTableTableManager(
-      $_db,
-      $_db.stockMovements,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(
-      _reversalOfMovementIdTable($_db),
-    );
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$StockMovementsTableFilterComposer
-    extends Composer<_$AppDatabase, $StockMovementsTable> {
-  $$StockMovementsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnWithTypeConverterFilters<SyncStatus, SyncStatus, String>
-  get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
-
-  ColumnFilters<int> get qty => $composableBuilder(
-    column: $table.qty,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnWithTypeConverterFilters<StockMovementType, StockMovementType, String>
-  get movementType => $composableBuilder(
-    column: $table.movementType,
-    builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
-
-  ColumnFilters<String> get refDocType => $composableBuilder(
-    column: $table.refDocType,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get refDocId => $composableBuilder(
-    column: $table.refDocId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get note => $composableBuilder(
-    column: $table.note,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$ItemsTableFilterComposer get itemId {
-    final $$ItemsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.itemId,
-      referencedTable: $db.items,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemsTableFilterComposer(
-            $db: $db,
-            $table: $db.items,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$ItemBatchesTableFilterComposer get batchId {
-    final $$ItemBatchesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.batchId,
-      referencedTable: $db.itemBatches,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemBatchesTableFilterComposer(
-            $db: $db,
-            $table: $db.itemBatches,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$StockLocationsTableFilterComposer get fromLocationId {
-    final $$StockLocationsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.fromLocationId,
-      referencedTable: $db.stockLocations,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockLocationsTableFilterComposer(
-            $db: $db,
-            $table: $db.stockLocations,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$StockLocationsTableFilterComposer get toLocationId {
-    final $$StockLocationsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.toLocationId,
-      referencedTable: $db.stockLocations,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockLocationsTableFilterComposer(
-            $db: $db,
-            $table: $db.stockLocations,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$UsersTableFilterComposer get actorUserId {
-    final $$UsersTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.actorUserId,
-      referencedTable: $db.users,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$UsersTableFilterComposer(
-            $db: $db,
-            $table: $db.users,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$StockMovementsTableFilterComposer get reversalOfMovementId {
-    final $$StockMovementsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.reversalOfMovementId,
-      referencedTable: $db.stockMovements,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockMovementsTableFilterComposer(
-            $db: $db,
-            $table: $db.stockMovements,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$StockMovementsTableOrderingComposer
-    extends Composer<_$AppDatabase, $StockMovementsTable> {
-  $$StockMovementsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get qty => $composableBuilder(
-    column: $table.qty,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get movementType => $composableBuilder(
-    column: $table.movementType,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get refDocType => $composableBuilder(
-    column: $table.refDocType,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get refDocId => $composableBuilder(
-    column: $table.refDocId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get note => $composableBuilder(
-    column: $table.note,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$ItemsTableOrderingComposer get itemId {
-    final $$ItemsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.itemId,
-      referencedTable: $db.items,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemsTableOrderingComposer(
-            $db: $db,
-            $table: $db.items,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$ItemBatchesTableOrderingComposer get batchId {
-    final $$ItemBatchesTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.batchId,
-      referencedTable: $db.itemBatches,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemBatchesTableOrderingComposer(
-            $db: $db,
-            $table: $db.itemBatches,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$StockLocationsTableOrderingComposer get fromLocationId {
-    final $$StockLocationsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.fromLocationId,
-      referencedTable: $db.stockLocations,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockLocationsTableOrderingComposer(
-            $db: $db,
-            $table: $db.stockLocations,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$StockLocationsTableOrderingComposer get toLocationId {
-    final $$StockLocationsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.toLocationId,
-      referencedTable: $db.stockLocations,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockLocationsTableOrderingComposer(
-            $db: $db,
-            $table: $db.stockLocations,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$UsersTableOrderingComposer get actorUserId {
-    final $$UsersTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.actorUserId,
-      referencedTable: $db.users,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$UsersTableOrderingComposer(
-            $db: $db,
-            $table: $db.users,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$StockMovementsTableOrderingComposer get reversalOfMovementId {
-    final $$StockMovementsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.reversalOfMovementId,
-      referencedTable: $db.stockMovements,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockMovementsTableOrderingComposer(
-            $db: $db,
-            $table: $db.stockMovements,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$StockMovementsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $StockMovementsTable> {
-  $$StockMovementsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get updatedAt =>
-      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get deletedAt =>
-      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
-
-  GeneratedColumnWithTypeConverter<SyncStatus, String> get syncStatus =>
-      $composableBuilder(
-        column: $table.syncStatus,
-        builder: (column) => column,
-      );
-
-  GeneratedColumn<int> get qty =>
-      $composableBuilder(column: $table.qty, builder: (column) => column);
-
-  GeneratedColumnWithTypeConverter<StockMovementType, String>
-  get movementType => $composableBuilder(
-    column: $table.movementType,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get refDocType => $composableBuilder(
-    column: $table.refDocType,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get refDocId =>
-      $composableBuilder(column: $table.refDocId, builder: (column) => column);
-
-  GeneratedColumn<String> get note =>
-      $composableBuilder(column: $table.note, builder: (column) => column);
-
-  $$ItemsTableAnnotationComposer get itemId {
-    final $$ItemsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.itemId,
-      referencedTable: $db.items,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.items,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$ItemBatchesTableAnnotationComposer get batchId {
-    final $$ItemBatchesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.batchId,
-      referencedTable: $db.itemBatches,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ItemBatchesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.itemBatches,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$StockLocationsTableAnnotationComposer get fromLocationId {
-    final $$StockLocationsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.fromLocationId,
-      referencedTable: $db.stockLocations,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockLocationsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.stockLocations,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$StockLocationsTableAnnotationComposer get toLocationId {
-    final $$StockLocationsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.toLocationId,
-      referencedTable: $db.stockLocations,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockLocationsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.stockLocations,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$UsersTableAnnotationComposer get actorUserId {
-    final $$UsersTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.actorUserId,
-      referencedTable: $db.users,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$UsersTableAnnotationComposer(
-            $db: $db,
-            $table: $db.users,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$StockMovementsTableAnnotationComposer get reversalOfMovementId {
-    final $$StockMovementsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.reversalOfMovementId,
-      referencedTable: $db.stockMovements,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StockMovementsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.stockMovements,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$StockMovementsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $StockMovementsTable,
-          StockMovement,
-          $$StockMovementsTableFilterComposer,
-          $$StockMovementsTableOrderingComposer,
-          $$StockMovementsTableAnnotationComposer,
-          $$StockMovementsTableCreateCompanionBuilder,
-          $$StockMovementsTableUpdateCompanionBuilder,
-          (StockMovement, $$StockMovementsTableReferences),
-          StockMovement,
-          PrefetchHooks Function({
-            bool itemId,
-            bool batchId,
-            bool fromLocationId,
-            bool toLocationId,
-            bool actorUserId,
-            bool reversalOfMovementId,
-          })
-        > {
-  $$StockMovementsTableTableManager(
-    _$AppDatabase db,
-    $StockMovementsTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$StockMovementsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$StockMovementsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$StockMovementsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<SyncStatus> syncStatus = const Value.absent(),
-                Value<String> itemId = const Value.absent(),
-                Value<String?> batchId = const Value.absent(),
-                Value<String?> fromLocationId = const Value.absent(),
-                Value<String?> toLocationId = const Value.absent(),
-                Value<int> qty = const Value.absent(),
-                Value<StockMovementType> movementType = const Value.absent(),
-                Value<String?> refDocType = const Value.absent(),
-                Value<String?> refDocId = const Value.absent(),
-                Value<String> actorUserId = const Value.absent(),
-                Value<String?> note = const Value.absent(),
-                Value<String?> reversalOfMovementId = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => StockMovementsCompanion(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                syncStatus: syncStatus,
-                itemId: itemId,
-                batchId: batchId,
-                fromLocationId: fromLocationId,
-                toLocationId: toLocationId,
-                qty: qty,
-                movementType: movementType,
-                refDocType: refDocType,
-                refDocId: refDocId,
-                actorUserId: actorUserId,
-                note: note,
-                reversalOfMovementId: reversalOfMovementId,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<SyncStatus> syncStatus = const Value.absent(),
-                required String itemId,
-                Value<String?> batchId = const Value.absent(),
-                Value<String?> fromLocationId = const Value.absent(),
-                Value<String?> toLocationId = const Value.absent(),
-                required int qty,
-                required StockMovementType movementType,
-                Value<String?> refDocType = const Value.absent(),
-                Value<String?> refDocId = const Value.absent(),
-                required String actorUserId,
-                Value<String?> note = const Value.absent(),
-                Value<String?> reversalOfMovementId = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => StockMovementsCompanion.insert(
-                id: id,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                syncStatus: syncStatus,
-                itemId: itemId,
-                batchId: batchId,
-                fromLocationId: fromLocationId,
-                toLocationId: toLocationId,
-                qty: qty,
-                movementType: movementType,
-                refDocType: refDocType,
-                refDocId: refDocId,
-                actorUserId: actorUserId,
-                note: note,
-                reversalOfMovementId: reversalOfMovementId,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$StockMovementsTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback:
-              ({
-                itemId = false,
-                batchId = false,
-                fromLocationId = false,
-                toLocationId = false,
-                actorUserId = false,
-                reversalOfMovementId = false,
-              }) {
-                return PrefetchHooks(
-                  db: db,
-                  explicitlyWatchedTables: [],
-                  addJoins:
-                      <
-                        T extends TableManagerState<
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic
-                        >
-                      >(state) {
-                        if (itemId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.itemId,
-                                    referencedTable:
-                                        $$StockMovementsTableReferences
-                                            ._itemIdTable(db),
-                                    referencedColumn:
-                                        $$StockMovementsTableReferences
-                                            ._itemIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
-                        }
-                        if (batchId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.batchId,
-                                    referencedTable:
-                                        $$StockMovementsTableReferences
-                                            ._batchIdTable(db),
-                                    referencedColumn:
-                                        $$StockMovementsTableReferences
-                                            ._batchIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
-                        }
-                        if (fromLocationId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.fromLocationId,
-                                    referencedTable:
-                                        $$StockMovementsTableReferences
-                                            ._fromLocationIdTable(db),
-                                    referencedColumn:
-                                        $$StockMovementsTableReferences
-                                            ._fromLocationIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
-                        }
-                        if (toLocationId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.toLocationId,
-                                    referencedTable:
-                                        $$StockMovementsTableReferences
-                                            ._toLocationIdTable(db),
-                                    referencedColumn:
-                                        $$StockMovementsTableReferences
-                                            ._toLocationIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
-                        }
-                        if (actorUserId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.actorUserId,
-                                    referencedTable:
-                                        $$StockMovementsTableReferences
-                                            ._actorUserIdTable(db),
-                                    referencedColumn:
-                                        $$StockMovementsTableReferences
-                                            ._actorUserIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
-                        }
-                        if (reversalOfMovementId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.reversalOfMovementId,
-                                    referencedTable:
-                                        $$StockMovementsTableReferences
-                                            ._reversalOfMovementIdTable(db),
-                                    referencedColumn:
-                                        $$StockMovementsTableReferences
-                                            ._reversalOfMovementIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
-                        }
-
-                        return state;
-                      },
-                  getPrefetchedDataCallback: (items) async {
-                    return [];
-                  },
-                );
-              },
-        ),
-      );
-}
-
-typedef $$StockMovementsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $StockMovementsTable,
-      StockMovement,
-      $$StockMovementsTableFilterComposer,
-      $$StockMovementsTableOrderingComposer,
-      $$StockMovementsTableAnnotationComposer,
-      $$StockMovementsTableCreateCompanionBuilder,
-      $$StockMovementsTableUpdateCompanionBuilder,
-      (StockMovement, $$StockMovementsTableReferences),
-      StockMovement,
-      PrefetchHooks Function({
-        bool itemId,
-        bool batchId,
-        bool fromLocationId,
-        bool toLocationId,
-        bool actorUserId,
-        bool reversalOfMovementId,
-      })
-    >;
-
-class $AppDatabaseManager {
-  final _$AppDatabase _db;
-  $AppDatabaseManager(this._db);
-  $$BranchesTableTableManager get branches =>
-      $$BranchesTableTableManager(_db, _db.branches);
-  $$RoomsTableTableManager get rooms =>
-      $$RoomsTableTableManager(_db, _db.rooms);
-  $$UsersTableTableManager get users =>
-      $$UsersTableTableManager(_db, _db.users);
-  $$ItemCategoriesTableTableManager get itemCategories =>
-      $$ItemCategoriesTableTableManager(_db, _db.itemCategories);
-  $$ItemsTableTableManager get items =>
-      $$ItemsTableTableManager(_db, _db.items);
-  $$ItemBatchesTableTableManager get itemBatches =>
-      $$ItemBatchesTableTableManager(_db, _db.itemBatches);
-  $$StockLocationsTableTableManager get stockLocations =>
-      $$StockLocationsTableTableManager(_db, _db.stockLocations);
-  $$StockBalancesTableTableManager get stockBalances =>
-      $$StockBalancesTableTableManager(_db, _db.stockBalances);
-  $$StockMovementsTableTableManager get stockMovements =>
-      $$StockMovementsTableTableManager(_db, _db.stockMovements);
 }

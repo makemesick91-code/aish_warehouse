@@ -9,3 +9,10 @@ targets:
           # break the FEFO / expiry comparisons.
           store_date_time_values_as_text: true
           named_parameters: true
+          # The generated manager API (`db.managers.stockOpnameLines.update(…)`,
+          # `.delete()`) is a second, unguarded write path into every table. It
+          # would let any caller overwrite `system_qty` after the snapshot
+          # (G-O2), edit the lines of a reviewed document (G-S2), or hard delete
+          # business rows (G-A5) — the exact things the DAOs are written to make
+          # impossible. Nothing uses it, so it is not generated.
+          generate_manager: false

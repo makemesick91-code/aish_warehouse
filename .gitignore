@@ -33,6 +33,10 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Graphify dependency-graph output (build artifact, regenerate with
+# `graphify update .`)
+graphify-out/
+
 # Symbolication related
 app.*.symbols
 

@@ -125,6 +125,49 @@ class MovementDraft {
   final String? reversalOfMovementId;
 }
 
+/// One position to align during a Stok Opname review (G-O5).
+///
+/// Carries only what the posting needs: which physical position, what was
+/// counted, and why. The difference is *not* passed in — it is recomputed
+/// against the live balance at posting time.
+class OpnameAdjustmentLine {
+  const OpnameAdjustmentLine({
+    required this.lineId,
+    required this.itemId,
+    this.batchId,
+    required this.countedQty,
+    this.note,
+  });
+
+  /// The opname line this adjustment came from, so a failure can name it.
+  final String lineId;
+
+  final String itemId;
+  final String? batchId;
+  final Quantity countedQty;
+  final String? note;
+}
+
+/// Outcome of one adjusted position.
+class OpnameAdjustmentResult {
+  const OpnameAdjustmentResult({
+    required this.lineId,
+    this.movement,
+    required this.countedQty,
+  });
+
+  final String lineId;
+
+  /// `null` when the balance already matched the count, in which case no
+  /// ledger row is written at all (G-A1: the ledger records changes, not
+  /// confirmations).
+  final InventoryMovement? movement;
+
+  final Quantity countedQty;
+
+  bool get didAdjust => movement != null;
+}
+
 /// A persisted ledger row.
 class InventoryMovement {
   const InventoryMovement({

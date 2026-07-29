@@ -5,9 +5,11 @@ import '../quantity/quantity.dart';
 import 'converters/enum_converters.dart';
 import 'daos/inventory_dao.dart';
 import 'daos/master_data_dao.dart';
+import 'daos/opname_dao.dart';
 import 'tables/base_columns.dart';
 import 'tables/inventory_tables.dart';
 import 'tables/master_tables.dart';
+import 'tables/opname_tables.dart';
 
 part 'app_database.g.dart';
 
@@ -22,8 +24,10 @@ part 'app_database.g.dart';
     StockLocations,
     StockBalances,
     StockMovements,
+    StockOpnames,
+    StockOpnameLines,
   ],
-  daos: [MasterDataDao, InventoryDao],
+  daos: [MasterDataDao, InventoryDao, OpnameDao],
 )
 class AppDatabase extends _$AppDatabase {
   /// The executor is injected so tests can pass an in-memory database while the
@@ -32,10 +36,9 @@ class AppDatabase extends _$AppDatabase {
 
   /// * v1 — initial Milestone 1 schema, quantities in whole units.
   /// * v2 — Milestone 1.1, ledger quantities become fixed-point milli-units.
-  ///
-  /// Stok Opname must introduce v3 rather than extend v2 (spec §6.3).
+  /// * v3 — Milestone 2, Stok Opname (`stock_opnames`, `stock_opname_lines`).
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -59,10 +62,60 @@ class AppDatabase extends _$AppDatabase {
           'UPDATE stock_movements SET qty = qty * ${Quantity.scale};',
         );
       }
+      if (from < 3) {
+        // Milestone 2 is purely additive: two new tables and their indexes.
+        // No existing column is touched, so ledger quantities, balances,
+        // master data and the v1 → v2 scaling above all stay exactly as they
+        // are — a v1 database upgrading straight to v3 is scaled once by the
+        // block above and then gains the opname tables here.
+        await m.createTable(stockOpnames);
+        await m.createTable(stockOpnameLines);
+        for (final statement in _v3OpnameIndexes) {
+          await customStatement(statement);
+        }
+      }
     },
     beforeOpen: (details) async {
       // SQLite does not enforce foreign keys unless explicitly asked to.
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
+
+  /// The Stok Opname indexes **exactly as schema v3 defined them**.
+  ///
+  /// `Migrator.createTable` issues only the CREATE TABLE statement, so an
+  /// upgrade has to create the indexes itself; a fresh database gets them from
+  /// `createAll` instead.
+  ///
+  /// They are frozen here as literal SQL rather than read from
+  /// `allSchemaEntities`, because that getter always describes the *current*
+  /// schema, not v3. Deriving the list would mean that adding an opname index
+  /// in some future v4 silently changes what the `from < 3` block creates: a
+  /// device on v2 would get the v4 index here and then hit
+  /// `index … already exists` when the `from < 4` block created it again. A
+  /// migration step must keep doing what it did the day it shipped.
+  ///
+  /// `IF NOT EXISTS` makes the step re-runnable on a database that already has
+  /// the tables, which `CREATE TABLE IF NOT EXISTS` above already is.
+  static const List<String> _v3OpnameIndexes = [
+    'CREATE INDEX IF NOT EXISTS idx_stock_opnames_branch_status '
+        'ON stock_opnames (branch_id, status);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_stock_opnames_room_period '
+        'ON stock_opnames (room_id, period_year, period_week) '
+        'WHERE deleted_at IS NULL;',
+    'CREATE INDEX IF NOT EXISTS idx_stock_opnames_counted_by_status '
+        'ON stock_opnames (counted_by, status);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_stock_opnames_doc_number '
+        'ON stock_opnames (doc_number) WHERE deleted_at IS NULL;',
+    'CREATE INDEX IF NOT EXISTS idx_stock_opname_lines_opname '
+        'ON stock_opname_lines (opname_id);',
+    'CREATE INDEX IF NOT EXISTS idx_stock_opname_lines_item '
+        'ON stock_opname_lines (item_id);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_stock_opname_lines_batched '
+        'ON stock_opname_lines (opname_id, item_id, batch_id) '
+        'WHERE batch_id IS NOT NULL AND deleted_at IS NULL;',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_stock_opname_lines_unbatched '
+        'ON stock_opname_lines (opname_id, item_id) '
+        'WHERE batch_id IS NULL AND deleted_at IS NULL;',
+  ];
 }

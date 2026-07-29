@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app_database.dart';
 import 'daos/inventory_dao.dart';
 import 'daos/master_data_dao.dart';
+import 'daos/opname_dao.dart';
 import 'database_connection.dart';
 
 /// Single owner of the database handle.
@@ -21,4 +22,8 @@ final masterDataDaoProvider = Provider<MasterDataDao>(
 
 final inventoryDaoProvider = Provider<InventoryDao>(
   (ref) => ref.watch(appDatabaseProvider).inventoryDao,
+);
+
+final opnameDaoProvider = Provider<OpnameDao>(
+  (ref) => ref.watch(appDatabaseProvider).opnameDao,
 );

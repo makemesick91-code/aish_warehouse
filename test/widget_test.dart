@@ -34,6 +34,21 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Scrolls the page until [finder] is built.
+  ///
+  /// The development home page is a lazy `ListView`, so anything below the fold
+  /// simply does not exist in the tree yet. As the page grows this is what
+  /// keeps the assertions about its lower half honest rather than accidental.
+  Future<Finder> reveal(WidgetTester tester, Finder finder) async {
+    await tester.scrollUntilVisible(
+      finder,
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    return finder;
+  }
+
   testWidgets('halaman pengembangan tampil dengan empty state', (
     WidgetTester tester,
   ) async {
@@ -42,7 +57,10 @@ void main() {
     expect(find.text('Aish Warehouse'), findsOneWidget);
     expect(find.text('Belum ada data'), findsOneWidget);
     expect(find.text('Jalankan Seed Pengembangan'), findsOneWidget);
-    expect(find.text('Saldo Warehouse Pusat'), findsOneWidget);
+    expect(
+      await reveal(tester, find.text('Saldo Warehouse Pusat')),
+      findsOneWidget,
+    );
 
     await disposeApp(tester);
   });
@@ -59,7 +77,10 @@ void main() {
     expect(find.text('Cabang'), findsOneWidget);
     expect(find.text('Ruangan'), findsOneWidget);
     expect(find.text('Barang'), findsOneWidget);
-    expect(find.text('Masker Bedah 3 Ply'), findsOneWidget);
+    expect(
+      await reveal(tester, find.text('Masker Bedah 3 Ply')),
+      findsOneWidget,
+    );
 
     await disposeApp(tester);
   });
@@ -72,8 +93,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Decimal balances render as typed, whole ones without a decimal tail.
-    expect(find.text('10.5 box'), findsOneWidget);
-    expect(find.text('150 box'), findsOneWidget);
+    expect(await reveal(tester, find.text('10.5 box')), findsOneWidget);
+    expect(await reveal(tester, find.text('150 box')), findsOneWidget);
     expect(find.text('150.0 box'), findsNothing);
     // Milli-units must never reach the screen.
     expect(find.text('10500 box'), findsNothing);
@@ -86,7 +107,10 @@ void main() {
   ) async {
     await pumpApp(tester);
 
-    expect(find.text('Zona waktu operasional: GMT+8'), findsOneWidget);
+    expect(
+      await reveal(tester, find.text('Zona waktu operasional: GMT+8')),
+      findsOneWidget,
+    );
 
     await disposeApp(tester);
   });

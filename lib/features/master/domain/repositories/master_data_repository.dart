@@ -80,6 +80,13 @@ abstract interface class MasterDataRepository {
 
   Future<MasterLocation?> locationById(String id);
 
+  /// The stock location that holds a room's inventory.
+  Future<MasterLocation?> roomLocation(String roomId);
+
+  Future<MasterRoom?> roomById(String id);
+
+  Future<MasterUser?> userById(String id);
+
   Future<MasterLocation?> warehouseLocation();
 
   Future<MasterSummary> summary();

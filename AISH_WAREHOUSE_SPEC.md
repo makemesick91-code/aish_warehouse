@@ -696,12 +696,58 @@ negatif**. Input `counted_qty` oleh perawat harus menerima nilai desimal seperti
 |---|---|
 | v1 | Skema awal Milestone 1 (kuantitas sebagai unit bulat) |
 | **v2** | **Milestone 1.1** — kuantitas ledger menjadi fixed-point milli-unit |
-| v3 | Stok Opname (`stock_opnames`, `stock_opname_lines`) — **belum dikerjakan** |
+| **v3** | **Milestone 2** — Stok Opname (`stock_opnames`, `stock_opname_lines`) |
 
 Migrasi v1 → v2 hanya menskalakan data (`× 1000`) pada `stock_balances.qty_on_hand` dan
 `stock_movements.qty`; tipe kolom tetap INTEGER sehingga tidak ada rebuild tabel. Migrasi
 dijalankan tepat satu kali, pada blok `if (from < 2)`. Stok Opname **wajib** memakai schema
 v3, bukan menumpang v2.
+
+Migrasi v2 → v3 bersifat **aditif**: hanya menambahkan dua tabel Stok Opname beserta
+index-nya, tanpa menyentuh kolom, data, atau index yang sudah ada. Database v1 dapat
+dibuka langsung pada v3: penskalaan v1 → v2 berjalan tepat sekali, lalu blok
+`if (from < 3)` menambahkan tabel opname.
+
+### 6.4 Keputusan Teknis Stok Opname (Milestone 2)
+
+Keputusan berikut melengkapi §2.3 dan §3.3 dengan hal-hal yang baru terjawab saat
+implementasi. Keputusan ini **tidak mengubah** aturan bisnis mana pun.
+
+- **O-1 — `difference` adalah generated column.** Kolom dihitung SQLite sendiri
+  (`GENERATED ALWAYS AS (counted_qty - system_qty) STORED`), bukan ditulis aplikasi,
+  sehingga nilainya tidak pernah dapat berbeda dari operandnya. Aplikasi tidak memiliki
+  jalur tulis ke kolom ini.
+- **O-2 — Keunikan memakai partial unique index.** SQLite memperlakukan setiap `NULL`
+  sebagai nilai berbeda, sehingga `UNIQUE` biasa akan meloloskan baris ganda untuk barang
+  tanpa batch. Keunikan baris karena itu dinyatakan sebagai dua partial unique index
+  (`WHERE batch_id IS NOT NULL` dan `WHERE batch_id IS NULL`). Keduanya juga menyertakan
+  `deleted_at IS NULL`, karena keunikan berlaku untuk baris **hidup**: baris yang dihapus
+  dari draft tidak boleh memblokir posisi itu dihitung ulang. Alasan yang sama berlaku
+  pada kunci mingguan `(room_id, period_year, period_week)`.
+- **O-3 — Catatan selisih ditegakkan saat submit, bukan oleh CHECK constraint.** Perawat
+  harus dapat menyimpan draft dengan hasil hitung sudah terisi dan alasan belum ditulis.
+  G-O3 karena itu divalidasi atas seluruh dokumen oleh `SubmitStockOpnameUseCase` — satu-
+  satunya momen aturan tersebut bermakna. Constraint database tetap menegakkan
+  `counted_qty >= 0` dan `system_qty >= 0`.
+- **O-4 — Penyesuaian review dihitung terhadap saldo terkini.** Saat Kepala Cabang
+  mereview, sistem membandingkan `counted_qty` dengan saldo **saat itu**, bukan dengan
+  `difference` hasil snapshot. Stok dapat berpindah secara sah antara penghitungan dan
+  review; yang dijamin G-O5 adalah saldo akhir sama dengan hasil hitung fisik. Setelah
+  posting, saldo setiap baris diverifikasi ulang dan transaksi ditolak bila ada yang tidak
+  sama.
+- **O-5 — Review adalah satu transaksi.** Pembacaan saldo, seluruh movement
+  `opname_adjustment`, penulisan saldo, dan perubahan status dokumen berada dalam satu
+  transaksi database. Tidak ada metode yang membuka transaksi per baris.
+- **O-6 — Nomor dokumen sementara.** Sebelum backend sync ada, dokumen memakai
+  `TMP-SO-{uuid}` sesuai G-Y4. Nomor final berformat server tidak dibuat di klien karena
+  akan bertabrakan antar perangkat.
+- **O-7 — Batch kedaluwarsa tetap dapat dihitung dan disesuaikan.** G-E4 memblokir batch
+  kedaluwarsa dari DO dan distribusi, tetapi opname justru harus dapat melaporkan barang
+  kedaluwarsa yang masih ada di rak; pengeluarannya tetap lewat `disposal` (G-E7).
+- **O-8 — Sesi pengembangan.** Autentikasi produksi belum ada. Peran aktif dipilih lewat
+  `CurrentUserSession` + `DevelopmentSessionController` (debug saja). Abstraksi ini hanya
+  menyediakan *actor id*; seluruh use case tetap membaca ulang pengguna dari database dan
+  memvalidasi peran serta cabangnya, sehingga sesi tidak pernah memberi wewenang.
 
 ---
 

@@ -34,6 +34,18 @@ class StockLocationTypeConverter
   String toSql(StockLocationType value) => value.dbValue;
 }
 
+class StockOpnameStatusConverter
+    extends TypeConverter<StockOpnameStatus, String> {
+  const StockOpnameStatusConverter();
+
+  @override
+  StockOpnameStatus fromSql(String fromDb) =>
+      StockOpnameStatus.fromDbValue(fromDb);
+
+  @override
+  String toSql(StockOpnameStatus value) => value.dbValue;
+}
+
 class StockMovementTypeConverter
     extends TypeConverter<StockMovementType, String> {
   const StockMovementTypeConverter();

@@ -86,6 +86,58 @@ enum StockMovementType {
   );
 }
 
+/// Lifecycle of a Stok Opname document (schema v3).
+///
+/// The state machine only ever moves forward — `draft → submitted → reviewed` —
+/// and `reviewed` is terminal (G-S1/G-S2). There is no un-submit and no
+/// un-review: a mistake in a final document is corrected by a new adjusting
+/// document, never by editing the old one.
+enum StockOpnameStatus {
+  draft('draft'),
+  submitted('submitted'),
+  reviewed('reviewed');
+
+  const StockOpnameStatus(this.dbValue);
+
+  final String dbValue;
+
+  bool get isDraft => this == draft;
+
+  bool get isSubmitted => this == submitted;
+
+  bool get isReviewed => this == reviewed;
+
+  /// Final documents — and their lines — are read-only permanently (G-S2).
+  bool get isFinal => this == reviewed;
+
+  /// Only a document that has left the nurse's hands may back a Purchase
+  /// Request (G-O4). The PR module does not exist yet; this predicate is what
+  /// it will ask.
+  bool get isPurchaseRequestReference => this == submitted || this == reviewed;
+
+  /// The single source of truth for allowed transitions (G-S1). Everything
+  /// else — `draft → reviewed`, `submitted → draft`, any move out of
+  /// `reviewed`, and re-entering the current state — is rejected.
+  bool canTransitionTo(StockOpnameStatus next) => switch (this) {
+    draft => next == submitted,
+    submitted => next == reviewed,
+    reviewed => false,
+  };
+
+  /// Indonesian label for chips and document timelines.
+  String get label => switch (this) {
+    draft => 'Draft',
+    submitted => 'Menunggu Review',
+    reviewed => 'Selesai Direview',
+  };
+
+  static StockOpnameStatus fromDbValue(String value) => values.firstWhere(
+    (status) => status.dbValue == value,
+    orElse: () =>
+        throw ArgumentError.value(value, 'value', 'Unknown StockOpnameStatus'),
+  );
+}
+
 /// Document types referenced by ledger entries (`ref_doc_type`).
 abstract final class RefDocType {
   static const stockOpname = 'SO';
