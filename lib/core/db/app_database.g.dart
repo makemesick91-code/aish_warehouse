@@ -12443,6 +12443,1388 @@ class GoodReceiptLinesCompanion extends UpdateCompanion<GoodReceiptLineRow> {
   }
 }
 
+class $DistributionsTable extends Distributions
+    with TableInfo<$DistributionsTable, DistributionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DistributionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>($DistributionsTable.$convertersyncStatus);
+  static const VerificationMeta _docNumberMeta = const VerificationMeta(
+    'docNumber',
+  );
+  @override
+  late final GeneratedColumn<String> docNumber = GeneratedColumn<String>(
+    'doc_number',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _branchIdMeta = const VerificationMeta(
+    'branchId',
+  );
+  @override
+  late final GeneratedColumn<String> branchId = GeneratedColumn<String>(
+    'branch_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES branches (id)',
+    ),
+  );
+  static const VerificationMeta _distributedByMeta = const VerificationMeta(
+    'distributedBy',
+  );
+  @override
+  late final GeneratedColumn<String> distributedBy = GeneratedColumn<String>(
+    'distributed_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<DistributionStatus, String>
+  status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => DistributionStatus.draft.dbValue,
+  ).withConverter<DistributionStatus>($DistributionsTable.$converterstatus);
+  static const VerificationMeta _postedAtMeta = const VerificationMeta(
+    'postedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> postedAt = GeneratedColumn<DateTime>(
+    'posted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    docNumber,
+    branchId,
+    distributedBy,
+    status,
+    postedAt,
+    note,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'distributions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DistributionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('doc_number')) {
+      context.handle(
+        _docNumberMeta,
+        docNumber.isAcceptableOrUnknown(data['doc_number']!, _docNumberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_docNumberMeta);
+    }
+    if (data.containsKey('branch_id')) {
+      context.handle(
+        _branchIdMeta,
+        branchId.isAcceptableOrUnknown(data['branch_id']!, _branchIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_branchIdMeta);
+    }
+    if (data.containsKey('distributed_by')) {
+      context.handle(
+        _distributedByMeta,
+        distributedBy.isAcceptableOrUnknown(
+          data['distributed_by']!,
+          _distributedByMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_distributedByMeta);
+    }
+    if (data.containsKey('posted_at')) {
+      context.handle(
+        _postedAtMeta,
+        postedAt.isAcceptableOrUnknown(data['posted_at']!, _postedAtMeta),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DistributionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DistributionRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $DistributionsTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      docNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}doc_number'],
+      )!,
+      branchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}branch_id'],
+      )!,
+      distributedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}distributed_by'],
+      )!,
+      status: $DistributionsTable.$converterstatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}status'],
+        )!,
+      ),
+      postedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}posted_at'],
+      ),
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+    );
+  }
+
+  @override
+  $DistributionsTable createAlias(String alias) {
+    return $DistributionsTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+  static TypeConverter<DistributionStatus, String> $converterstatus =
+      const DistributionStatusConverter();
+}
+
+class DistributionRow extends DataClass implements Insertable<DistributionRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+
+  /// Temporary local number `TMP-DIST-{uuid}` until a sync backend assigns the
+  /// final `DIST-{cabang}-{yyyyMMdd}-{seq}` (G-Y4). Minting a server-shaped number
+  /// offline would collide across devices — every branch distributes on its own.
+  final String docNumber;
+
+  /// The branch whose *Gudang Cabang* the goods leave, and the only branch whose
+  /// rooms may receive them (G-T1).
+  final String branchId;
+
+  /// The Kepala Cabang who distributed (spec §3.1). Their branch must be
+  /// [branchId], which is a cross-table question and therefore the use case's to
+  /// enforce.
+  final String distributedBy;
+  final DistributionStatus status;
+
+  /// UTC instant the distribution was posted and the balances moved (T-1).
+  final DateTime? postedAt;
+
+  /// Free-text remark about the distribution as a whole, e.g. why an unusual
+  /// quantity left the store. Optional, and never a substitute for the per-line
+  /// `fefo_override_reason`, which is an audit record for a specific decision.
+  final String? note;
+  const DistributionRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.docNumber,
+    required this.branchId,
+    required this.distributedBy,
+    required this.status,
+    this.postedAt,
+    this.note,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $DistributionsTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    map['doc_number'] = Variable<String>(docNumber);
+    map['branch_id'] = Variable<String>(branchId);
+    map['distributed_by'] = Variable<String>(distributedBy);
+    {
+      map['status'] = Variable<String>(
+        $DistributionsTable.$converterstatus.toSql(status),
+      );
+    }
+    if (!nullToAbsent || postedAt != null) {
+      map['posted_at'] = Variable<DateTime>(postedAt);
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    return map;
+  }
+
+  DistributionsCompanion toCompanion(bool nullToAbsent) {
+    return DistributionsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      docNumber: Value(docNumber),
+      branchId: Value(branchId),
+      distributedBy: Value(distributedBy),
+      status: Value(status),
+      postedAt: postedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(postedAt),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+    );
+  }
+
+  factory DistributionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DistributionRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      docNumber: serializer.fromJson<String>(json['docNumber']),
+      branchId: serializer.fromJson<String>(json['branchId']),
+      distributedBy: serializer.fromJson<String>(json['distributedBy']),
+      status: serializer.fromJson<DistributionStatus>(json['status']),
+      postedAt: serializer.fromJson<DateTime?>(json['postedAt']),
+      note: serializer.fromJson<String?>(json['note']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'docNumber': serializer.toJson<String>(docNumber),
+      'branchId': serializer.toJson<String>(branchId),
+      'distributedBy': serializer.toJson<String>(distributedBy),
+      'status': serializer.toJson<DistributionStatus>(status),
+      'postedAt': serializer.toJson<DateTime?>(postedAt),
+      'note': serializer.toJson<String?>(note),
+    };
+  }
+
+  DistributionRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    String? docNumber,
+    String? branchId,
+    String? distributedBy,
+    DistributionStatus? status,
+    Value<DateTime?> postedAt = const Value.absent(),
+    Value<String?> note = const Value.absent(),
+  }) => DistributionRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    docNumber: docNumber ?? this.docNumber,
+    branchId: branchId ?? this.branchId,
+    distributedBy: distributedBy ?? this.distributedBy,
+    status: status ?? this.status,
+    postedAt: postedAt.present ? postedAt.value : this.postedAt,
+    note: note.present ? note.value : this.note,
+  );
+  DistributionRow copyWithCompanion(DistributionsCompanion data) {
+    return DistributionRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      docNumber: data.docNumber.present ? data.docNumber.value : this.docNumber,
+      branchId: data.branchId.present ? data.branchId.value : this.branchId,
+      distributedBy: data.distributedBy.present
+          ? data.distributedBy.value
+          : this.distributedBy,
+      status: data.status.present ? data.status.value : this.status,
+      postedAt: data.postedAt.present ? data.postedAt.value : this.postedAt,
+      note: data.note.present ? data.note.value : this.note,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DistributionRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('docNumber: $docNumber, ')
+          ..write('branchId: $branchId, ')
+          ..write('distributedBy: $distributedBy, ')
+          ..write('status: $status, ')
+          ..write('postedAt: $postedAt, ')
+          ..write('note: $note')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    docNumber,
+    branchId,
+    distributedBy,
+    status,
+    postedAt,
+    note,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DistributionRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.docNumber == this.docNumber &&
+          other.branchId == this.branchId &&
+          other.distributedBy == this.distributedBy &&
+          other.status == this.status &&
+          other.postedAt == this.postedAt &&
+          other.note == this.note);
+}
+
+class DistributionsCompanion extends UpdateCompanion<DistributionRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<String> docNumber;
+  final Value<String> branchId;
+  final Value<String> distributedBy;
+  final Value<DistributionStatus> status;
+  final Value<DateTime?> postedAt;
+  final Value<String?> note;
+  final Value<int> rowid;
+  const DistributionsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.docNumber = const Value.absent(),
+    this.branchId = const Value.absent(),
+    this.distributedBy = const Value.absent(),
+    this.status = const Value.absent(),
+    this.postedAt = const Value.absent(),
+    this.note = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DistributionsCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String docNumber,
+    required String branchId,
+    required String distributedBy,
+    this.status = const Value.absent(),
+    this.postedAt = const Value.absent(),
+    this.note = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : docNumber = Value(docNumber),
+       branchId = Value(branchId),
+       distributedBy = Value(distributedBy);
+  static Insertable<DistributionRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? docNumber,
+    Expression<String>? branchId,
+    Expression<String>? distributedBy,
+    Expression<String>? status,
+    Expression<DateTime>? postedAt,
+    Expression<String>? note,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (docNumber != null) 'doc_number': docNumber,
+      if (branchId != null) 'branch_id': branchId,
+      if (distributedBy != null) 'distributed_by': distributedBy,
+      if (status != null) 'status': status,
+      if (postedAt != null) 'posted_at': postedAt,
+      if (note != null) 'note': note,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DistributionsCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<String>? docNumber,
+    Value<String>? branchId,
+    Value<String>? distributedBy,
+    Value<DistributionStatus>? status,
+    Value<DateTime?>? postedAt,
+    Value<String?>? note,
+    Value<int>? rowid,
+  }) {
+    return DistributionsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      docNumber: docNumber ?? this.docNumber,
+      branchId: branchId ?? this.branchId,
+      distributedBy: distributedBy ?? this.distributedBy,
+      status: status ?? this.status,
+      postedAt: postedAt ?? this.postedAt,
+      note: note ?? this.note,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $DistributionsTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (docNumber.present) {
+      map['doc_number'] = Variable<String>(docNumber.value);
+    }
+    if (branchId.present) {
+      map['branch_id'] = Variable<String>(branchId.value);
+    }
+    if (distributedBy.present) {
+      map['distributed_by'] = Variable<String>(distributedBy.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(
+        $DistributionsTable.$converterstatus.toSql(status.value),
+      );
+    }
+    if (postedAt.present) {
+      map['posted_at'] = Variable<DateTime>(postedAt.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DistributionsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('docNumber: $docNumber, ')
+          ..write('branchId: $branchId, ')
+          ..write('distributedBy: $distributedBy, ')
+          ..write('status: $status, ')
+          ..write('postedAt: $postedAt, ')
+          ..write('note: $note, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DistributionLinesTable extends DistributionLines
+    with TableInfo<$DistributionLinesTable, DistributionLineRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DistributionLinesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>($DistributionLinesTable.$convertersyncStatus);
+  static const VerificationMeta _distributionIdMeta = const VerificationMeta(
+    'distributionId',
+  );
+  @override
+  late final GeneratedColumn<String> distributionId = GeneratedColumn<String>(
+    'distribution_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES distributions (id)',
+    ),
+  );
+  static const VerificationMeta _roomIdMeta = const VerificationMeta('roomId');
+  @override
+  late final GeneratedColumn<String> roomId = GeneratedColumn<String>(
+    'room_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES rooms (id)',
+    ),
+  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+    'item_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES items (id)',
+    ),
+  );
+  static const VerificationMeta _batchIdMeta = const VerificationMeta(
+    'batchId',
+  );
+  @override
+  late final GeneratedColumn<String> batchId = GeneratedColumn<String>(
+    'batch_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES item_batches (id)',
+    ),
+  );
+  static const VerificationMeta _qtyMeta = const VerificationMeta('qty');
+  @override
+  late final GeneratedColumn<int> qty = GeneratedColumn<int>(
+    'qty',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fefoOverrideReasonMeta =
+      const VerificationMeta('fefoOverrideReason');
+  @override
+  late final GeneratedColumn<String> fefoOverrideReason =
+      GeneratedColumn<String>(
+        'fefo_override_reason',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    distributionId,
+    roomId,
+    itemId,
+    batchId,
+    qty,
+    fefoOverrideReason,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'distribution_lines';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DistributionLineRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('distribution_id')) {
+      context.handle(
+        _distributionIdMeta,
+        distributionId.isAcceptableOrUnknown(
+          data['distribution_id']!,
+          _distributionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_distributionIdMeta);
+    }
+    if (data.containsKey('room_id')) {
+      context.handle(
+        _roomIdMeta,
+        roomId.isAcceptableOrUnknown(data['room_id']!, _roomIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_roomIdMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('batch_id')) {
+      context.handle(
+        _batchIdMeta,
+        batchId.isAcceptableOrUnknown(data['batch_id']!, _batchIdMeta),
+      );
+    }
+    if (data.containsKey('qty')) {
+      context.handle(
+        _qtyMeta,
+        qty.isAcceptableOrUnknown(data['qty']!, _qtyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_qtyMeta);
+    }
+    if (data.containsKey('fefo_override_reason')) {
+      context.handle(
+        _fefoOverrideReasonMeta,
+        fefoOverrideReason.isAcceptableOrUnknown(
+          data['fefo_override_reason']!,
+          _fefoOverrideReasonMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DistributionLineRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DistributionLineRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $DistributionLinesTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      distributionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}distribution_id'],
+      )!,
+      roomId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}room_id'],
+      )!,
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}item_id'],
+      )!,
+      batchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}batch_id'],
+      ),
+      qty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}qty'],
+      )!,
+      fefoOverrideReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fefo_override_reason'],
+      ),
+    );
+  }
+
+  @override
+  $DistributionLinesTable createAlias(String alias) {
+    return $DistributionLinesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+}
+
+class DistributionLineRow extends DataClass
+    implements Insertable<DistributionLineRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+  final String distributionId;
+
+  /// The destination room. Must belong to the header's branch (G-T1) — a
+  /// cross-table rule SQLite cannot express, enforced by the use cases and
+  /// revalidated inside the posting transaction.
+  final String roomId;
+  final String itemId;
+
+  /// The batch leaving the store. NULL, and only NULL, for an item without expiry
+  /// (G-E2); the use case enforces both directions because the rule depends on
+  /// `items.has_expiry`, which this table cannot read.
+  final String? batchId;
+
+  /// Distributed quantity in **milli-units** (Q-3). Strictly positive: a
+  /// distribution of nothing is not a line, and the ledger records changes rather
+  /// than confirmations (G-A1).
+  final int qty;
+
+  /// Why a batch younger than the FEFO suggestion was chosen (G-E3).
+  ///
+  /// NULL when the selection follows FEFO, which is the overwhelmingly common
+  /// case. Whether a reason is *required* depends on the batches the store holds
+  /// right now, which is not a fact this table can see — so the domain decides it
+  /// (`DistributionFefoPolicy`) and re-decides it inside the posting transaction
+  /// against fresh balances.
+  final String? fefoOverrideReason;
+  const DistributionLineRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.distributionId,
+    required this.roomId,
+    required this.itemId,
+    this.batchId,
+    required this.qty,
+    this.fefoOverrideReason,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $DistributionLinesTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    map['distribution_id'] = Variable<String>(distributionId);
+    map['room_id'] = Variable<String>(roomId);
+    map['item_id'] = Variable<String>(itemId);
+    if (!nullToAbsent || batchId != null) {
+      map['batch_id'] = Variable<String>(batchId);
+    }
+    map['qty'] = Variable<int>(qty);
+    if (!nullToAbsent || fefoOverrideReason != null) {
+      map['fefo_override_reason'] = Variable<String>(fefoOverrideReason);
+    }
+    return map;
+  }
+
+  DistributionLinesCompanion toCompanion(bool nullToAbsent) {
+    return DistributionLinesCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      distributionId: Value(distributionId),
+      roomId: Value(roomId),
+      itemId: Value(itemId),
+      batchId: batchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(batchId),
+      qty: Value(qty),
+      fefoOverrideReason: fefoOverrideReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fefoOverrideReason),
+    );
+  }
+
+  factory DistributionLineRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DistributionLineRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      distributionId: serializer.fromJson<String>(json['distributionId']),
+      roomId: serializer.fromJson<String>(json['roomId']),
+      itemId: serializer.fromJson<String>(json['itemId']),
+      batchId: serializer.fromJson<String?>(json['batchId']),
+      qty: serializer.fromJson<int>(json['qty']),
+      fefoOverrideReason: serializer.fromJson<String?>(
+        json['fefoOverrideReason'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'distributionId': serializer.toJson<String>(distributionId),
+      'roomId': serializer.toJson<String>(roomId),
+      'itemId': serializer.toJson<String>(itemId),
+      'batchId': serializer.toJson<String?>(batchId),
+      'qty': serializer.toJson<int>(qty),
+      'fefoOverrideReason': serializer.toJson<String?>(fefoOverrideReason),
+    };
+  }
+
+  DistributionLineRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    String? distributionId,
+    String? roomId,
+    String? itemId,
+    Value<String?> batchId = const Value.absent(),
+    int? qty,
+    Value<String?> fefoOverrideReason = const Value.absent(),
+  }) => DistributionLineRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    distributionId: distributionId ?? this.distributionId,
+    roomId: roomId ?? this.roomId,
+    itemId: itemId ?? this.itemId,
+    batchId: batchId.present ? batchId.value : this.batchId,
+    qty: qty ?? this.qty,
+    fefoOverrideReason: fefoOverrideReason.present
+        ? fefoOverrideReason.value
+        : this.fefoOverrideReason,
+  );
+  DistributionLineRow copyWithCompanion(DistributionLinesCompanion data) {
+    return DistributionLineRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      distributionId: data.distributionId.present
+          ? data.distributionId.value
+          : this.distributionId,
+      roomId: data.roomId.present ? data.roomId.value : this.roomId,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      batchId: data.batchId.present ? data.batchId.value : this.batchId,
+      qty: data.qty.present ? data.qty.value : this.qty,
+      fefoOverrideReason: data.fefoOverrideReason.present
+          ? data.fefoOverrideReason.value
+          : this.fefoOverrideReason,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DistributionLineRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('distributionId: $distributionId, ')
+          ..write('roomId: $roomId, ')
+          ..write('itemId: $itemId, ')
+          ..write('batchId: $batchId, ')
+          ..write('qty: $qty, ')
+          ..write('fefoOverrideReason: $fefoOverrideReason')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    distributionId,
+    roomId,
+    itemId,
+    batchId,
+    qty,
+    fefoOverrideReason,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DistributionLineRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.distributionId == this.distributionId &&
+          other.roomId == this.roomId &&
+          other.itemId == this.itemId &&
+          other.batchId == this.batchId &&
+          other.qty == this.qty &&
+          other.fefoOverrideReason == this.fefoOverrideReason);
+}
+
+class DistributionLinesCompanion extends UpdateCompanion<DistributionLineRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<String> distributionId;
+  final Value<String> roomId;
+  final Value<String> itemId;
+  final Value<String?> batchId;
+  final Value<int> qty;
+  final Value<String?> fefoOverrideReason;
+  final Value<int> rowid;
+  const DistributionLinesCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.distributionId = const Value.absent(),
+    this.roomId = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.batchId = const Value.absent(),
+    this.qty = const Value.absent(),
+    this.fefoOverrideReason = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DistributionLinesCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String distributionId,
+    required String roomId,
+    required String itemId,
+    this.batchId = const Value.absent(),
+    required int qty,
+    this.fefoOverrideReason = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : distributionId = Value(distributionId),
+       roomId = Value(roomId),
+       itemId = Value(itemId),
+       qty = Value(qty);
+  static Insertable<DistributionLineRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? distributionId,
+    Expression<String>? roomId,
+    Expression<String>? itemId,
+    Expression<String>? batchId,
+    Expression<int>? qty,
+    Expression<String>? fefoOverrideReason,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (distributionId != null) 'distribution_id': distributionId,
+      if (roomId != null) 'room_id': roomId,
+      if (itemId != null) 'item_id': itemId,
+      if (batchId != null) 'batch_id': batchId,
+      if (qty != null) 'qty': qty,
+      if (fefoOverrideReason != null)
+        'fefo_override_reason': fefoOverrideReason,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DistributionLinesCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<String>? distributionId,
+    Value<String>? roomId,
+    Value<String>? itemId,
+    Value<String?>? batchId,
+    Value<int>? qty,
+    Value<String?>? fefoOverrideReason,
+    Value<int>? rowid,
+  }) {
+    return DistributionLinesCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      distributionId: distributionId ?? this.distributionId,
+      roomId: roomId ?? this.roomId,
+      itemId: itemId ?? this.itemId,
+      batchId: batchId ?? this.batchId,
+      qty: qty ?? this.qty,
+      fefoOverrideReason: fefoOverrideReason ?? this.fefoOverrideReason,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $DistributionLinesTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (distributionId.present) {
+      map['distribution_id'] = Variable<String>(distributionId.value);
+    }
+    if (roomId.present) {
+      map['room_id'] = Variable<String>(roomId.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (batchId.present) {
+      map['batch_id'] = Variable<String>(batchId.value);
+    }
+    if (qty.present) {
+      map['qty'] = Variable<int>(qty.value);
+    }
+    if (fefoOverrideReason.present) {
+      map['fefo_override_reason'] = Variable<String>(fefoOverrideReason.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DistributionLinesCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('distributionId: $distributionId, ')
+          ..write('roomId: $roomId, ')
+          ..write('itemId: $itemId, ')
+          ..write('batchId: $batchId, ')
+          ..write('qty: $qty, ')
+          ..write('fefoOverrideReason: $fefoOverrideReason, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   late final $BranchesTable branches = $BranchesTable(this);
@@ -12472,6 +13854,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $GoodReceiptLinesTable goodReceiptLines = $GoodReceiptLinesTable(
     this,
   );
+  late final $DistributionsTable distributions = $DistributionsTable(this);
+  late final $DistributionLinesTable distributionLines =
+      $DistributionLinesTable(this);
   late final Index idxStockBalancesBatched = Index(
     'idx_stock_balances_batched',
     'CREATE UNIQUE INDEX idx_stock_balances_batched ON stock_balances (location_id, item_id, batch_id) WHERE batch_id IS NOT NULL',
@@ -12656,6 +14041,50 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_good_receipt_lines_unique',
     'CREATE UNIQUE INDEX idx_good_receipt_lines_unique ON good_receipt_lines (gr_id, do_line_id)',
   );
+  late final Index idxDistributionsBranchStatus = Index(
+    'idx_distributions_branch_status',
+    'CREATE INDEX idx_distributions_branch_status ON distributions (branch_id, status)',
+  );
+  late final Index idxDistributionsDistributedByStatus = Index(
+    'idx_distributions_distributed_by_status',
+    'CREATE INDEX idx_distributions_distributed_by_status ON distributions (distributed_by, status)',
+  );
+  late final Index idxDistributionsCreatedAt = Index(
+    'idx_distributions_created_at',
+    'CREATE INDEX idx_distributions_created_at ON distributions (created_at)',
+  );
+  late final Index idxDistributionsPostedAt = Index(
+    'idx_distributions_posted_at',
+    'CREATE INDEX idx_distributions_posted_at ON distributions (posted_at)',
+  );
+  late final Index idxDistributionsDocNumber = Index(
+    'idx_distributions_doc_number',
+    'CREATE UNIQUE INDEX idx_distributions_doc_number ON distributions (doc_number) WHERE deleted_at IS NULL',
+  );
+  late final Index idxDistributionLinesDistribution = Index(
+    'idx_distribution_lines_distribution',
+    'CREATE INDEX idx_distribution_lines_distribution ON distribution_lines (distribution_id)',
+  );
+  late final Index idxDistributionLinesRoom = Index(
+    'idx_distribution_lines_room',
+    'CREATE INDEX idx_distribution_lines_room ON distribution_lines (room_id)',
+  );
+  late final Index idxDistributionLinesItem = Index(
+    'idx_distribution_lines_item',
+    'CREATE INDEX idx_distribution_lines_item ON distribution_lines (item_id)',
+  );
+  late final Index idxDistributionLinesBatch = Index(
+    'idx_distribution_lines_batch',
+    'CREATE INDEX idx_distribution_lines_batch ON distribution_lines (batch_id)',
+  );
+  late final Index idxDistributionLinesBatched = Index(
+    'idx_distribution_lines_batched',
+    'CREATE UNIQUE INDEX idx_distribution_lines_batched ON distribution_lines (distribution_id, room_id, item_id, batch_id) WHERE batch_id IS NOT NULL AND deleted_at IS NULL',
+  );
+  late final Index idxDistributionLinesUnbatched = Index(
+    'idx_distribution_lines_unbatched',
+    'CREATE UNIQUE INDEX idx_distribution_lines_unbatched ON distribution_lines (distribution_id, room_id, item_id) WHERE batch_id IS NULL AND deleted_at IS NULL',
+  );
   late final MasterDataDao masterDataDao = MasterDataDao(this as AppDatabase);
   late final InventoryDao inventoryDao = InventoryDao(this as AppDatabase);
   late final OpnameDao opnameDao = OpnameDao(this as AppDatabase);
@@ -12666,6 +14095,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this as AppDatabase,
   );
   late final GoodReceiptDao goodReceiptDao = GoodReceiptDao(
+    this as AppDatabase,
+  );
+  late final DistributionDao distributionDao = DistributionDao(
     this as AppDatabase,
   );
   @override
@@ -12691,6 +14123,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     deliveryOrderLines,
     goodReceipts,
     goodReceiptLines,
+    distributions,
+    distributionLines,
     idxStockBalancesBatched,
     idxStockBalancesUnbatched,
     idxStockMovementsItem,
@@ -12737,6 +14171,17 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxGoodReceiptLinesBatch,
     idxGoodReceiptLinesStatus,
     idxGoodReceiptLinesUnique,
+    idxDistributionsBranchStatus,
+    idxDistributionsDistributedByStatus,
+    idxDistributionsCreatedAt,
+    idxDistributionsPostedAt,
+    idxDistributionsDocNumber,
+    idxDistributionLinesDistribution,
+    idxDistributionLinesRoom,
+    idxDistributionLinesItem,
+    idxDistributionLinesBatch,
+    idxDistributionLinesBatched,
+    idxDistributionLinesUnbatched,
   ];
   @override
   DriftDatabaseOptions get options =>

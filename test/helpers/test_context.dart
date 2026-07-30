@@ -13,6 +13,16 @@ import 'package:aish_warehouse/features/delivery/domain/use_cases/create_deliver
 import 'package:aish_warehouse/features/delivery/domain/use_cases/remove_delivery_order_line_use_case.dart';
 import 'package:aish_warehouse/features/delivery/domain/use_cases/ship_delivery_order_use_case.dart';
 import 'package:aish_warehouse/features/delivery/domain/use_cases/update_delivery_order_line_use_case.dart';
+import 'package:aish_warehouse/features/distribution/data/repositories/drift_distribution_repository.dart';
+import 'package:aish_warehouse/features/distribution/domain/models/distribution_models.dart';
+import 'package:aish_warehouse/features/distribution/domain/repositories/distribution_repository.dart';
+import 'package:aish_warehouse/features/distribution/domain/services/distribution_branch_stock_reader.dart';
+import 'package:aish_warehouse/features/distribution/domain/use_cases/add_distribution_item_use_case.dart';
+import 'package:aish_warehouse/features/distribution/domain/use_cases/add_manual_distribution_allocation_use_case.dart';
+import 'package:aish_warehouse/features/distribution/domain/use_cases/create_distribution_use_case.dart';
+import 'package:aish_warehouse/features/distribution/domain/use_cases/post_distribution_use_case.dart';
+import 'package:aish_warehouse/features/distribution/domain/use_cases/remove_distribution_line_use_case.dart';
+import 'package:aish_warehouse/features/distribution/domain/use_cases/update_distribution_line_use_case.dart';
 import 'package:aish_warehouse/features/good_receipt/data/repositories/drift_good_receipt_repository.dart';
 import 'package:aish_warehouse/features/good_receipt/domain/models/good_receipt_models.dart';
 import 'package:aish_warehouse/features/good_receipt/domain/repositories/good_receipt_repository.dart';
@@ -59,6 +69,7 @@ class TestContext {
     required this.requests,
     required this.deliveries,
     required this.receipts,
+    required this.distributions,
     required this.posting,
     required this.clock,
   });
@@ -76,6 +87,7 @@ class TestContext {
     );
     final deliveries = DriftDeliveryOrderRepository(database.deliveryOrderDao);
     final receipts = DriftGoodReceiptRepository(database.goodReceiptDao);
+    final distributions = DriftDistributionRepository(database.distributionDao);
     return TestContext._(
       database: database,
       master: master,
@@ -84,6 +96,7 @@ class TestContext {
       requests: requests,
       deliveries: deliveries,
       receipts: receipts,
+      distributions: distributions,
       clock: clock,
       posting: StockPostingService(
         inventory: inventory,
@@ -101,6 +114,7 @@ class TestContext {
   final PurchaseRequestRepository requests;
   final DeliveryOrderRepository deliveries;
   final GoodReceiptRepository receipts;
+  final DistributionRepository distributions;
   final StockPostingService posting;
 
   /// The injected UTC clock, or `null` when the real one is in use.
@@ -357,6 +371,79 @@ class TestContext {
     );
   }
 
+  // --- Distribusi (Milestone 6) ---------------------------------------------
+  //
+  // Every factory takes an optional clock for the same reason the delivery ones do:
+  // G-E4 is a function of the current operational day, and a batch that is valid
+  // today is refused tomorrow. Omitting it falls back to the context's clock, and
+  // omitting that too uses the real one.
+
+  DistributionBranchStockReader get distributionStock =>
+      DistributionBranchStockReader(inventory);
+
+  CreateDistributionUseCase createDistribution({
+    DateTime Function()? clock,
+    String Function()? idGenerator,
+  }) => CreateDistributionUseCase(
+    distributions: distributions,
+    master: master,
+    clock: clock ?? this.clock,
+    idGenerator: idGenerator,
+  );
+
+  AddDistributionItemUseCase addDistributionItem({
+    DateTime Function()? clock,
+  }) => AddDistributionItemUseCase(
+    distributions: distributions,
+    master: master,
+    clock: clock ?? this.clock,
+  );
+
+  AddManualDistributionAllocationUseCase addManualDistributionAllocation({
+    DateTime Function()? clock,
+  }) => AddManualDistributionAllocationUseCase(
+    distributions: distributions,
+    master: master,
+    clock: clock ?? this.clock,
+  );
+
+  UpdateDistributionLineUseCase updateDistributionLine({
+    DateTime Function()? clock,
+  }) => UpdateDistributionLineUseCase(
+    distributions: distributions,
+    master: master,
+    clock: clock ?? this.clock,
+  );
+
+  RemoveDistributionLineUseCase get removeDistributionLine =>
+      RemoveDistributionLineUseCase(
+        distributions: distributions,
+        master: master,
+      );
+
+  /// The post use case, with both clocks pointing at the same instant.
+  ///
+  /// [posting] is injectable so an atomicity test can hand it a service that fails on
+  /// a chosen line and then assert that *nothing* was written — the rollback
+  /// assertion G-T4 exists for.
+  PostDistributionUseCase postDistribution({
+    DateTime Function()? clock,
+    StockPostingService? posting,
+  }) {
+    final effectiveClock = clock ?? this.clock;
+    return PostDistributionUseCase(
+      distributions: distributions,
+      master: master,
+      posting:
+          posting ??
+          (effectiveClock == null
+              ? this.posting
+              : postingWithClock(effectiveClock)),
+      stock: distributionStock,
+      clock: effectiveClock,
+    );
+  }
+
   /// A posting service on the same database but with a different notion of
   /// "now", used to test expiry rules without waiting.
   StockPostingService postingWithClock(DateTime Function() clock) =>
@@ -386,6 +473,7 @@ class TestContext {
     requests: requests,
     deliveries: deliveries,
     receipts: receipts,
+    distributions: distributions,
     isDevelopmentBuild: true,
   );
 
@@ -398,6 +486,7 @@ class TestContext {
     requests: requests,
     deliveries: deliveries,
     receipts: receipts,
+    distributions: distributions,
     isDevelopmentBuild: false,
   );
 
@@ -424,6 +513,38 @@ class TestContext {
     'UPDATE $table SET deleted_at = ? WHERE id = ?;',
     [DateTime.utc(2026, 7, 30).toIso8601String(), id],
   );
+
+  /// Inserts a second stock location of the same type for the same branch or room.
+  ///
+  /// Deliberately raw SQL: `MasterDataRepository.ensureLocation` is idempotent on
+  /// `(type, branch_id, room_id)`, so the production API *cannot* produce a duplicate —
+  /// which is exactly why the ambiguity failures need a helper to be reachable at all.
+  /// A back-office import, a bad sync payload or a hand-edited database can produce
+  /// this state, and §14 says a distribution must then refuse rather than guess which
+  /// location the goods moved through. Returns the new row's id.
+  Future<String> insertDuplicateLocation({
+    required String id,
+    required String type,
+    required String name,
+    String? branchId,
+    String? roomId,
+  }) async {
+    await database.customStatement(
+      'INSERT INTO stock_locations (id, created_at, updated_at, sync_status, '
+      'type, branch_id, room_id, name) VALUES (?, ?, ?, ?, ?, ?, ?, ?);',
+      [
+        id,
+        DateTime.utc(2026, 7, 30).toIso8601String(),
+        DateTime.utc(2026, 7, 30).toIso8601String(),
+        'pending',
+        type,
+        branchId,
+        roomId,
+        name,
+      ],
+    );
+    return id;
+  }
 
   /// Physically removes a row, simulating corruption rather than any supported
   /// operation.
@@ -735,6 +856,127 @@ class TestContext {
           },
         )
         .toList(growable: false);
+  }
+
+  // --- Distribusi raw reads, for rollback and atomicity assertions -----------
+  //
+  // All of these read the columns directly, so an assertion about a rolled-back
+  // transaction cannot be fooled by a cached repository read.
+
+  /// The stored status of one Distribusi.
+  Future<String> distributionStatusOf(String distributionId) async {
+    final row = await database
+        .customSelect(
+          'SELECT status FROM distributions WHERE id = ?;',
+          variables: [Variable<String>(distributionId)],
+        )
+        .getSingle();
+    return row.read<String>('status');
+  }
+
+  /// One raw column of a Distribusi, for assertions about audit metadata.
+  Future<String?> distributionColumn(
+    String distributionId,
+    String column,
+  ) async {
+    final row = await database
+        .customSelect(
+          'SELECT $column AS value FROM distributions WHERE id = ?;',
+          variables: [Variable<String>(distributionId)],
+        )
+        .getSingle();
+    return row.read<String?>('value');
+  }
+
+  /// Live line count of one distribution, read without any join.
+  Future<int> distributionLineCount(String distributionId) async {
+    final row = await database
+        .customSelect(
+          'SELECT COUNT(*) AS c FROM distribution_lines '
+          'WHERE distribution_id = ? AND deleted_at IS NULL;',
+          variables: [Variable<String>(distributionId)],
+        )
+        .getSingle();
+    return row.read<int>('c');
+  }
+
+  /// Raw line rows of one distribution, keyed by line id.
+  Future<Map<String, Map<String, Object?>>> distributionLineRows(
+    String distributionId,
+  ) async {
+    final rows = await database
+        .customSelect(
+          'SELECT id, room_id, item_id, batch_id, qty, fefo_override_reason '
+          'FROM distribution_lines '
+          'WHERE distribution_id = ? AND deleted_at IS NULL;',
+          variables: [Variable<String>(distributionId)],
+        )
+        .get();
+    return {
+      for (final row in rows)
+        row.read<String>('id'): <String, Object?>{
+          'room_id': row.read<String>('room_id'),
+          'item_id': row.read<String>('item_id'),
+          'batch_id': row.read<String?>('batch_id'),
+          'qty': row.read<int>('qty'),
+          'fefo_override_reason': row.read<String?>('fefo_override_reason'),
+        },
+    };
+  }
+
+  /// Ledger rows written against one Distribusi.
+  ///
+  /// The assertion behind every rollback test: a failed posting must leave **zero** of
+  /// these, whichever line it failed on (G-T4).
+  Future<int> distributionMovementCount(String distributionId) async {
+    final row = await database
+        .customSelect(
+          "SELECT COUNT(*) AS c FROM stock_movements "
+          "WHERE ref_doc_type = 'DIST' AND ref_doc_id = ?;",
+          variables: [Variable<String>(distributionId)],
+        )
+        .getSingle();
+    return row.read<int>('c');
+  }
+
+  /// Every `distribution` movement of one document, as raw column values.
+  Future<List<Map<String, Object?>>> distributionMovements(
+    String distributionId,
+  ) async {
+    final rows = await database
+        .customSelect(
+          'SELECT item_id, batch_id, from_location_id, to_location_id, qty, '
+          'movement_type, ref_doc_type, ref_doc_id, actor_user_id '
+          "FROM stock_movements WHERE ref_doc_type = 'DIST' AND ref_doc_id = ? "
+          'ORDER BY created_at, id;',
+          variables: [Variable<String>(distributionId)],
+        )
+        .get();
+    return rows
+        .map(
+          (row) => <String, Object?>{
+            'item_id': row.read<String>('item_id'),
+            'batch_id': row.read<String?>('batch_id'),
+            'from_location_id': row.read<String?>('from_location_id'),
+            'to_location_id': row.read<String?>('to_location_id'),
+            'qty': row.read<int>('qty'),
+            'movement_type': row.read<String>('movement_type'),
+            'ref_doc_type': row.read<String?>('ref_doc_type'),
+            'ref_doc_id': row.read<String?>('ref_doc_id'),
+            'actor_user_id': row.read<String>('actor_user_id'),
+          },
+        )
+        .toList(growable: false);
+  }
+
+  /// Total movement count across every document type, so a rollback test can assert
+  /// that a failed posting wrote nothing **anywhere** rather than only nothing under
+  /// its own reference.
+  Future<int> totalMovementCount() async {
+    final row = await database
+        .customSelect('SELECT COUNT(*) AS c FROM stock_movements;')
+        .getSingle();
+    return row.read<int>('c');
   }
 
   /// The stored status of one document, bypassing every Dart layer.
@@ -2180,3 +2422,484 @@ Future<void> checkEveryGoodReceiptLine(
     );
   }
 }
+
+// --- Distribusi helpers (Milestone 6) ---------------------------------------
+
+/// A branch whose *Gudang Cabang* is stocked and whose three rooms are ready to
+/// receive — the state every Distribusi test starts from.
+///
+/// The quantities are the interesting part, and each one exists to make a specific
+/// rule reachable:
+///
+/// | item          | expiry | branch store                                        |
+/// |---------------|--------|-----------------------------------------------------|
+/// | `simpleItem`  | no     | `10.5` — one balance, no batch (G-E2)               |
+/// | `batchItem`   | yes    | `2` old + `4` new + `3` expired                     |
+/// | `tieItem`     | yes    | `2` + `2`, same expiry date                         |
+/// | `emptyItem`   | no     | nothing at all                                      |
+///
+/// * `simpleItem` is the decimal, non-batch case: `10.5 box` across three rooms with
+///   no FEFO involved.
+/// * `batchItem` is the FEFO case. `oldBatch` expires in 10 days and holds only `2`,
+///   so a request for `3` **must** split across `oldBatch` and `newBatch` — and
+///   choosing `newBatch` while `oldBatch` still has stock is the override G-E3 demands
+///   a reason for. `expiredBatch` holds real stock that must never be distributable
+///   (G-E4) and must stay on the shelf for disposal (G-E7). The FEFO order is
+///   deliberately *not* the batch-number order, so an allocator that sorted by name
+///   would fail. `oldBatch` is also inside the default 30-day alert window, which is
+///   what the near-expiry badge is asserted against — without blocking anything.
+/// * `tieBatchA`/`tieBatchB` share an expiry date, which is the case a naive "diff
+///   against the canonical allocation" FEFO check gets wrong.
+/// * `emptyItem` is what the picker must **not** offer (§15).
+/// * `otherBranch` exists with its own room, store and branch head, so every G-T1
+///   refusal has something real to be refused against rather than a fabricated id.
+class DistributionFixture {
+  const DistributionFixture({
+    required this.branch,
+    required this.otherBranch,
+    required this.warehouse,
+    required this.branchStore,
+    required this.otherBranchStore,
+    required this.roomOne,
+    required this.roomTwo,
+    required this.roomThree,
+    required this.otherBranchRoom,
+    required this.locationOne,
+    required this.locationTwo,
+    required this.locationThree,
+    required this.otherBranchRoomLocation,
+    required this.branchHead,
+    required this.otherBranchHead,
+    required this.nurse,
+    required this.warehouseUser,
+    required this.superAdmin,
+    required this.category,
+    required this.otherCategory,
+    required this.simpleItem,
+    required this.batchItem,
+    required this.tieItem,
+    required this.emptyItem,
+    required this.oldBatch,
+    required this.newBatch,
+    required this.expiredBatch,
+    required this.tieBatchA,
+    required this.tieBatchB,
+  });
+
+  final MasterBranch branch;
+  final MasterBranch otherBranch;
+
+  final MasterLocation warehouse;
+  final MasterLocation branchStore;
+  final MasterLocation otherBranchStore;
+
+  final MasterRoom roomOne;
+  final MasterRoom roomTwo;
+  final MasterRoom roomThree;
+  final MasterRoom otherBranchRoom;
+
+  final MasterLocation locationOne;
+  final MasterLocation locationTwo;
+  final MasterLocation locationThree;
+  final MasterLocation otherBranchRoomLocation;
+
+  final MasterUser branchHead;
+  final MasterUser otherBranchHead;
+  final MasterUser nurse;
+  final MasterUser warehouseUser;
+  final MasterUser superAdmin;
+
+  final MasterCategory category;
+  final MasterCategory otherCategory;
+
+  final MasterItem simpleItem;
+  final MasterItem batchItem;
+  final MasterItem tieItem;
+  final MasterItem emptyItem;
+
+  /// Expires in 10 days and holds `2` — the batch FEFO must consume first, and the
+  /// one an override skips.
+  final MasterBatch oldBatch;
+
+  /// Expires in 200 days and holds `4`.
+  final MasterBatch newBatch;
+
+  /// Expired three days ago and still holds `3`. Never distributable (G-E4).
+  final MasterBatch expiredBatch;
+
+  final MasterBatch tieBatchA;
+  final MasterBatch tieBatchB;
+
+  /// The room location of one room, for balance assertions.
+  MasterLocation locationForRoom(String roomId) {
+    if (roomId == roomOne.id) return locationOne;
+    if (roomId == roomTwo.id) return locationTwo;
+    if (roomId == roomThree.id) return locationThree;
+    if (roomId == otherBranchRoom.id) return otherBranchRoomLocation;
+    throw StateError('Ruangan $roomId bukan bagian dari fixture.');
+  }
+}
+
+/// Builds [DistributionFixture] against the injected [nowUtc].
+///
+/// Branch-store stock is placed **through the ledger** — an inbound movement into the
+/// central warehouse, then a `good_receipt` transfer down to the branch store — never
+/// by writing `stock_balances` directly, which is the same rule the production code
+/// follows (G-A1). Both postings run on a clock 30 days before [nowUtc], so the
+/// expired batch can be stocked while it was still in date: a transfer refuses an
+/// expired batch (G-E4), and that is precisely the situation a distribution then has to
+/// block.
+Future<DistributionFixture> buildDistributionFixture(
+  TestContext context, {
+  required DateTime nowUtc,
+}) async {
+  final master = context.master;
+  final today = AppTimeZone.operationalDate(nowUtc);
+
+  final branch = await master.ensureBranch(
+    code: 'CAB-01',
+    name: 'Cabang Uji',
+    address: 'Jl. Uji No. 1',
+  );
+  final otherBranch = await master.ensureBranch(
+    code: 'CAB-02',
+    name: 'Cabang Lain',
+  );
+
+  final roomOne = await master.ensureRoom(
+    branchId: branch.id,
+    code: 'R1',
+    name: 'Ruang Dental 1',
+  );
+  final roomTwo = await master.ensureRoom(
+    branchId: branch.id,
+    code: 'R2',
+    name: 'Ruang Dental 2',
+  );
+  final roomThree = await master.ensureRoom(
+    branchId: branch.id,
+    code: 'R3',
+    name: 'Ruang Dental 3',
+  );
+  final otherBranchRoom = await master.ensureRoom(
+    branchId: otherBranch.id,
+    code: 'R1',
+    name: 'Ruang Dental 1 Cabang Lain',
+  );
+
+  final warehouse = await master.ensureLocation(
+    type: StockLocationType.warehouse,
+    name: 'Warehouse Pusat',
+  );
+  final branchStore = await master.ensureLocation(
+    type: StockLocationType.branchStore,
+    name: 'Gudang Cabang Uji',
+    branchId: branch.id,
+  );
+  final otherBranchStore = await master.ensureLocation(
+    type: StockLocationType.branchStore,
+    name: 'Gudang Cabang Lain',
+    branchId: otherBranch.id,
+  );
+  final locationOne = await master.ensureLocation(
+    type: StockLocationType.room,
+    name: roomOne.name,
+    branchId: branch.id,
+    roomId: roomOne.id,
+  );
+  final locationTwo = await master.ensureLocation(
+    type: StockLocationType.room,
+    name: roomTwo.name,
+    branchId: branch.id,
+    roomId: roomTwo.id,
+  );
+  final locationThree = await master.ensureLocation(
+    type: StockLocationType.room,
+    name: roomThree.name,
+    branchId: branch.id,
+    roomId: roomThree.id,
+  );
+  final otherBranchRoomLocation = await master.ensureLocation(
+    type: StockLocationType.room,
+    name: otherBranchRoom.name,
+    branchId: otherBranch.id,
+    roomId: otherBranchRoom.id,
+  );
+
+  final branchHead = await master.ensureUser(
+    email: 'kacab@test.local',
+    fullName: 'Kepala Cabang Uji',
+    role: UserRole.kepalaCabang,
+    branchId: branch.id,
+  );
+  final otherBranchHead = await master.ensureUser(
+    email: 'kacab2@test.local',
+    fullName: 'Kepala Cabang Lain',
+    role: UserRole.kepalaCabang,
+    branchId: otherBranch.id,
+  );
+  final nurse = await master.ensureUser(
+    email: 'perawat@test.local',
+    fullName: 'Perawat Uji',
+    role: UserRole.perawat,
+    branchId: branch.id,
+  );
+  final warehouseUser = await master.ensureUser(
+    email: 'warehouse@test.local',
+    fullName: 'Petugas Warehouse Uji',
+    role: UserRole.warehouse,
+  );
+  final superAdmin = await master.ensureUser(
+    email: 'admin@test.local',
+    fullName: 'Super Admin Uji',
+    role: UserRole.superAdmin,
+  );
+
+  final category = await master.ensureCategory('Alat Sekali Pakai');
+  final otherCategory = await master.ensureCategory('Obat');
+
+  final simpleItem = await master.ensureItem(
+    sku: 'DIST-0001',
+    name: 'Masker Bedah',
+    categoryId: category.id,
+    unit: 'box',
+    minStockRoom: 5,
+    minStockBranch: 20,
+    hasExpiry: false,
+  );
+  final batchItem = await master.ensureItem(
+    sku: 'DIST-0002',
+    name: 'Anestesi Lokal',
+    categoryId: otherCategory.id,
+    unit: 'ampul',
+    minStockRoom: 10,
+    minStockBranch: 40,
+    hasExpiry: true,
+  );
+  final tieItem = await master.ensureItem(
+    sku: 'DIST-0003',
+    name: 'Kasa Steril',
+    categoryId: category.id,
+    unit: 'roll',
+    minStockRoom: 4,
+    minStockBranch: 12,
+    hasExpiry: true,
+  );
+  final emptyItem = await master.ensureItem(
+    sku: 'DIST-0004',
+    name: 'Bonding Agent',
+    categoryId: otherCategory.id,
+    unit: 'botol',
+    minStockRoom: 3,
+    minStockBranch: 9,
+    hasExpiry: false,
+  );
+
+  // `expiry_alert_days` defaults to 30, so 10 days is inside the alert window and 200
+  // is comfortably outside it. The batch numbers deliberately run against the expiry
+  // order: `A-NEW` expires later than `B-OLD`.
+  final oldBatch = await master.ensureBatch(
+    itemId: batchItem.id,
+    batchNo: 'B-OLD',
+    expiryDate: DateOnly.addDays(today, 10),
+  );
+  final newBatch = await master.ensureBatch(
+    itemId: batchItem.id,
+    batchNo: 'A-NEW',
+    expiryDate: DateOnly.addDays(today, 200),
+  );
+  final expiredBatch = await master.ensureBatch(
+    itemId: batchItem.id,
+    batchNo: 'C-EXPIRED',
+    expiryDate: DateOnly.addDays(today, -3),
+  );
+  // Same expiry date, different batch numbers: the tie case.
+  final tieBatchA = await master.ensureBatch(
+    itemId: tieItem.id,
+    batchNo: 'T-A',
+    expiryDate: DateOnly.addDays(today, 100),
+  );
+  final tieBatchB = await master.ensureBatch(
+    itemId: tieItem.id,
+    batchNo: 'T-B',
+    expiryDate: DateOnly.addDays(today, 100),
+  );
+
+  // Inbound and transfer on a clock well before every expiry date, so the expired
+  // batch can be stocked while it was still valid.
+  final earlyPosting = context.postingWithClock(
+    () => nowUtc.subtract(const Duration(days: 30)),
+  );
+  Future<void> place(String itemId, String? batchId, String qty) async {
+    final amount = Quantity.parse(qty);
+    await earlyPosting.postInboundWarehouse(
+      itemId: itemId,
+      batchId: batchId,
+      toLocationId: warehouse.id,
+      qty: amount,
+      actorUserId: warehouseUser.id,
+      refDocType: RefDocType.seed,
+      refDocId: 'fixture-$itemId-${batchId ?? 'nobatch'}',
+      note: 'Saldo awal fixture',
+    );
+    await earlyPosting.postTransfer(
+      itemId: itemId,
+      batchId: batchId,
+      fromLocationId: warehouse.id,
+      toLocationId: branchStore.id,
+      qty: amount,
+      movementType: StockMovementType.goodReceipt,
+      actorUserId: warehouseUser.id,
+      refDocType: RefDocType.seed,
+      refDocId: 'fixture-gr-$itemId-${batchId ?? 'nobatch'}',
+      note: 'Penerimaan awal fixture',
+    );
+  }
+
+  await place(simpleItem.id, null, '10.5');
+  await place(batchItem.id, oldBatch.id, '2');
+  await place(batchItem.id, newBatch.id, '4');
+  await place(batchItem.id, expiredBatch.id, '3');
+  await place(tieItem.id, tieBatchA.id, '2');
+  await place(tieItem.id, tieBatchB.id, '2');
+  // `emptyItem` is deliberately left with no branch-store stock at all.
+
+  return DistributionFixture(
+    branch: branch,
+    otherBranch: otherBranch,
+    warehouse: warehouse,
+    branchStore: branchStore,
+    otherBranchStore: otherBranchStore,
+    roomOne: roomOne,
+    roomTwo: roomTwo,
+    roomThree: roomThree,
+    otherBranchRoom: otherBranchRoom,
+    locationOne: locationOne,
+    locationTwo: locationTwo,
+    locationThree: locationThree,
+    otherBranchRoomLocation: otherBranchRoomLocation,
+    branchHead: branchHead,
+    otherBranchHead: otherBranchHead,
+    nurse: nurse,
+    warehouseUser: warehouseUser,
+    superAdmin: superAdmin,
+    category: category,
+    otherCategory: otherCategory,
+    simpleItem: simpleItem,
+    batchItem: batchItem,
+    tieItem: tieItem,
+    emptyItem: emptyItem,
+    oldBatch: oldBatch,
+    newBatch: newBatch,
+    expiredBatch: expiredBatch,
+    tieBatchA: tieBatchA,
+    tieBatchB: tieBatchB,
+  );
+}
+
+/// Creates a `draft` distribution for the fixture's branch head and returns its id.
+Future<String> createDistributionDraft(
+  TestContext context,
+  DistributionFixture fixture, {
+  required DateTime nowUtc,
+  String? actorUserId,
+  String? note,
+}) async {
+  final distribution = await context
+      .createDistribution(clock: () => nowUtc)
+      .call(actorUserId: actorUserId ?? fixture.branchHead.id, note: note);
+  return distribution.id;
+}
+
+/// Adds one item to one room with FEFO choosing the batches.
+Future<DistributionAdditionResult> addDistributionItem(
+  TestContext context,
+  DistributionFixture fixture, {
+  required String distributionId,
+  required String roomId,
+  required String itemId,
+  required String qty,
+  required DateTime nowUtc,
+  String? actorUserId,
+}) => context
+    .addDistributionItem(clock: () => nowUtc)
+    .call(
+      actorUserId: actorUserId ?? fixture.branchHead.id,
+      distributionId: distributionId,
+      roomId: roomId,
+      itemId: itemId,
+      requestedQty: Quantity.parse(qty),
+    );
+
+/// Adds one hand-picked batch allocation.
+Future<DistributionAllocation> addManualDistributionAllocation(
+  TestContext context,
+  DistributionFixture fixture, {
+  required String distributionId,
+  required String roomId,
+  required String itemId,
+  String? batchId,
+  required String qty,
+  required DateTime nowUtc,
+  String? fefoOverrideReason,
+  String? actorUserId,
+}) => context
+    .addManualDistributionAllocation(clock: () => nowUtc)
+    .call(
+      actorUserId: actorUserId ?? fixture.branchHead.id,
+      distributionId: distributionId,
+      roomId: roomId,
+      itemId: itemId,
+      batchId: batchId,
+      qty: Quantity.parse(qty),
+      fefoOverrideReason: fefoOverrideReason,
+    );
+
+/// `room|item|batch → distribution_lines.id` for one document.
+///
+/// The same grain as the two partial unique indexes, so a test addresses a line the
+/// way the database identifies it.
+Future<Map<String, String>> distributionLineIdsByPosition(
+  TestContext context,
+  String distributionId,
+) async {
+  final rows = await context.database
+      .customSelect(
+        'SELECT id, room_id, item_id, batch_id FROM distribution_lines '
+        'WHERE distribution_id = ? AND deleted_at IS NULL;',
+        variables: [Variable<String>(distributionId)],
+      )
+      .get();
+  return {
+    for (final row in rows)
+      '${row.read<String>('room_id')}|${row.read<String>('item_id')}|'
+          '${row.read<String?>('batch_id') ?? ''}': row.read<String>(
+        'id',
+      ),
+  };
+}
+
+/// The branch store's balance of one position, read through the repository.
+Future<Quantity> branchStoreBalance(
+  TestContext context,
+  DistributionFixture fixture, {
+  required String itemId,
+  String? batchId,
+}) => context.inventory.balanceQty(
+  locationId: fixture.branchStore.id,
+  itemId: itemId,
+  batchId: batchId,
+);
+
+/// One room's balance of one position.
+Future<Quantity> roomBalance(
+  TestContext context,
+  DistributionFixture fixture, {
+  required String roomId,
+  required String itemId,
+  String? batchId,
+}) => context.inventory.balanceQty(
+  locationId: fixture.locationForRoom(roomId).id,
+  itemId: itemId,
+  batchId: batchId,
+);

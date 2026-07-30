@@ -4,6 +4,7 @@ import '../enums/app_enums.dart';
 import '../quantity/quantity.dart';
 import 'converters/enum_converters.dart';
 import 'daos/delivery_order_dao.dart';
+import 'daos/distribution_dao.dart';
 import 'daos/good_receipt_dao.dart';
 import 'daos/inventory_dao.dart';
 import 'daos/master_data_dao.dart';
@@ -11,6 +12,7 @@ import 'daos/opname_dao.dart';
 import 'daos/purchase_request_dao.dart';
 import 'tables/base_columns.dart';
 import 'tables/delivery_tables.dart';
+import 'tables/distribution_tables.dart';
 import 'tables/good_receipt_tables.dart';
 import 'tables/inventory_tables.dart';
 import 'tables/master_tables.dart';
@@ -39,6 +41,8 @@ part 'app_database.g.dart';
     DeliveryOrderLines,
     GoodReceipts,
     GoodReceiptLines,
+    Distributions,
+    DistributionLines,
   ],
   daos: [
     MasterDataDao,
@@ -47,6 +51,7 @@ part 'app_database.g.dart';
     PurchaseRequestDao,
     DeliveryOrderDao,
     GoodReceiptDao,
+    DistributionDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -64,8 +69,9 @@ class AppDatabase extends _$AppDatabase {
   /// * v6 — Milestone 4, Delivery Order (`delivery_orders`,
   ///   `delivery_order_lines`).
   /// * v7 — Milestone 5, Good Receipt (`good_receipts`, `good_receipt_lines`).
+  /// * v8 — Milestone 6, Distribusi (`distributions`, `distribution_lines`).
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -203,6 +209,38 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(goodReceipts);
         await m.createTable(goodReceiptLines);
         for (final statement in _v7GoodReceiptIndexes) {
+          await customStatement(statement);
+        }
+      }
+      if (from < 8) {
+        // Milestone 6, purely additive in the sense the `from < 3` block
+        // established: two new tables and their indexes, and not one statement
+        // touching an existing column.
+        //
+        // The Distribusi is the document that moves stock *within* a branch — the
+        // branch store down, a room up (spec §2.5) — and this step still does not
+        // migrate stock: the posting happens when a document is posted, at runtime,
+        // not when the schema is upgraded. So ledger quantities keep the scaling the
+        // `from < 2` block gave them, `stock_opnames` keeps the shape the `from < 4`
+        // rebuild left it in, and every Purchase Request, Delivery Order and Good
+        // Receipt row is untouched.
+        //
+        // In particular this step invents no distributions for the stock already
+        // sitting in rooms. How that stock got there is whatever the ledger already
+        // records — an opname adjustment, a seeded opening balance — and writing
+        // documents to explain it would be a migration asserting business events
+        // that never happened.
+        //
+        // It also has to leave `stock_opnames` alone for the second reason the
+        // `from < 5` block spells out: the `from < 4` block reads the *current* Dart
+        // definition of that table through `alterTable`, so a v8 that changed its
+        // shape would make a v3 → v8 upgrade land on the v8 shape at step 4 and then
+        // apply steps 5, 6, 7 and 8 on top. Distribusi only references `branches`,
+        // `rooms`, `users`, `items` and `item_batches` by foreign key, so that trap
+        // stays shut.
+        await m.createTable(distributions);
+        await m.createTable(distributionLines);
+        for (final statement in _v8DistributionIndexes) {
           await customStatement(statement);
         }
       }
@@ -388,5 +426,54 @@ class AppDatabase extends _$AppDatabase {
         'ON good_receipt_lines (line_status);',
     'CREATE UNIQUE INDEX IF NOT EXISTS idx_good_receipt_lines_unique '
         'ON good_receipt_lines (gr_id, do_line_id);',
+  ];
+
+  /// The Distribusi indexes **exactly as schema v8 defined them**.
+  ///
+  /// Frozen as literal SQL for the reason [_v3OpnameIndexes] spells out: a
+  /// migration step must keep doing what it did the day it shipped, so this list
+  /// must not be derived from `allSchemaEntities` — that getter always describes the
+  /// current schema, and a v9 index added to one of these tables would silently
+  /// change what the `from < 8` block creates.
+  ///
+  /// The two partial unique indexes on `distribution_lines` are the load-bearing
+  /// ones: they are what stops the same `(room, item, batch)` position appearing
+  /// twice on one document, which would take double the quantity out of the branch
+  /// store while every per-line check still passed. `deleted_at IS NULL` is what
+  /// lets a line removed from a draft be added back afterwards, and the split
+  /// between the batched and unbatched shapes exists because SQLite treats every
+  /// NULL as distinct — one index over `(…, batch_id)` would let an item without
+  /// expiry be added to the same room any number of times.
+  ///
+  /// There is deliberately **no** unique index involving `branch_id` and `room_id`:
+  /// one document targets several rooms by design (G-T3), and the rule that every
+  /// room belongs to the header's branch is a cross-table one SQLite cannot express
+  /// at all — it lives in the use cases and is revalidated inside the posting
+  /// transaction.
+  static const List<String> _v8DistributionIndexes = [
+    'CREATE INDEX IF NOT EXISTS idx_distributions_branch_status '
+        'ON distributions (branch_id, status);',
+    'CREATE INDEX IF NOT EXISTS idx_distributions_distributed_by_status '
+        'ON distributions (distributed_by, status);',
+    'CREATE INDEX IF NOT EXISTS idx_distributions_created_at '
+        'ON distributions (created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_distributions_posted_at '
+        'ON distributions (posted_at);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_distributions_doc_number '
+        'ON distributions (doc_number) WHERE deleted_at IS NULL;',
+    'CREATE INDEX IF NOT EXISTS idx_distribution_lines_distribution '
+        'ON distribution_lines (distribution_id);',
+    'CREATE INDEX IF NOT EXISTS idx_distribution_lines_room '
+        'ON distribution_lines (room_id);',
+    'CREATE INDEX IF NOT EXISTS idx_distribution_lines_item '
+        'ON distribution_lines (item_id);',
+    'CREATE INDEX IF NOT EXISTS idx_distribution_lines_batch '
+        'ON distribution_lines (batch_id);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_distribution_lines_batched '
+        'ON distribution_lines (distribution_id, room_id, item_id, batch_id) '
+        'WHERE batch_id IS NOT NULL AND deleted_at IS NULL;',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_distribution_lines_unbatched '
+        'ON distribution_lines (distribution_id, room_id, item_id) '
+        'WHERE batch_id IS NULL AND deleted_at IS NULL;',
   ];
 }

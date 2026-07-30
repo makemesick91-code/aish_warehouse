@@ -11,20 +11,44 @@ import 'package:aish_warehouse/features/inventory/domain/repositories/inventory_
 /// balances, so if the review were not one unit of work, those earlier writes
 /// would survive the rollback.
 class FailingInventoryRepository implements InventoryRepository {
-  FailingInventoryRepository(this._delegate, {required this.failOnItemId});
+  FailingInventoryRepository(
+    this._delegate, {
+    this.failOnItemId,
+    this.failOnToLocationId,
+    this.failAfterAppends,
+  });
 
   final InventoryRepository _delegate;
 
   /// Movements for this item are rejected. Pass an id that is not on the
   /// document to get a repository that never fails.
-  final String failOnItemId;
+  final String? failOnItemId;
+
+  /// Movements *into* this location are rejected.
+  ///
+  /// The distribution equivalent of [failOnItemId]: one document targets several
+  /// rooms, and the assertion G-T4 needs is that a failure on the **last room**
+  /// rolls back the rooms already credited. Failing by item cannot express that when
+  /// every room receives the same product.
+  final String? failOnToLocationId;
+
+  /// Reject the movement after this many have succeeded.
+  ///
+  /// The position-independent way to land a failure in the middle of a document, for
+  /// a test that cares about "the second line" rather than about which item or room
+  /// happens to be second in the plan's deterministic order.
+  final int? failAfterAppends;
 
   /// How many movements were written before the failure fired.
   int appendedBeforeFailure = 0;
 
   @override
   Future<InventoryMovement> appendMovement(MovementDraft draft) async {
-    if (draft.itemId == failOnItemId) {
+    if (draft.itemId == failOnItemId ||
+        (failOnToLocationId != null &&
+            draft.toLocationId == failOnToLocationId) ||
+        (failAfterAppends != null &&
+            appendedBeforeFailure >= failAfterAppends!)) {
       throw const ValidationFailure('Kegagalan buatan pada baris ini.');
     }
     appendedBeforeFailure++;

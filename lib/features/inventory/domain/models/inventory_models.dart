@@ -207,6 +207,47 @@ class GoodReceiptPostingLine {
   final String? note;
 }
 
+/// One position to post when a Distribusi is posted (G-T2/G-T4).
+///
+/// Carries only what the ledger needs: which physical position leaves the branch
+/// store, which room location it enters, how much, and a note the movement records.
+/// Which document it came from and why that batch was chosen are the Distribusi's
+/// business — the ledger records that stock moved, not the reasoning behind it.
+///
+/// Unlike [ShipmentPostingLine] and [GoodReceiptPostingLine] this one carries a
+/// **destination**, and that is the whole shape of the document: a shipment writes
+/// one leg out and a receipt the matching leg in, because goods are in transit
+/// between them; a distribution moves stock between two locations that both exist
+/// right now, so each line is a single two-sided movement. The source is the same for
+/// every line and therefore stays a parameter of the posting call.
+class DistributionPostingLine {
+  const DistributionPostingLine({
+    required this.lineId,
+    required this.toLocationId,
+    required this.itemId,
+    this.batchId,
+    required this.qty,
+    this.note,
+  });
+
+  /// The distribution line this movement came from, so a failure can name it.
+  final String lineId;
+
+  /// The `room` stock location the goods enter, resolved by type by the caller
+  /// (§14). There is no way to pass a location of any other type here without the
+  /// caller having resolved it wrongly, which the posting re-checks.
+  final String toLocationId;
+
+  final String itemId;
+  final String? batchId;
+
+  /// Strictly positive. A distribution of nothing is not a line, and the ledger
+  /// records changes rather than confirmations (G-A1).
+  final Quantity qty;
+
+  final String? note;
+}
+
 /// Outcome of one adjusted position.
 class OpnameAdjustmentResult {
   const OpnameAdjustmentResult({

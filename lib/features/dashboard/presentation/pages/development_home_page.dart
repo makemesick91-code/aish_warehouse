@@ -13,6 +13,7 @@ import '../../../inventory/presentation/widgets/expiry_badge.dart';
 import '../../../master/domain/models/master_models.dart';
 import '../../../master/presentation/providers/master_providers.dart';
 import '../../../good_receipt/presentation/widgets/good_receipt_dashboard_cards.dart';
+import '../../../distribution/presentation/widgets/distribution_dashboard_cards.dart';
 import '../providers/development_home_providers.dart';
 
 /// Development screen that proves the foundation works end to end: the local
@@ -326,6 +327,24 @@ class _SessionCard extends ConsumerWidget {
                   label: const Text('Penerimaan'),
                 ),
               ),
+            ],
+            // Distribusi. Offered to the Kepala Cabang alone (spec §3.1), which is
+            // also what `canDistribute` says — the button and the route guard read the
+            // same predicate rather than two similar-looking ones.
+            if (session.value?.canDistribute ?? false) ...[
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('homeBranchDistributions'),
+                  onPressed: () =>
+                      context.pushNamed(AppRoutes.distributionsName),
+                  icon: const Icon(Icons.outbound_outlined),
+                  label: const Text('Distribusi'),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              const DistributionDashboardCards(),
             ],
             // Good Receipt's warehouse side is read-only: the posted receipts and
             // the selisih/retur queue (§33). No create, decide or post route

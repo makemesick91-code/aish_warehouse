@@ -76,6 +76,8 @@ void main() {
 
   const receiptTables = <String>['good_receipts', 'good_receipt_lines'];
 
+  const distributionTables = <String>['distributions', 'distribution_lines'];
+
   const receiptIndexes = <String>[
     'idx_good_receipts_received_by_status',
     'idx_good_receipts_status_created',
@@ -332,25 +334,23 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 7);
+      expect(row.read<int>('user_version'), 8);
 
       await database.close();
     });
 
-    test(
-      'dua tabel Good Receipt ditambahkan dan tidak ada yang lain',
-      () async {
-        await createVersion6Database();
-        final database = openDatabase();
+    test('dua tabel Good Receipt ditambahkan dan tidak ada yang lain', () async {
+      await createVersion6Database();
+      final database = openDatabase();
 
-        final tables = await objectNames(database, 'table');
-        expect(tables, containsAll(receiptTables));
-        // Exhaustive: v7 adds two tables, no more.
-        expect(tables, {...v6Tables, ...receiptTables});
+      final tables = await objectNames(database, 'table');
+      expect(tables, containsAll(receiptTables));
+      // Exhaustive: v7 adds two tables, no more — and the versions after it add
+      // their own, which is what `distributionTables` accounts for.
+      expect(tables, {...v6Tables, ...receiptTables, ...distributionTables});
 
-        await database.close();
-      },
-    );
+      await database.close();
+    });
 
     test('seluruh index Good Receipt ditambahkan', () async {
       await createVersion6Database();
@@ -660,7 +660,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 7);
+      expect(version.read<int>('user_version'), 8);
 
       final tables = await objectNames(second, 'table');
       expect(tables, containsAll(receiptTables));
@@ -753,7 +753,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 7);
+        expect(version.read<int>('user_version'), 8);
 
         final tables = await objectNames(database, 'table');
         expect(tables, containsAll(receiptTables));

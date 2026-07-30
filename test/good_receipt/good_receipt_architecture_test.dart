@@ -656,7 +656,7 @@ void main() {
 
       expect(source, contains('_v7GoodReceiptIndexes'));
       expect(source, contains('if (from < 7)'));
-      expect(source, contains('int get schemaVersion => 7;'));
+      expect(source, contains('int get schemaVersion => 8;'));
       expect(
         source.contains('allSchemaEntities'),
         isFalse,
@@ -746,17 +746,22 @@ void main() {
       }
     });
 
-    test('tidak ada tabel distribusi pada milestone ini', () {
-      // Distribution is Milestone 6. Declaring its tables now would be a schema promise
-      // this milestone cannot keep.
-      for (final file in dartFilesUnder('lib/core/db/tables')) {
-        final source = readLibrarySource(file);
-        expect(source.contains('class Distributions'), isFalse, reason: file);
-        expect(
-          source.contains('class DistributionLines'),
-          isFalse,
-          reason: file,
-        );
+    test('Good Receipt tidak bergantung pada fitur Distribusi', () {
+      // Until Milestone 6 this asserted that the distribution tables did not exist at
+      // all. They do now (schema v8), so the invariant worth keeping is the one that was
+      // really behind it: the Good Receipt path must not reach *forward* into a feature
+      // that comes after it. A receipt credits the branch store and stops there — what
+      // the branch then does with that stock is the distribution's business, and a
+      // dependency in this direction would make the two impossible to reason about
+      // separately.
+      for (final file in [...dartFilesUnder(featureRoot), dao]) {
+        for (final import in importsOf(file)) {
+          expect(
+            import.contains('features/distribution/'),
+            isFalse,
+            reason: '\$file mengimpor fitur Distribusi (\$import).',
+          );
+        }
       }
     });
 

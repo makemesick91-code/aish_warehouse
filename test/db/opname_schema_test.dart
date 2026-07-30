@@ -97,6 +97,8 @@ void main() {
         'delivery_order_lines',
         'good_receipts',
         'good_receipt_lines',
+        'distributions',
+        'distribution_lines',
       });
     });
 

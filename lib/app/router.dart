@@ -4,10 +4,12 @@ import 'package:go_router/go_router.dart';
 
 import '../core/session/current_user_session.dart';
 import '../features/delivery/domain/services/delivery_order_access_policy.dart';
+import '../features/distribution/domain/services/distribution_access_policy.dart';
 import '../features/good_receipt/domain/services/good_receipt_access_policy.dart';
 import '../features/opname/domain/services/opname_access_policy.dart';
 import '../features/purchase_request/domain/services/purchase_request_access_policy.dart';
 import 'guards/delivery_order_route_guard.dart';
+import 'guards/distribution_route_guard.dart';
 import 'guards/good_receipt_route_guard.dart';
 import 'guards/opname_route_guard.dart';
 import 'guards/purchase_request_route_guard.dart';
@@ -19,6 +21,9 @@ import '../features/delivery/presentation/pages/delivery_order_detail_page.dart'
 import '../features/delivery/presentation/pages/delivery_order_form_page.dart';
 import '../features/delivery/presentation/pages/delivery_waybill_page.dart';
 import '../features/delivery/presentation/pages/warehouse_delivery_order_list_page.dart';
+import '../features/distribution/presentation/pages/distribution_detail_page.dart';
+import '../features/distribution/presentation/pages/distribution_form_page.dart';
+import '../features/distribution/presentation/pages/distribution_list_page.dart';
 import '../features/good_receipt/presentation/pages/branch_good_receipt_list_page.dart';
 import '../features/good_receipt/presentation/pages/good_receipt_detail_page.dart';
 import '../features/good_receipt/presentation/pages/good_receipt_start_page.dart';
@@ -167,6 +172,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
       if (location.startsWith(AppRoutes.receipts)) {
         return receiptSectionFor(GoodReceiptRouteKind.branchList).isGranted
+            ? null
+            : AppRoutes.home;
+      }
+
+      // Distribusi. Same shape again, and the simplest of the five: every screen is
+      // branch-scoped and there is no warehouse counterpart at all (spec §3.1), so the
+      // cheap section half of the rule is a single role-and-branch question. Whether a
+      // *document* may be opened — and, on the editor, whether it is still a draft — is
+      // the guard's question, because only the database knows.
+      if (location.startsWith(AppRoutes.distributions)) {
+        return DistributionAccessPolicy.forSection(
+              user: session.user,
+              kind: DistributionRouteKind.branchList,
+            ).isGranted
             ? null
             : AppRoutes.home;
       }
@@ -463,6 +482,55 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           builder: _warehouseGoodReceiptDiscrepancies,
         ),
       ),
+      GoRoute(
+        path: AppRoutes.distributions,
+        name: AppRoutes.distributionsName,
+        builder: (context, state) => const DistributionSectionGuard(
+          kind: DistributionRouteKind.branchList,
+          builder: _distributionList,
+        ),
+        routes: [
+          // Listed first: the literal `new` segment must win over the `:id` pattern, or
+          // `/distributions/new` would be read as a document id.
+          GoRoute(
+            path: AppRoutes.distributionNew,
+            name: AppRoutes.distributionNewName,
+            builder: (context, state) => const DistributionSectionGuard(
+              kind: DistributionRouteKind.branchCreate,
+              builder: _distributionList,
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.distributionDetail,
+            name: AppRoutes.distributionDetailName,
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return DistributionRouteGuard(
+                kind: DistributionRouteKind.branchDocument,
+                distributionId: id,
+                builder: (_) => DistributionDetailPage(distributionId: id),
+              );
+            },
+            routes: [
+              GoRoute(
+                path: AppRoutes.distributionEdit,
+                name: AppRoutes.distributionEditName,
+                builder: (context, state) {
+                  final id = state.pathParameters['id']!;
+                  // A distinct kind, not the same one as the detail route: the editor
+                  // additionally requires the document to still be a draft (G-S2), and
+                  // the policy is where that is decided.
+                  return DistributionRouteGuard(
+                    kind: DistributionRouteKind.branchDraft,
+                    distributionId: id,
+                    builder: (_) => DistributionFormPage(distributionId: id),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
     ],
   );
 });
@@ -491,6 +559,14 @@ Widget _warehouseGoodReceiptList(BuildContext context) =>
 
 Widget _warehouseGoodReceiptDiscrepancies(BuildContext context) =>
     const WarehouseGoodReceiptDiscrepancyPage();
+
+/// `/distributions` and `/distributions/new` both land here.
+///
+/// The list *is* the create surface: its `Buat Distribusi` button creates the draft and
+/// pushes straight into the editor, because a document has to exist before rooms and
+/// items can be validated against it. The `new` route exists so a deep link has
+/// somewhere to go, and so the section guard has a `branchCreate` kind to refuse.
+Widget _distributionList(BuildContext context) => const DistributionListPage();
 
 /// Bridges the session provider to GoRouter's `refreshListenable`, so switching
 /// role re-runs the redirect immediately instead of on the next navigation.

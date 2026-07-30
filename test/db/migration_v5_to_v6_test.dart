@@ -71,6 +71,8 @@ void main() {
 
   const goodReceiptTables = <String>['good_receipts', 'good_receipt_lines'];
 
+  const distributionTables = <String>['distributions', 'distribution_lines'];
+
   const deliveryIndexes = <String>[
     'idx_delivery_orders_pr_status',
     'idx_delivery_orders_status_created',
@@ -301,7 +303,7 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 7);
+      expect(row.read<int>('user_version'), 8);
 
       await database.close();
     });
@@ -317,7 +319,12 @@ void main() {
         // Exhaustive: v6 adds two tables, no more. Later versions add their
         // own, and naming them here is what keeps this assertion honest rather
         // than loosening it to `containsAll`.
-        expect(tables, {...v5Tables, ...deliveryTables, ...goodReceiptTables});
+        expect(tables, {
+          ...v5Tables,
+          ...deliveryTables,
+          ...goodReceiptTables,
+          ...distributionTables,
+        });
 
         await database.close();
       },
@@ -751,7 +758,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 7);
+      expect(version.read<int>('user_version'), 8);
 
       final tables = await objectNames(second, 'table');
       expect(tables, containsAll(deliveryTables));
@@ -838,7 +845,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 7);
+        expect(version.read<int>('user_version'), 8);
 
         final tables = await objectNames(database, 'table');
         expect(tables, containsAll(deliveryTables));

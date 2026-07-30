@@ -53,6 +53,16 @@ class CurrentUserSession {
   /// ask for one.
   bool get canProcessPurchaseRequest => isWarehouse;
 
+  /// Kepala Cabang distribute from the *Gudang Cabang* to their own rooms
+  /// (spec §3.1, G-T1).
+  ///
+  /// Branch-scoped, and the branch is part of the predicate rather than an
+  /// afterthought: *"ke ruangan dalam cabang yang sama"* is meaningless without one,
+  /// and this affordance must not appear for an account that has none. Warehouse,
+  /// Perawat and Super Admin answer `false` — an account being powerful is not a
+  /// reason to offer it somebody else's job (G-R4).
+  bool get canDistribute => isKepalaCabang && branchId != null;
+
   String get roleLabel => user.role.label;
 
   @override

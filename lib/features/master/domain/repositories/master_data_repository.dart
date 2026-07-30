@@ -100,6 +100,19 @@ abstract interface class MasterDataRepository {
   /// included.
   Future<MasterLocation?> historicalRoomLocation(String roomId);
 
+  /// Every live `room` stock location of one room.
+  ///
+  /// The Distribusi path asks for the list rather than for "the" room location,
+  /// because it has to be able to tell "there is none" from "there are two". A
+  /// distribution posts into exactly one location per room and may not guess which
+  /// (G-T1/§14); [activeRoomLocation] cannot express the ambiguity — it throws on
+  /// it.
+  Future<List<MasterLocation>> activeRoomLocations(String roomId);
+
+  /// The same list including archived rows, for reading a posted document whose
+  /// room location was tidied away afterwards (§7.2/§32).
+  Future<List<MasterLocation>> historicalRoomLocations(String roomId);
+
   Future<MasterRoom?> activeRoomById(String id);
 
   /// The room a historic document names, soft-deleted rows included.

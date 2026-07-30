@@ -592,6 +592,215 @@ class StockPostingService {
     return movements;
   }
 
+  /// Posts every line of a Distribusi as **one** unit of work (G-T2/G-T4).
+  ///
+  /// This method opens no transaction of its own: the caller — the post use case —
+  /// already owns one, and that is precisely the point. Writing the movements,
+  /// decreasing the branch store, increasing every room and flipping the document to
+  /// `posted` all have to commit or roll back together, so a failure on the last room
+  /// cannot leave the first one's stock credited. Calling [postTransfer] per line
+  /// would make that impossible — it opens a transaction each time — which is why no
+  /// such loop exists anywhere. *"Posting bersifat atomik: semua baris berhasil atau
+  /// semua batal."*
+  ///
+  /// ### Why both locations are set
+  ///
+  /// A shipment writes one leg out and a Good Receipt the matching leg in, because
+  /// goods are in transit between the two events (spec §2.5, and the notes on those
+  /// two methods). A distribution has no transit: the *Gudang Cabang* and the room are
+  /// both inside one branch and both exist at the moment of the posting, so spec §2.5
+  /// states the effect as a single movement — *"Gudang Cabang − qty, Ruangan + qty"*.
+  /// Each line therefore carries `from_location_id` **and** `to_location_id`, which is
+  /// what `StockMovementType.distribution.isLocationToLocation` already declares.
+  ///
+  /// ### Order of operations
+  ///
+  /// Every line is validated before **any** of them is written: item and batch
+  /// consistency (G-E1/G-E2), expiry (G-E4), the destination's type, and sufficiency
+  /// against the **aggregate** each source position draws (G-T2). Only then does the
+  /// posting loop start, and each balance is re-read as it goes, so two rooms drawing
+  /// on the same batch cannot both see the opening quantity. The closing assertions
+  /// re-read every touched balance and refuse to let the transaction commit if a
+  /// source came out negative or the totals do not reconcile — the invariants G-A2 and
+  /// §2.5 state, verified rather than assumed, because `assert` would be compiled out
+  /// of a release build and these are exactly the checks that must hold in production.
+  ///
+  /// [fromLocationId] must be the branch store the caller resolved by type and branch
+  /// (§14); it is re-checked here so no caller can nominate a warehouse or a room as
+  /// the source. Whether every destination belongs to the same branch is a
+  /// cross-table question the Distribusi's own guards answer (G-T1) — this is the
+  /// floor underneath them, not a replacement for them.
+  Future<List<InventoryMovement>> postDistributionInTransaction({
+    required String fromLocationId,
+    required List<DistributionPostingLine> lines,
+    required String actorUserId,
+    required String distributionId,
+  }) async {
+    if (lines.isEmpty) {
+      throw const ValidationFailure(
+        'Distribusi tanpa baris tidak dapat diposting.',
+      );
+    }
+
+    final source = await _requireLocation(fromLocationId);
+    if (source.type != StockLocationType.branchStore) {
+      throw InvalidLocationFailure(
+        'Distribusi hanya boleh dilakukan dari Gudang Cabang, bukan dari '
+        '"${source.name}".',
+      );
+    }
+
+    // --- validate the whole document first -----------------------------------
+    final destinations = <String, MasterLocation>{};
+    for (final line in lines) {
+      _requirePositiveQty(line.qty);
+      final item = await _requireItem(line.itemId);
+      final batch = await _validateBatch(item: item, batchId: line.batchId);
+      // Expired stock is blocked from a distribution outright (G-E4). No
+      // confirmation and no override reason reach this point; the stock leaves
+      // through disposal instead (G-E7).
+      _rejectExpiredBatch(batch);
+
+      final target = destinations[line.toLocationId] ??= await _requireLocation(
+        line.toLocationId,
+      );
+      if (target.type != StockLocationType.room) {
+        throw InvalidLocationFailure(
+          'Distribusi hanya boleh masuk ke lokasi ruangan, bukan ke '
+          '"${target.name}".',
+        );
+      }
+      if (target.id == fromLocationId) {
+        throw const InvalidLocationFailure(
+          'Lokasi sumber dan lokasi tujuan tidak boleh sama.',
+        );
+      }
+      // The source store and every destination room must sit in one branch — the
+      // location table's own CHECK guarantees a `room` location carries a branch, and
+      // this compares it. G-T1's document-level half (the *room* row's branch) is the
+      // use case's, because it needs `rooms.branch_id`, which the ledger never reads.
+      if (target.branchId != source.branchId) {
+        throw InvalidLocationFailure(
+          'Ruangan "${target.name}" bukan milik cabang gudang sumber, sehingga '
+          'distribusi ditolak.',
+        );
+      }
+    }
+
+    // Sufficiency is checked against the **total** each position draws, not per
+    // line: two rooms taking 3 each from a balance of 5 must fail, and checking them
+    // one at a time would let both pass. This is G-T2's arithmetic.
+    final requestedByKey = <String, Quantity>{};
+    for (final line in lines) {
+      final key = _balanceKey(line.itemId, line.batchId);
+      requestedByKey[key] = (requestedByKey[key] ?? Quantity.zero()) + line.qty;
+    }
+    for (final line in lines) {
+      final key = _balanceKey(line.itemId, line.batchId);
+      final wanted = requestedByKey[key];
+      if (wanted == null) continue;
+      await _assertSufficientStock(
+        locationId: fromLocationId,
+        itemId: line.itemId,
+        batchId: line.batchId,
+        qty: wanted,
+      );
+      // Checked once per distinct position.
+      requestedByKey.remove(key);
+    }
+
+    // --- post ----------------------------------------------------------------
+    final movements = <InventoryMovement>[];
+    final touchedSource = <String, ({String itemId, String? batchId})>{};
+    final touchedDestination =
+        <String, ({String locationId, String itemId, String? batchId})>{};
+
+    for (final line in lines) {
+      final movement = await _append(
+        MovementDraft(
+          id: _newId(),
+          itemId: line.itemId,
+          batchId: line.batchId,
+          fromLocationId: fromLocationId,
+          toLocationId: line.toLocationId,
+          qty: line.qty,
+          movementType: StockMovementType.distribution,
+          actorUserId: actorUserId,
+          refDocType: RefDocType.distribution,
+          refDocId: distributionId,
+          note: line.note,
+        ),
+      );
+      movements.add(movement);
+
+      await _decrease(
+        locationId: fromLocationId,
+        itemId: line.itemId,
+        batchId: line.batchId,
+        qty: line.qty,
+      );
+      await _increase(
+        locationId: line.toLocationId,
+        itemId: line.itemId,
+        batchId: line.batchId,
+        qty: line.qty,
+      );
+
+      touchedSource[_balanceKey(line.itemId, line.batchId)] = (
+        itemId: line.itemId,
+        batchId: line.batchId,
+      );
+      touchedDestination['${line.toLocationId}|'
+          '${_balanceKey(line.itemId, line.batchId)}'] = (
+        locationId: line.toLocationId,
+        itemId: line.itemId,
+        batchId: line.batchId,
+      );
+    }
+
+    // Post-condition of G-A2/G-T2, verified rather than assumed.
+    for (final position in touchedSource.values) {
+      final remaining = await _inventory.balanceQty(
+        locationId: fromLocationId,
+        itemId: position.itemId,
+        batchId: position.batchId,
+      );
+      if (remaining.isNegative) {
+        throw InsufficientStockFailure(
+          'Saldo Gudang Cabang menjadi negatif setelah distribusi '
+          '(${remaining.format()}). Distribusi dibatalkan.',
+          itemId: position.itemId,
+          locationId: fromLocationId,
+          batchId: position.batchId,
+          available: Quantity.zero(),
+          requested: -remaining,
+        );
+      }
+    }
+    // And the rooms, which can only have risen. A negative one here means something
+    // else corrupted the balance, and committing on top of that would bake it in.
+    for (final position in touchedDestination.values) {
+      final onHand = await _inventory.balanceQty(
+        locationId: position.locationId,
+        itemId: position.itemId,
+        batchId: position.batchId,
+      );
+      if (onHand.isNegative) {
+        throw InsufficientStockFailure(
+          'Saldo ruangan menjadi negatif setelah distribusi '
+          '(${onHand.format()}). Distribusi dibatalkan.',
+          itemId: position.itemId,
+          locationId: position.locationId,
+          batchId: position.batchId,
+          available: Quantity.zero(),
+          requested: -onHand,
+        );
+      }
+    }
+
+    return movements;
+  }
+
   /// The identity of one balance row, as a map key. `item|batch`, with an empty
   /// batch segment for items without expiry.
   static String _balanceKey(String itemId, String? batchId) =>

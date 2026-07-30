@@ -123,6 +123,33 @@ abstract final class AppRoutes {
   static const String warehouseGoodReceiptDiscrepanciesName =
       'warehouseGoodReceiptDiscrepancies';
 
+  // --- Distribusi (Milestone 6) ---------------------------------------------
+
+  /// The Kepala Cabang's Distribusi section. There is deliberately **no**
+  /// `/warehouse/distributions` counterpart: spec §3.1 gives *"Distribusi ke
+  /// ruangan"* to `kepala_cabang` alone, and §2.5 makes the movement
+  /// branch-internal. A cross-branch view of distributions is a reporting question
+  /// (`rekap_distribusi`, §4.2), and the reporting module is a later milestone.
+  static const String distributions = '/distributions';
+  static const String distributionsName = 'distributions';
+
+  /// Nested under [distributions], so the full path is `/distributions/new`.
+  /// Declared **before** the `:id` pattern, or the literal segment would be matched
+  /// as a document id.
+  static const String distributionNew = 'new';
+  static const String distributionNewName = 'distributionNew';
+
+  static const String distributionDetail = ':id';
+  static const String distributionDetailName = 'distributionDetail';
+
+  /// `/distributions/{id}/edit` — the multi-room form, nested under the detail route
+  /// so both share the same `:id`. A distinct route rather than a mode of the detail
+  /// page, because the editor additionally requires the document to still be a draft
+  /// (G-S2) and that is a *route* precondition the guard can enforce before anything
+  /// is fetched.
+  static const String distributionEdit = 'edit';
+  static const String distributionEditName = 'distributionEdit';
+
   // There is deliberately no `/akses-ditolak` route. A refused document route
   // renders `AccessDeniedPage` *in place*, keeping the URL the user typed:
   // redirecting to a dedicated path would tell them, by the address bar alone,

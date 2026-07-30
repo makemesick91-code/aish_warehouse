@@ -407,6 +407,67 @@ enum GoodReceiptLineStatus {
   );
 }
 
+/// Lifecycle of a Distribusi (schema v8, spec §2.3/§3.2).
+///
+/// ```
+/// draft ──▶ posted   (final)
+/// ```
+///
+/// There is no third value and there never will be one on this document: a
+/// distribution is not cancelled, not un-posted and not reopened. A mistake in a
+/// posted distribution is corrected by a new adjusting document — the same rule
+/// `reviewed`, `received` and the Good Receipt's `posted` follow (G-S1/G-S2).
+/// Which transitions are permitted, and who may drive them, is
+/// [DistributionStatePolicy]'s to decide; this enum only answers questions about
+/// a single status.
+enum DistributionStatus {
+  draft('draft'),
+  posted('posted');
+
+  const DistributionStatus(this.dbValue);
+
+  final String dbValue;
+
+  bool get isDraft => this == draft;
+
+  bool get isPosted => this == posted;
+
+  /// Only a draft may have its rooms, items, quantities or batch allocations
+  /// changed (G-S2). A posted distribution is read-only permanently.
+  bool get isEditable => this == draft;
+
+  /// Read-only permanently (G-S2).
+  bool get isFinal => this == posted;
+
+  /// Whether the branch head may still post this distribution to the ledger
+  /// (G-T4).
+  ///
+  /// Says nothing about whether the document has any lines — that is a fact
+  /// about the *lines*, which this enum cannot see. `DistributionDetail.canPost`
+  /// asks both halves.
+  bool get canPost => this == draft;
+
+  /// The single source of truth for allowed transitions on one status.
+  /// Everything else — `posted → draft`, `posted → posted`, re-entering
+  /// `draft` — is refused.
+  bool canTransitionTo(DistributionStatus next) => switch (this) {
+    draft => next == posted,
+    posted => false,
+  };
+
+  /// Indonesian label for chips and document timelines (§4.2).
+  String get label => switch (this) {
+    draft => 'Draft',
+    posted => 'Selesai Diposting',
+  };
+
+  static DistributionStatus fromDbValue(String value) => values.firstWhere(
+    (status) => status.dbValue == value,
+    orElse: () =>
+        throw ArgumentError.value(value, 'value', 'Unknown DistributionStatus'),
+  );
+}
+
 /// Document types referenced by ledger entries (`ref_doc_type`).
 abstract final class RefDocType {
   static const stockOpname = 'SO';

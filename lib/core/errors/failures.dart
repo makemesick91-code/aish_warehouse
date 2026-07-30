@@ -1115,3 +1115,366 @@ final class ConcurrentGoodReceiptUpdateFailure extends AppFailure {
 
   final String grId;
 }
+
+// --- Distribusi (Milestone 6) -----------------------------------------------
+
+/// The distribution document does not exist, or has been soft deleted.
+final class DistributionNotFoundFailure extends AppFailure {
+  const DistributionNotFoundFailure(
+    super.message, {
+    required this.distributionId,
+  });
+
+  final String distributionId;
+}
+
+/// The requested transition is not one the state machine lists (G-S1).
+final class InvalidDistributionStateFailure extends AppFailure {
+  const InvalidDistributionStateFailure(
+    super.message, {
+    required this.distributionId,
+    required this.currentStatus,
+    this.attemptedStatus,
+  });
+
+  final String distributionId;
+  final DistributionStatus currentStatus;
+
+  /// `null` when the caller only asserted a status rather than a transition.
+  final DistributionStatus? attemptedStatus;
+}
+
+/// The document is already `posted`, and `posted` is final (G-S2).
+///
+/// Separate from [InvalidDistributionStateFailure] so the message can say *when* it
+/// was posted — the fact that makes "you cannot change this" understandable rather
+/// than merely true.
+final class DistributionAlreadyPostedFailure extends AppFailure {
+  const DistributionAlreadyPostedFailure(
+    super.message, {
+    required this.distributionId,
+    this.postedAt,
+  });
+
+  final String distributionId;
+
+  /// UTC instant (T-1).
+  final DateTime? postedAt;
+}
+
+/// A distribution with no lines cannot be posted: there is nothing to move.
+final class DistributionLineRequiredFailure extends AppFailure {
+  const DistributionLineRequiredFailure(
+    super.message, {
+    required this.distributionId,
+  });
+
+  final String distributionId;
+}
+
+/// The line is not on this distribution, or does not exist. Both answer the same
+/// way, so the id cannot be probed.
+final class DistributionLineNotFoundFailure extends AppFailure {
+  const DistributionLineNotFoundFailure(super.message, {required this.lineId});
+
+  final String lineId;
+}
+
+/// The acting branch head's branch is not the document's (G-T1/G-R2).
+final class DistributionBranchMismatchFailure extends AppFailure {
+  const DistributionBranchMismatchFailure(
+    super.message, {
+    required this.actorUserId,
+    this.actorBranchId,
+    required this.documentBranchId,
+  });
+
+  final String actorUserId;
+  final String? actorBranchId;
+  final String documentBranchId;
+}
+
+/// The room is in another branch — G-T1's core refusal.
+///
+/// SQLite cannot express `rooms.branch_id = distributions.branch_id`, so this is
+/// where the rule is actually enforced. The message deliberately does not confirm
+/// which branch the room *is* in.
+final class DistributionRoomBranchMismatchFailure extends AppFailure {
+  const DistributionRoomBranchMismatchFailure(
+    super.message, {
+    required this.roomId,
+    required this.documentBranchId,
+  });
+
+  final String roomId;
+  final String documentBranchId;
+}
+
+/// The room exists in this branch but is deactivated or archived.
+///
+/// Refused for a new line, and refused again at posting: a room that is not
+/// operational is not a place stock may be moved to, whatever the draft says
+/// (§32).
+final class DistributionRoomInactiveFailure extends AppFailure {
+  const DistributionRoomInactiveFailure(super.message, {required this.roomId});
+
+  final String roomId;
+}
+
+/// No `room` stock location resolves for the destination room (§14).
+final class DistributionRoomLocationNotFoundFailure extends AppFailure {
+  const DistributionRoomLocationNotFoundFailure(
+    super.message, {
+    required this.roomId,
+  });
+
+  final String roomId;
+}
+
+/// More than one `room` stock location resolves for the destination room.
+///
+/// Refused rather than resolved: which location the goods entered is a business
+/// fact, and picking one would credit a balance nobody chose.
+final class DistributionRoomLocationAmbiguousFailure extends AppFailure {
+  const DistributionRoomLocationAmbiguousFailure(
+    super.message, {
+    required this.roomId,
+    required this.locationIds,
+  });
+
+  final String roomId;
+  final List<String> locationIds;
+}
+
+/// The branch has no *Gudang Cabang* location, so there is no source to draw from
+/// (G-T1).
+final class DistributionBranchStoreNotFoundFailure extends AppFailure {
+  const DistributionBranchStoreNotFoundFailure(
+    super.message, {
+    required this.branchId,
+  });
+
+  final String branchId;
+}
+
+/// There is more than one *Gudang Cabang* location for the branch.
+final class DistributionBranchStoreAmbiguousFailure extends AppFailure {
+  const DistributionBranchStoreAmbiguousFailure(
+    super.message, {
+    required this.branchId,
+    required this.locationIds,
+  });
+
+  final String branchId;
+  final List<String> locationIds;
+}
+
+/// A distributed quantity is zero, negative, or otherwise not a legal quantity.
+final class InvalidDistributionQuantityFailure extends AppFailure {
+  const InvalidDistributionQuantityFailure(
+    super.message, {
+    this.lineId,
+    required this.qty,
+  });
+
+  /// `null` while the line does not exist yet — an add that was asked for zero.
+  final String? lineId;
+  final Quantity qty;
+}
+
+/// The branch store does not hold enough of one position for the whole document
+/// (G-T2).
+///
+/// The quantities are the **aggregate** across every room, which is the number the
+/// rule is about: two rooms each taking `3` from a batch holding `5` fails here
+/// even though neither line exceeds the balance on its own.
+final class InsufficientBranchStockFailure extends AppFailure {
+  const InsufficientBranchStockFailure(
+    super.message, {
+    required this.itemId,
+    required this.locationId,
+    this.batchId,
+    required this.available,
+    required this.requested,
+  });
+
+  final String itemId;
+  final String locationId;
+  final String? batchId;
+
+  /// What the store holds for this exact position.
+  final Quantity available;
+
+  /// What the whole document asks of it, summed over every room.
+  final Quantity requested;
+}
+
+/// The item has no distributable stock in the branch store at all (§15).
+///
+/// Distinct from [InsufficientBranchStockFailure] because the answer is different:
+/// there is nothing to reduce a quantity *to*, and the item should not have been
+/// offered by the picker in the first place.
+final class DistributionItemHasNoStockFailure extends AppFailure {
+  const DistributionItemHasNoStockFailure(
+    super.message, {
+    required this.itemId,
+    required this.locationId,
+  });
+
+  final String itemId;
+  final String locationId;
+}
+
+/// Batch and item disagree: an expiry-tracked item without a batch, an item without
+/// expiry carrying one, or a batch that belongs to a different item (G-E2).
+final class InvalidDistributionBatchFailure extends AppFailure {
+  const InvalidDistributionBatchFailure(
+    super.message, {
+    required this.itemId,
+    this.batchId,
+  });
+
+  final String itemId;
+  final String? batchId;
+}
+
+/// The batch has expired and is blocked from distribution outright (G-E4).
+///
+/// No note, no confirmation and no override reason can pass this. The stock stays
+/// on the shelf and leaves through disposal instead (G-E7).
+final class ExpiredBatchForDistributionFailure extends AppFailure {
+  const ExpiredBatchForDistributionFailure(
+    super.message, {
+    required this.batchId,
+    required this.batchNo,
+    required this.expiryDate,
+    this.lineId,
+  });
+
+  final String batchId;
+  final String batchNo;
+
+  /// Civil date — never timezone converted (T-8).
+  final DateTime expiryDate;
+
+  final String? lineId;
+}
+
+/// A batch younger than the FEFO suggestion was chosen without a written reason
+/// (G-E3).
+///
+/// The skipped batch is carried so the message can name what should have been taken
+/// — the one fact that makes the warning actionable.
+final class DistributionFefoOverrideReasonRequiredFailure extends AppFailure {
+  const DistributionFefoOverrideReasonRequiredFailure(
+    super.message, {
+    required this.itemId,
+    required this.selectedBatchId,
+    required this.selectedBatchNo,
+    required this.skippedBatchId,
+    required this.skippedBatchNo,
+    required this.skippedExpiryDate,
+    this.lineId,
+  });
+
+  final String itemId;
+  final String selectedBatchId;
+  final String selectedBatchNo;
+  final String skippedBatchId;
+  final String skippedBatchNo;
+
+  /// Civil date of the batch that was passed over (T-8).
+  final DateTime skippedExpiryDate;
+
+  final String? lineId;
+}
+
+/// The same `(room, item, batch)` position already exists on this document.
+///
+/// The domain half of the two partial unique indexes: the database refuses it too,
+/// but as a driver error, and a branch head needs a sentence.
+final class DuplicateDistributionLineFailure extends AppFailure {
+  const DuplicateDistributionLineFailure(
+    super.message, {
+    required this.distributionId,
+    required this.roomId,
+    required this.itemId,
+    this.batchId,
+  });
+
+  final String distributionId;
+  final String roomId;
+  final String itemId;
+  final String? batchId;
+}
+
+/// The document's own lines and what the joined read produced no longer agree: a
+/// line is missing from one side, or one is present that the other cannot account
+/// for (§22).
+final class DistributionLineIntegrityFailure extends AppFailure {
+  const DistributionLineIntegrityFailure(
+    super.message, {
+    required this.distributionId,
+    this.missingLineIds = const <String>[],
+    this.extraLineIds = const <String>[],
+  });
+
+  final String distributionId;
+
+  /// Lines the plain select found and the joined read dropped — posting on that
+  /// basis would move less stock than the document says.
+  final List<String> missingLineIds;
+
+  /// Lines the joined read produced that no live row accounts for.
+  final List<String> extraLineIds;
+}
+
+/// A master row a distribution depends on is physically gone.
+///
+/// The same distinction [HistoricalReferenceMissingFailure] draws for Stok Opname: a
+/// deactivated or soft-deleted row is still there and a posted document may still be
+/// read against it, but a row that cannot be found at all means the reference is
+/// broken. Nothing may be invented, substituted or guessed to paper over it (§32).
+final class HistoricalDistributionReferenceMissingFailure extends AppFailure {
+  const HistoricalDistributionReferenceMissingFailure(
+    super.message, {
+    required this.entity,
+    required this.id,
+    required this.distributionId,
+  });
+
+  /// The table whose row is missing: `rooms`, `items`, `item_batches`,
+  /// `stock_locations`…
+  final String entity;
+
+  /// The id the document still points at.
+  final String id;
+
+  final String distributionId;
+}
+
+/// A guarded write affected no rows: somebody else changed the distribution between
+/// reading it and writing it. The caller must reload rather than retry blindly.
+final class ConcurrentDistributionUpdateFailure extends AppFailure {
+  const ConcurrentDistributionUpdateFailure(
+    super.message, {
+    required this.distributionId,
+  });
+
+  final String distributionId;
+}
+
+/// `posted_at` would land before `created_at` — a device clock behind the document
+/// it is stamping (§34).
+final class InvalidDistributionTimestampFailure extends AppFailure {
+  const InvalidDistributionTimestampFailure(
+    super.message, {
+    required this.distributionId,
+    required this.createdAtUtc,
+    required this.postedAtUtc,
+  });
+
+  final String distributionId;
+  final DateTime createdAtUtc;
+  final DateTime postedAtUtc;
+}

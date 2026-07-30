@@ -308,6 +308,56 @@ class MasterDataDao extends DatabaseAccessor<AppDatabase>
             ..limit(1))
           .getSingleOrNull();
 
+  /// Every live `room` stock location of one room, ordered deterministically.
+  ///
+  /// A list rather than a single row, for the reason [warehouseLocations] and
+  /// [branchStoreLocations] spell out: a Distribusi posts into exactly one room
+  /// location per line and may not guess which (G-T1/§14). The caller counts the
+  /// result and produces the right failure for 0 and for >1 —
+  /// [activeLocationForRoom] uses `getSingleOrNull`, which *throws* a driver error
+  /// on the second case, and a distribution has to be able to *say* that the room
+  /// location is ambiguous rather than crash on it.
+  ///
+  /// `branch_id` is deliberately not part of the predicate: the table's own CHECK
+  /// already ties a `room` location to a branch, and the caller compares that
+  /// branch against the document's rather than pre-filtering by it — so a
+  /// misfiled location is *reported* instead of silently disappearing from the
+  /// result and being read as "no location at all".
+  Future<List<StockLocation>> roomLocations(String roomId) =>
+      (select(stockLocations)
+            ..where(
+              (t) =>
+                  t.roomId.equals(roomId) &
+                  t.type.equalsValue(StockLocationType.room) &
+                  t.deletedAt.isNull(),
+            )
+            ..orderBy([
+              (t) => OrderingTerm.asc(t.createdAt),
+              (t) => OrderingTerm.asc(t.id),
+            ]))
+          .get();
+
+  /// The same list **including archived ones**, for reading a document that already
+  /// posted into one of them (§7.2/§32).
+  ///
+  /// A live location still wins when both exist, which is why this orders rather
+  /// than filtering: a room archived and re-created has two rows, and the balances
+  /// a posted document moved are the ones on the live location.
+  Future<List<StockLocation>> historicalRoomLocations(String roomId) =>
+      (select(stockLocations)
+            ..where(
+              (t) =>
+                  t.roomId.equals(roomId) &
+                  t.type.equalsValue(StockLocationType.room),
+            )
+            ..orderBy([
+              // `deleted_at IS NULL` is 1 for a live row, so descending puts the
+              // live one first; `created_at` keeps the rest deterministic.
+              (t) => OrderingTerm.desc(t.deletedAt.isNull()),
+              (t) => OrderingTerm.asc(t.createdAt),
+            ]))
+          .get();
+
   /// A room for **new** operations: soft-deleted rows are invisible.
   Future<Room?> activeRoomById(String id) => (select(
     rooms,

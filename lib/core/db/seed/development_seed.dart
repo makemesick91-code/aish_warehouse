@@ -8,6 +8,11 @@ import '../../../features/delivery/domain/services/delivery_warehouse_stock_read
 import '../../../features/delivery/domain/use_cases/build_fefo_delivery_allocation_use_case.dart';
 import '../../../features/delivery/domain/use_cases/create_delivery_order_use_case.dart';
 import '../../../features/delivery/domain/use_cases/ship_delivery_order_use_case.dart';
+import '../../../features/distribution/domain/repositories/distribution_repository.dart';
+import '../../../features/distribution/domain/services/distribution_branch_stock_reader.dart';
+import '../../../features/distribution/domain/use_cases/add_distribution_item_use_case.dart';
+import '../../../features/distribution/domain/use_cases/create_distribution_use_case.dart';
+import '../../../features/distribution/domain/use_cases/post_distribution_use_case.dart';
 import '../../../features/good_receipt/domain/repositories/good_receipt_repository.dart';
 import '../../../features/good_receipt/domain/services/good_receipt_line_decision_policy.dart';
 import '../../../features/good_receipt/domain/use_cases/create_good_receipt_use_case.dart';
@@ -125,6 +130,7 @@ class DevelopmentSeed {
     required this._requests,
     required this._deliveries,
     required this._receipts,
+    required this._distributions,
     bool? isDevelopmentBuild,
   }) : _opnameRepository = opnames,
        _isDevelopmentBuild = isDevelopmentBuild ?? !kReleaseMode;
@@ -136,6 +142,7 @@ class DevelopmentSeed {
   final PurchaseRequestRepository _requests;
   final DeliveryOrderRepository _deliveries;
   final GoodReceiptRepository _receipts;
+  final DistributionRepository _distributions;
   final bool _isDevelopmentBuild;
 
   static const _categoryNames = <String>[
@@ -1050,6 +1057,147 @@ class DevelopmentSeed {
     ).call(actorUserId: head.id, goodReceiptId: grId);
 
     return grId;
+  }
+
+  /// Creates a `draft` Distribusi with lines for **two** rooms, so the multi-room form
+  /// has something real to open (§35, G-T3).
+  ///
+  /// Opt-in and idempotent: a branch that already has a distribution returns it,
+  /// whatever status it reached, so a second run is a no-op rather than the start of a
+  /// second chain.
+  ///
+  /// The branch store is stocked first by posting the seeded Good Receipt — which is the
+  /// only path that credits it (spec §2.5) — so the balances this draft draws on arrive
+  /// **through the ledger** and never by writing `stock_balances`. If there is nothing to
+  /// receive, there is nothing to distribute either, and this returns `null` rather than
+  /// inventing stock.
+  ///
+  /// Quantities are deliberately modest: the demo must leave stock on the shelf, because
+  /// an emptied store makes every other screen look broken. Each room is asked for a
+  /// *quarter* of what the store holds of the item, in exact fixed point (Q-2), and any
+  /// position that rounds to nothing is skipped.
+  ///
+  /// Nothing about stock happens here — a draft is an intention, and the balances move
+  /// when it is posted (§18).
+  Future<String?> seedDraftDistribution() async {
+    _requireDevelopmentBuild();
+
+    final users = await _master.activeUsers();
+    final heads = users.where((user) => user.role == UserRole.kepalaCabang);
+    if (heads.isEmpty) return null;
+    final head = heads.first;
+    final branchId = head.branchId;
+    if (branchId == null) return null;
+
+    final previous = await _existingDistributionForBranch(branchId);
+    if (previous != null) return previous;
+
+    // The branch store's only legitimate source of stock (spec §2.5).
+    await seedPostedGoodReceipt();
+
+    final stores = await _master.activeBranchStoreLocations(branchId);
+    if (stores.length != 1) return null;
+    final store = stores.single;
+
+    final rooms = await _distributions.branchRooms(branchId);
+    if (rooms.isEmpty) return null;
+
+    final nowUtc = DateTime.now().toUtc();
+    final available = await _distributions.searchBranchStock(
+      branchStoreLocationId: store.id,
+      nowUtc: nowUtc,
+      // Enough to cover both a batch-tracked and a plain item when the receipt
+      // credited several.
+      limit: 4,
+    );
+    if (available.isEmpty) return null;
+
+    final distribution = await CreateDistributionUseCase(
+      distributions: _distributions,
+      master: _master,
+    ).call(actorUserId: head.id, note: 'Distribusi demo seed pengembangan');
+
+    final add = AddDistributionItemUseCase(
+      distributions: _distributions,
+      master: _master,
+    );
+    // Two rooms, so the grouping G-T3 produces is visible on a fresh install. A third
+    // would only repeat the point and drain more stock.
+    final targets = rooms.take(2).toList(growable: false);
+    for (final item in available.take(2)) {
+      for (final room in targets) {
+        // A quarter each, truncated towards zero — so two rooms take at most half and
+        // the store keeps a working balance.
+        final share = item.availableQty.scaledBy(numerator: 1, denominator: 4);
+        if (!share.isPositive) continue;
+        try {
+          await add.call(
+            actorUserId: head.id,
+            distributionId: distribution.id,
+            roomId: room.id,
+            itemId: item.itemId,
+            requestedQty: share,
+          );
+        } on AppFailure {
+          // A seed must never be the reason a fresh install fails to open. Anything the
+          // rules refuse — a room without a location, a batch that expired between the
+          // read and the write — is simply left off the demo document.
+          continue;
+        }
+      }
+    }
+
+    final detail = await _distributions.getDetail(distribution.id);
+    if (detail == null || detail.isEmpty) return null;
+    return distribution.id;
+  }
+
+  /// Posts the seeded Distribusi, so a fresh install has a read-only document *and* room
+  /// balances that arrived the way real ones do (§35).
+  ///
+  /// Goes through [PostDistributionUseCase] rather than mutating balances: every rule the
+  /// screens enforce applies to the seed too, and the room stock it produces is backed by
+  /// real `distribution` movements (G-A1). Returns the document id, or `null` when there
+  /// is nothing to post.
+  ///
+  /// Deliberately **not** called by [run]. A fresh install should show both shapes — a
+  /// draft to continue and a posted document to read — and posting the only draft would
+  /// leave the form with nothing to open. The two seeds are separate opt-in steps, and
+  /// this one creates its own draft when the earlier one has already been posted.
+  Future<String?> seedPostedDistribution() async {
+    _requireDevelopmentBuild();
+
+    final users = await _master.activeUsers();
+    final heads = users.where((user) => user.role == UserRole.kepalaCabang);
+    if (heads.isEmpty) return null;
+    final head = heads.first;
+
+    final distributionId = await seedDraftDistribution();
+    if (distributionId == null) return null;
+
+    final distribution = await _distributions.getById(distributionId);
+    if (distribution == null) return null;
+    // Already posted by an earlier run.
+    if (distribution.isPosted) return distributionId;
+
+    await PostDistributionUseCase(
+      distributions: _distributions,
+      master: _master,
+      posting: _posting,
+      stock: DistributionBranchStockReader(_inventory),
+    ).call(actorUserId: head.id, distributionId: distributionId);
+
+    return distributionId;
+  }
+
+  /// The id of any Distribusi this branch already has, or `null`.
+  ///
+  /// Read through the branch-scoped list so it cannot report another branch's document,
+  /// and status-agnostic so a *posted* one still counts as "already seeded" — which is
+  /// what makes a second run a no-op.
+  Future<String?> _existingDistributionForBranch(String branchId) async {
+    final rows = await _distributions.listForBranch(branchId: branchId);
+    return rows.isEmpty ? null : rows.first.id;
   }
 
   /// The id of any Good Receipt this branch already has, or `null`.
