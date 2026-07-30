@@ -2149,3 +2149,292 @@ final class InvalidConsumptionTimestampFailure extends AppFailure {
   final DateTime createdAtUtc;
   final DateTime postedAtUtc;
 }
+
+// --- Retur Barang (Milestone 9) ---------------------------------------------
+//
+// Every failure below names the *rule* that fired rather than the layer that noticed
+// it, for the reason the earlier document families spell out: a caller that has to
+// inspect a message string to tell "already returned" from "not eligible" is a caller
+// that will eventually get it wrong, and the two produce different sentences and
+// different affordances.
+
+/// No such return, or it is outside the scope the lookup used. Deliberately one
+/// failure for both, so an id cannot be probed for existence (§27).
+final class GoodsReturnNotFoundFailure extends AppFailure {
+  const GoodsReturnNotFoundFailure(
+    super.message, {
+    required this.goodsReturnId,
+  });
+
+  final String goodsReturnId;
+}
+
+/// The Good Receipt already has a return — one Good Receipt, one Retur (§10/§17).
+///
+/// Carries [existingGoodsReturnId] so the UI can offer *"Lihat Retur"* instead of a
+/// dead end: the branch head who pressed the button almost certainly wants the document
+/// that already exists.
+final class GoodsReturnAlreadyExistsFailure extends AppFailure {
+  const GoodsReturnAlreadyExistsFailure(
+    super.message, {
+    required this.grId,
+    this.existingGoodsReturnId,
+  });
+
+  final String grId;
+  final String? existingGoodsReturnId;
+}
+
+/// The Good Receipt cannot be returned from at all — it is still `checking`, it belongs
+/// to another branch, or it is gone (§16).
+final class GoodsReturnNotEligibleFailure extends AppFailure {
+  const GoodsReturnNotEligibleFailure(
+    super.message, {
+    required this.grId,
+    this.receiptStatus,
+  });
+
+  final String grId;
+  final GoodReceiptStatus? receiptStatus;
+}
+
+/// The Good Receipt is posted and in the right branch, but refused nothing. Distinct
+/// from [GoodsReturnNotEligibleFailure] because it is the one case where the receipt is
+/// perfectly fine and there is simply nothing to send back (§16).
+final class GoodsReturnNoRejectedLinesFailure extends AppFailure {
+  const GoodsReturnNoRejectedLinesFailure(super.message, {required this.grId});
+
+  final String grId;
+}
+
+/// The transition the caller asked for is not one the state machine allows (§14).
+final class InvalidGoodsReturnStateFailure extends AppFailure {
+  const InvalidGoodsReturnStateFailure(
+    super.message, {
+    required this.goodsReturnId,
+    required this.currentStatus,
+    this.attemptedStatus,
+  });
+
+  final String goodsReturnId;
+  final GoodsReturnStatus currentStatus;
+  final GoodsReturnStatus? attemptedStatus;
+}
+
+/// The document belongs to another branch (G-R2).
+final class GoodsReturnBranchMismatchFailure extends AppFailure {
+  const GoodsReturnBranchMismatchFailure(
+    super.message, {
+    required this.actorUserId,
+    this.actorBranchId,
+    required this.documentBranchId,
+  });
+
+  final String actorUserId;
+  final String? actorBranchId;
+  final String documentBranchId;
+}
+
+/// The acting role has no part in this workflow at all (§15).
+final class GoodsReturnAccessDeniedFailure extends AppFailure {
+  const GoodsReturnAccessDeniedFailure(
+    super.message, {
+    required this.actorUserId,
+    this.requiredRole,
+  });
+
+  final String actorUserId;
+  final UserRole? requiredRole;
+}
+
+/// A line references something that cannot be loaded, or the loaded set does not match
+/// the plain id set — the inner-join data loss §26 exists to catch.
+final class GoodsReturnLineIntegrityFailure extends AppFailure {
+  const GoodsReturnLineIntegrityFailure(
+    super.message, {
+    required this.goodsReturnId,
+    this.lineId,
+    this.entity,
+    this.id,
+  });
+
+  final String goodsReturnId;
+  final String? lineId;
+
+  /// The table whose row could not be resolved — `items`, `item_batches`,
+  /// `good_receipt_lines`.
+  final String? entity;
+  final String? id;
+}
+
+/// The stored snapshot no longer reproduces the Good Receipt's rejections: a line is
+/// missing, an extra one appeared, or one of them is duplicated (§18/§26).
+final class GoodsReturnSnapshotMismatchFailure extends AppFailure {
+  const GoodsReturnSnapshotMismatchFailure(
+    super.message, {
+    required this.goodsReturnId,
+    required this.grId,
+    this.grLineId,
+  });
+
+  final String goodsReturnId;
+  final String grId;
+  final String? grLineId;
+}
+
+/// A snapshotted quantity is no longer the source line's `shipped_qty` (§18).
+///
+/// Separate from [GoodsReturnSnapshotMismatchFailure] because it is the mismatch a
+/// person is most likely to have caused and the one an administrator can most directly
+/// act on — it names both numbers.
+final class GoodsReturnQuantityMismatchFailure extends AppFailure {
+  const GoodsReturnQuantityMismatchFailure(
+    super.message, {
+    required this.goodsReturnId,
+    required this.grLineId,
+    required this.expected,
+    required this.actual,
+  });
+
+  final String goodsReturnId;
+  final String grLineId;
+  final Quantity expected;
+  final Quantity actual;
+}
+
+/// A rejected Good Receipt line has no reason, or a snapshot lost one (G-G4).
+final class GoodsReturnRejectReasonMissingFailure extends AppFailure {
+  const GoodsReturnRejectReasonMissingFailure(
+    super.message, {
+    required this.grLineId,
+    this.goodsReturnId,
+  });
+
+  final String grLineId;
+  final String? goodsReturnId;
+}
+
+/// The item/batch pairing on a line is wrong: a batch-tracked item without one, an item
+/// without expiry carrying one, a batch belonging to a different item, or a snapshot
+/// that drifted from its source (G-E2/§18).
+final class GoodsReturnItemBatchMismatchFailure extends AppFailure {
+  const GoodsReturnItemBatchMismatchFailure(
+    super.message, {
+    required this.itemId,
+    this.batchId,
+    this.grLineId,
+  });
+
+  final String itemId;
+  final String? batchId;
+  final String? grLineId;
+}
+
+/// There is no active Warehouse Pusat location to credit (§21).
+///
+/// An explicit refusal rather than a fallback: inventing a destination would post the
+/// ledger against a row that does not exist.
+final class GoodsReturnWarehouseLocationNotFoundFailure extends AppFailure {
+  const GoodsReturnWarehouseLocationNotFoundFailure(super.message);
+}
+
+/// There is more than one active Warehouse Pusat location, so which one the goods
+/// arrived at is a business fact the system may not guess (§21).
+final class GoodsReturnWarehouseLocationAmbiguousFailure extends AppFailure {
+  const GoodsReturnWarehouseLocationAmbiguousFailure(
+    super.message, {
+    required this.locationIds,
+  });
+
+  final List<String> locationIds;
+}
+
+/// G-R4 — the actor raised or shipped this document, so they may not confirm it (§15).
+final class GoodsReturnSegregationOfDutiesFailure extends AppFailure {
+  const GoodsReturnSegregationOfDutiesFailure(
+    super.message, {
+    required this.goodsReturnId,
+    required this.actorUserId,
+    required this.createdBy,
+    this.shippedBy,
+  });
+
+  final String goodsReturnId;
+  final String actorUserId;
+  final String createdBy;
+  final String? shippedBy;
+}
+
+/// The goods have already been handed over. There is no un-ship (§14).
+final class GoodsReturnAlreadyShippedFailure extends AppFailure {
+  const GoodsReturnAlreadyShippedFailure(
+    super.message, {
+    required this.goodsReturnId,
+    this.shippedAt,
+  });
+
+  final String goodsReturnId;
+  final DateTime? shippedAt;
+}
+
+/// The Warehouse has already counted these goods in. There is no un-receive, and a
+/// second confirmation must not credit the balance twice (§14/§21).
+final class GoodsReturnAlreadyReceivedFailure extends AppFailure {
+  const GoodsReturnAlreadyReceivedFailure(
+    super.message, {
+    required this.goodsReturnId,
+    this.receivedAt,
+  });
+
+  final String goodsReturnId;
+  final DateTime? receivedAt;
+}
+
+/// A guarded write affected no rows: somebody else changed the return between reading
+/// it and writing it. The caller must reload rather than retry blindly.
+final class ConcurrentGoodsReturnUpdateFailure extends AppFailure {
+  const ConcurrentGoodsReturnUpdateFailure(
+    super.message, {
+    required this.goodsReturnId,
+  });
+
+  final String goodsReturnId;
+}
+
+/// A row the document points at is physically gone — the Good Receipt, one of its
+/// lines, an item or a batch (§37).
+///
+/// Distinct from an *inactive* reference, which is legitimate: a received return whose
+/// item was withdrawn afterwards must stay readable. This is the case where the exact
+/// row no longer exists at all, and it blocks rather than degrades.
+final class HistoricalGoodsReturnReferenceMissingFailure extends AppFailure {
+  const HistoricalGoodsReturnReferenceMissingFailure(
+    super.message, {
+    required this.entity,
+    required this.id,
+    this.goodsReturnId,
+  });
+
+  final String entity;
+  final String id;
+  final String? goodsReturnId;
+}
+
+/// A transition instant would land before the one before it — a device clock behind the
+/// document it is stamping (§39).
+final class InvalidGoodsReturnTimestampFailure extends AppFailure {
+  const InvalidGoodsReturnTimestampFailure(
+    super.message, {
+    required this.goodsReturnId,
+    required this.earlierLabel,
+    required this.earlierUtc,
+    required this.laterLabel,
+    required this.laterUtc,
+  });
+
+  final String goodsReturnId;
+  final String earlierLabel;
+  final DateTime earlierUtc;
+  final String laterLabel;
+  final DateTime laterUtc;
+}

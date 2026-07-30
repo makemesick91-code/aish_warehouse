@@ -6,12 +6,14 @@ import '../core/enums/app_enums.dart';
 import '../core/session/current_user_session.dart';
 import '../features/delivery/domain/services/delivery_order_access_policy.dart';
 import '../features/consumption/domain/services/consumption_access_policy.dart';
+import '../features/goods_return/domain/services/goods_return_access_policy.dart';
 import '../features/disposal/domain/services/disposal_access_policy.dart';
 import '../features/distribution/domain/services/distribution_access_policy.dart';
 import '../features/good_receipt/domain/services/good_receipt_access_policy.dart';
 import '../features/opname/domain/services/opname_access_policy.dart';
 import '../features/purchase_request/domain/services/purchase_request_access_policy.dart';
 import 'guards/consumption_route_guard.dart';
+import 'guards/goods_return_route_guard.dart';
 import 'guards/delivery_order_route_guard.dart';
 import 'guards/disposal_route_guard.dart';
 import 'guards/distribution_route_guard.dart';
@@ -24,6 +26,9 @@ import '../features/consumption/presentation/pages/branch_consumption_list_page.
 import '../features/consumption/presentation/pages/consumption_detail_page.dart';
 import '../features/consumption/presentation/pages/consumption_form_page.dart';
 import '../features/consumption/presentation/pages/consumption_list_page.dart';
+import '../features/goods_return/presentation/pages/branch_goods_return_list_page.dart';
+import '../features/goods_return/presentation/pages/goods_return_detail_page.dart';
+import '../features/goods_return/presentation/pages/warehouse_goods_return_pages.dart';
 import '../features/delivery/presentation/pages/branch_delivery_list_page.dart';
 import '../features/delivery/presentation/pages/delivery_order_create_page.dart';
 import '../features/delivery/presentation/pages/delivery_order_detail_page.dart';
@@ -240,6 +245,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
       if (location.startsWith(AppRoutes.consumptions)) {
         return consumptionSectionFor(ConsumptionRouteKind.nurseList).isGranted
+            ? null
+            : AppRoutes.home;
+      }
+
+      // Retur Barang. Two sections, two roles, two top-level paths — and unlike every
+      // pair above, the Warehouse side is deliberately **not** branch-scoped: the goods
+      // all arrive at one building, so a Petugas Warehouse works one queue across every
+      // branch (§15). What keeps them out of a branch's private work is the *status*
+      // scope, which lives in the DAO predicate rather than here. The
+      // `/warehouse/returns` prefix is tested first because `/returns` is a prefix of
+      // nothing it shares — the two paths are disjoint on purpose, which is what stops
+      // a redirect having to decide between them by role.
+      GoodsReturnAccess goodsReturnSectionFor(GoodsReturnRouteKind kind) =>
+          GoodsReturnAccessPolicy.forSection(user: session.user, kind: kind);
+
+      if (location.startsWith(AppRoutes.warehouseReturns)) {
+        return goodsReturnSectionFor(
+              GoodsReturnRouteKind.warehouseList,
+            ).isGranted
+            ? null
+            : AppRoutes.home;
+      }
+      if (location.startsWith(AppRoutes.returns)) {
+        return goodsReturnSectionFor(GoodsReturnRouteKind.branchList).isGranted
             ? null
             : AppRoutes.home;
       }
@@ -734,6 +763,88 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
+        path: AppRoutes.returns,
+        name: AppRoutes.returnsName,
+        builder: (context, state) => const GoodsReturnSectionGuard(
+          kind: GoodsReturnRouteKind.branchList,
+          builder: _branchGoodsReturnList,
+        ),
+        routes: [
+          // Listed first: a literal segment must win over the `:id` pattern, or
+          // `/returns/new/{grId}` would be read as a document id.
+          GoRoute(
+            path: AppRoutes.returnNew,
+            name: AppRoutes.returnNewName,
+            builder: (context, state) {
+              final grId = state.pathParameters['goodReceiptId']!;
+              // Two guards, and both earn their place: the section guard refuses a role
+              // that has no business here at all, and the create guard refuses a Good
+              // Receipt outside the actor's branch — without either of them loading the
+              // receipt first (§27).
+              return GoodsReturnSectionGuard(
+                kind: GoodsReturnRouteKind.branchCreate,
+                builder: (_) => GoodsReturnCreateGuard(
+                  goodReceiptId: grId,
+                  builder: (_) => GoodsReturnCreatePage(goodReceiptId: grId),
+                ),
+              );
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.returnDetail,
+            name: AppRoutes.returnDetailName,
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return GoodsReturnRouteGuard(
+                kind: GoodsReturnRouteKind.branchDocument,
+                goodsReturnId: id,
+                builder: (_) => GoodsReturnDetailPage(goodsReturnId: id),
+              );
+            },
+            routes: [
+              GoRoute(
+                path: AppRoutes.returnEdit,
+                name: AppRoutes.returnEditName,
+                builder: (context, state) {
+                  final id = state.pathParameters['id']!;
+                  // The note editor is the detail page in draft mode; the separate route
+                  // exists so the guard can additionally require `draft` before anything
+                  // is fetched (§27).
+                  return GoodsReturnRouteGuard(
+                    kind: GoodsReturnRouteKind.branchDraft,
+                    goodsReturnId: id,
+                    builder: (_) => GoodsReturnDetailPage(goodsReturnId: id),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+      GoRoute(
+        path: AppRoutes.warehouseReturns,
+        name: AppRoutes.warehouseReturnsName,
+        builder: (context, state) => const GoodsReturnSectionGuard(
+          kind: GoodsReturnRouteKind.warehouseList,
+          builder: _warehouseGoodsReturnList,
+        ),
+        routes: [
+          GoRoute(
+            path: AppRoutes.warehouseReturnDetail,
+            name: AppRoutes.warehouseReturnDetailName,
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return GoodsReturnRouteGuard(
+                kind: GoodsReturnRouteKind.warehouseDocument,
+                goodsReturnId: id,
+                builder: (_) =>
+                    WarehouseGoodsReturnDetailPage(goodsReturnId: id),
+              );
+            },
+          ),
+        ],
+      ),
+      GoRoute(
         path: AppRoutes.branchConsumptions,
         name: AppRoutes.branchConsumptionsName,
         builder: (context, state) => const ConsumptionSectionGuard(
@@ -769,6 +880,18 @@ Widget _consumptionList(BuildContext context) => const ConsumptionListPage();
 
 Widget _branchConsumptionList(BuildContext context) =>
     const BranchConsumptionListPage();
+
+/// `/returns` — the Kepala Cabang's Retur section.
+///
+/// The list *is* the create surface: its `Buat Retur` button snapshots the receipt's
+/// rejections in one tap and replaces straight into the detail (§30). The `new` route
+/// exists so a deep link has somewhere to land, and so the section guard has a
+/// `branchCreate` kind to refuse.
+Widget _branchGoodsReturnList(BuildContext context) =>
+    const BranchGoodsReturnListPage();
+
+Widget _warehouseGoodsReturnList(BuildContext context) =>
+    const WarehouseGoodsReturnListPage();
 
 // Top-level builders so the section guards above can stay `const`.
 Widget _purchaseRequestList(BuildContext context) =>

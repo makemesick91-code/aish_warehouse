@@ -49,6 +49,13 @@ import 'package:aish_warehouse/features/good_receipt/domain/repositories/good_re
 import 'package:aish_warehouse/features/good_receipt/domain/use_cases/create_good_receipt_use_case.dart';
 import 'package:aish_warehouse/features/good_receipt/domain/use_cases/decide_good_receipt_line_use_cases.dart';
 import 'package:aish_warehouse/features/good_receipt/domain/use_cases/post_good_receipt_use_case.dart';
+import 'package:aish_warehouse/features/goods_return/data/repositories/drift_goods_return_repository.dart';
+import 'package:aish_warehouse/features/goods_return/domain/models/goods_return_models.dart';
+import 'package:aish_warehouse/features/goods_return/domain/repositories/goods_return_repository.dart';
+import 'package:aish_warehouse/features/goods_return/domain/use_cases/create_goods_return_use_case.dart';
+import 'package:aish_warehouse/features/goods_return/domain/use_cases/receive_goods_return_use_case.dart';
+import 'package:aish_warehouse/features/goods_return/domain/use_cases/ship_goods_return_use_case.dart';
+import 'package:aish_warehouse/features/goods_return/domain/use_cases/update_goods_return_note_use_case.dart';
 import 'package:aish_warehouse/features/inventory/data/repositories/drift_inventory_repository.dart';
 import 'package:aish_warehouse/features/inventory/domain/repositories/inventory_repository.dart';
 import 'package:aish_warehouse/features/inventory/domain/services/stock_posting_service.dart';
@@ -92,6 +99,7 @@ class TestContext {
     required this.distributions,
     required this.disposals,
     required this.consumptions,
+    required this.goodsReturns,
     required this.posting,
     required this.clock,
   });
@@ -112,6 +120,10 @@ class TestContext {
     final distributions = DriftDistributionRepository(database.distributionDao);
     final disposals = DriftDisposalRepository(database.disposalDao);
     final consumptions = DriftConsumptionRepository(database.consumptionDao);
+    final goodsReturns = DriftGoodsReturnRepository(
+      database.goodsReturnDao,
+      clock: clock,
+    );
     return TestContext._(
       database: database,
       master: master,
@@ -123,6 +135,7 @@ class TestContext {
       distributions: distributions,
       disposals: disposals,
       consumptions: consumptions,
+      goodsReturns: goodsReturns,
       clock: clock,
       posting: StockPostingService(
         inventory: inventory,
@@ -143,6 +156,7 @@ class TestContext {
   final DistributionRepository distributions;
   final DisposalRepository disposals;
   final ConsumptionRepository consumptions;
+  final GoodsReturnRepository goodsReturns;
   final StockPostingService posting;
 
   /// The injected UTC clock, or `null` when the real one is in use.
@@ -608,6 +622,56 @@ class TestContext {
 
   /// A posting service on the same database but with a different notion of
   /// "now", used to test expiry rules without waiting.
+  // --- Retur Barang (Milestone 9) -------------------------------------------
+  //
+  // Every factory takes an optional clock for the same reason the earlier ones do: the
+  // ordering rules `shipped_at >= created_at` and `received_at >= shipped_at` are
+  // assertions about instants (§39), and a test that could not pin them could not tell
+  // an ordering bug from a fast machine. Omitting it falls back to the context's clock,
+  // and omitting that too uses the real one.
+
+  CreateGoodsReturnUseCase createGoodsReturn({
+    DateTime Function()? clock,
+    String Function()? idGenerator,
+  }) => CreateGoodsReturnUseCase(
+    returns: goodsReturns,
+    master: master,
+    clock: clock ?? this.clock,
+    idGenerator: idGenerator,
+  );
+
+  UpdateGoodsReturnNoteUseCase get updateGoodsReturnNote =>
+      UpdateGoodsReturnNoteUseCase(returns: goodsReturns, master: master);
+
+  ShipGoodsReturnUseCase shipGoodsReturn({DateTime Function()? clock}) =>
+      ShipGoodsReturnUseCase(
+        returns: goodsReturns,
+        master: master,
+        clock: clock ?? this.clock,
+      );
+
+  /// The receive use case, with both clocks pointing at the same instant.
+  ///
+  /// [posting] is injectable so a test can hand it a service that fails on a chosen
+  /// line and then assert that *nothing* was written — the rollback assertion §46
+  /// exists for.
+  ReceiveGoodsReturnUseCase receiveGoodsReturn({
+    DateTime Function()? clock,
+    StockPostingService? posting,
+  }) {
+    final effectiveClock = clock ?? this.clock;
+    return ReceiveGoodsReturnUseCase(
+      returns: goodsReturns,
+      master: master,
+      posting:
+          posting ??
+          (effectiveClock == null
+              ? this.posting
+              : postingWithClock(effectiveClock)),
+      clock: effectiveClock,
+    );
+  }
+
   StockPostingService postingWithClock(DateTime Function() clock) =>
       StockPostingService(inventory: inventory, master: master, clock: clock);
 
@@ -638,6 +702,7 @@ class TestContext {
     distributions: distributions,
     disposals: disposals,
     consumptions: consumptions,
+    goodsReturns: goodsReturns,
     isDevelopmentBuild: true,
   );
 
@@ -653,6 +718,7 @@ class TestContext {
     distributions: distributions,
     disposals: disposals,
     consumptions: consumptions,
+    goodsReturns: goodsReturns,
     isDevelopmentBuild: false,
   );
 
@@ -1356,6 +1422,159 @@ class TestContext {
           "FROM stock_movements WHERE ref_doc_type = 'CONS' AND ref_doc_id = ? "
           'ORDER BY created_at, id;',
           variables: [Variable<String>(consumptionId)],
+        )
+        .get();
+    return rows
+        .map(
+          (row) => <String, Object?>{
+            'item_id': row.read<String>('item_id'),
+            'batch_id': row.read<String?>('batch_id'),
+            'from_location_id': row.read<String?>('from_location_id'),
+            'to_location_id': row.read<String?>('to_location_id'),
+            'qty': row.read<int>('qty'),
+            'movement_type': row.read<String>('movement_type'),
+            'ref_doc_type': row.read<String?>('ref_doc_type'),
+            'ref_doc_id': row.read<String?>('ref_doc_id'),
+            'actor_user_id': row.read<String>('actor_user_id'),
+            'note': row.read<String?>('note'),
+          },
+        )
+        .toList(growable: false);
+  }
+
+  // --- Retur Barang raw reads, for rollback and atomicity assertions ---------
+  //
+  // All of these read the columns directly, so an assertion about a rolled-back
+  // transaction cannot be fooled by a cached repository read.
+
+  /// The stored status of one Retur.
+  Future<String> goodsReturnStatusOf(String goodsReturnId) async {
+    final row = await database
+        .customSelect(
+          'SELECT status FROM goods_returns WHERE id = ?;',
+          variables: [Variable<String>(goodsReturnId)],
+        )
+        .getSingle();
+    return row.read<String>('status');
+  }
+
+  /// One raw column of a Retur, for assertions about audit metadata.
+  Future<String?> goodsReturnColumn(String goodsReturnId, String column) async {
+    final row = await database
+        .customSelect(
+          'SELECT $column AS value FROM goods_returns WHERE id = ?;',
+          variables: [Variable<String>(goodsReturnId)],
+        )
+        .getSingle();
+    return row.read<String?>('value');
+  }
+
+  /// The `doc_number` of one Retur, read raw.
+  Future<String> goodsReturnDocNumber(String goodsReturnId) async {
+    final row = await database
+        .customSelect(
+          'SELECT doc_number FROM goods_returns WHERE id = ?;',
+          variables: [Variable<String>(goodsReturnId)],
+        )
+        .getSingle();
+    return row.read<String>('doc_number');
+  }
+
+  /// How many Retur documents exist for one Good Receipt.
+  ///
+  /// The *one Good Receipt, one Retur* assertion (§10/§42), and it counts soft-deleted
+  /// rows too — because the unique index is unqualified, so a soft delete must not free
+  /// the slot.
+  Future<int> goodsReturnCountFor(String grId) async {
+    final row = await database
+        .customSelect(
+          'SELECT COUNT(*) AS c FROM goods_returns WHERE gr_id = ?;',
+          variables: [Variable<String>(grId)],
+        )
+        .getSingle();
+    return row.read<int>('c');
+  }
+
+  /// Live line count of one Retur, read without any join.
+  Future<int> goodsReturnLineCount(String goodsReturnId) async {
+    final row = await database
+        .customSelect(
+          'SELECT COUNT(*) AS c FROM goods_return_lines '
+          'WHERE goods_return_id = ? AND deleted_at IS NULL;',
+          variables: [Variable<String>(goodsReturnId)],
+        )
+        .getSingle();
+    return row.read<int>('c');
+  }
+
+  /// Raw line rows of one Retur, keyed by the **Good Receipt line** they answer.
+  ///
+  /// Keyed on `gr_line_id` rather than on the line's own id, because that is the
+  /// identity the snapshot rules are stated in: every assertion in §44 is of the form
+  /// *"the line for this rejected position still carries this quantity/item/batch/
+  /// reason"*, and keying on a generated UUID would make each of them fetch the key
+  /// first.
+  Future<Map<String, Map<String, Object?>>> goodsReturnLineRows(
+    String goodsReturnId,
+  ) async {
+    final rows = await database
+        .customSelect(
+          'SELECT id, gr_line_id, item_id, batch_id, qty, '
+          'reject_reason_snapshot FROM goods_return_lines '
+          'WHERE goods_return_id = ? AND deleted_at IS NULL;',
+          variables: [Variable<String>(goodsReturnId)],
+        )
+        .get();
+    return {
+      for (final row in rows)
+        row.read<String>('gr_line_id'): <String, Object?>{
+          'id': row.read<String>('id'),
+          'item_id': row.read<String>('item_id'),
+          'batch_id': row.read<String?>('batch_id'),
+          'qty': row.read<int>('qty'),
+          'reject_reason_snapshot': row.read<String>('reject_reason_snapshot'),
+        },
+    };
+  }
+
+  /// Ledger rows written against one Retur.
+  ///
+  /// The assertion behind every rollback test: a failed receive must leave **zero** of
+  /// these, whichever line it failed on (§46).
+  Future<int> goodsReturnMovementCount(String goodsReturnId) async {
+    final row = await database
+        .customSelect(
+          'SELECT COUNT(*) AS c FROM stock_movements '
+          "WHERE ref_doc_type = 'RET' AND ref_doc_id = ?;",
+          variables: [Variable<String>(goodsReturnId)],
+        )
+        .getSingle();
+    return row.read<int>('c');
+  }
+
+  /// The ledger row ids of one Retur, oldest first.
+  Future<List<String>> goodsReturnMovementIds(String goodsReturnId) async {
+    final rows = await database
+        .customSelect(
+          "SELECT id FROM stock_movements WHERE ref_doc_type = 'RET' "
+          'AND ref_doc_id = ? ORDER BY created_at, id;',
+          variables: [Variable<String>(goodsReturnId)],
+        )
+        .get();
+    return rows.map((row) => row.read<String>('id')).toList(growable: false);
+  }
+
+  /// Every `return` movement of one document, as raw column values.
+  Future<List<Map<String, Object?>>> goodsReturnMovements(
+    String goodsReturnId,
+  ) async {
+    final rows = await database
+        .customSelect(
+          'SELECT item_id, batch_id, from_location_id, to_location_id, qty, '
+          'movement_type, ref_doc_type, ref_doc_id, actor_user_id, note '
+          "FROM stock_movements WHERE ref_doc_type = 'RET' AND ref_doc_id = ? "
+          'ORDER BY created_at, id;',
+          variables: [Variable<String>(goodsReturnId)],
         )
         .get();
     return rows
@@ -4326,5 +4545,434 @@ Future<Map<String, String>> consumptionLineIdsByPosition(
     for (final row in rows)
       '${row.read<String>('item_id')}|${row.read<String?>('batch_id') ?? ''}':
           row.read<String>('id'),
+  };
+}
+
+// --- Retur Barang helpers (Milestone 9) -------------------------------------
+
+/// A branch that has checked three shipments in and now owes the Warehouse a return.
+///
+/// Built on [DeliveryFixture] rather than beside it, because a Retur is the *fifth*
+/// document in one chain — PR → DO → GR → Retur — and a fixture that faked any earlier
+/// link would be testing this milestone against a shape the application cannot
+/// actually produce. Every receipt here is posted through the real use cases, which
+/// means every rejection carries the mandatory reason G-G4 demands and every
+/// `received_qty` obeys the Good Receipt's own CHECK.
+///
+/// ### What the primary receipt holds, and why each line is there
+///
+/// | line                  | decision            | why the fixture needs it            |
+/// |-----------------------|---------------------|-------------------------------------|
+/// | `simpleItem`          | `rejected`          | a returnable position with no batch  |
+/// | `batchItem`/`nearBatch` | `rejected`        | a returnable position *with* a batch |
+/// | `tieItem`/`tieBatchA` | `checked`, short    | a shortage that must **never** be returnable |
+///
+/// The third row is the one that earns its keep. §16.10 draws the line between a
+/// rejection — goods that arrived and were refused, and are physically at the branch —
+/// and a shortage, where the quantity on the waybill never arrived and there is no box
+/// to send back. Every eligibility, snapshot and ledger assertion in this milestone is
+/// really an assertion that those two stayed apart.
+///
+/// ### How an *expired* batch is reached without faking one
+///
+/// `nearBatch` expires 12 days after [nowUtc], so a test that runs the return at
+/// `nowUtc` sees a near-expiry position and one that runs it at [expiredInstant] —
+/// forty days later — sees an expired one. That is the real G-E5 sequence rather than a
+/// hand-written row: goods too close to their date are refused on arrival, and by the
+/// time the paperwork moves they have gone off. A shipment could never have carried an
+/// already-expired batch, because G-E4 refuses one at ship time — so faking that state
+/// would be testing against something the application cannot produce.
+class GoodsReturnFixture {
+  const GoodsReturnFixture({
+    required this.delivery,
+    required this.superAdmin,
+    required this.nowUtc,
+    required this.deliveryOrderId,
+    required this.goodReceiptId,
+    required this.rejectedSimpleLineId,
+    required this.rejectedBatchLineId,
+    required this.shortageLineId,
+    required this.rejectedSimpleQty,
+    required this.rejectedBatchQty,
+    required this.checkingGoodReceiptId,
+    required this.cleanGoodReceiptId,
+    required this.otherBranchGoodReceiptId,
+    required this.otherBranchRejectedLineId,
+  });
+
+  final DeliveryFixture delivery;
+
+  /// A Super Admin, which [DeliveryFixture] has no need of. Present so the security
+  /// tests can assert that a powerful account is refused rather than merely unrouted
+  /// (§15).
+  final MasterUser superAdmin;
+
+  /// The instant every document in this fixture was created at.
+  final DateTime nowUtc;
+
+  /// Forty days on, by which point `nearBatch` has expired. The instant the
+  /// expired-batch cases run at (§36).
+  DateTime get expiredInstant => nowUtc.add(const Duration(days: 40));
+
+  final String deliveryOrderId;
+
+  /// The posted receipt a Retur is raised from: two rejections and one shortage.
+  final String goodReceiptId;
+
+  /// `good_receipt_lines.id` of the rejected position without a batch.
+  final String rejectedSimpleLineId;
+
+  /// `good_receipt_lines.id` of the rejected position carrying `nearBatch`.
+  final String rejectedBatchLineId;
+
+  /// `good_receipt_lines.id` of the `checked` position that arrived short. Never
+  /// returnable (§16.10).
+  final String shortageLineId;
+
+  /// The quantities the two rejected lines were *shipped* — which is exactly what a
+  /// return line must carry (§18).
+  final Quantity rejectedSimpleQty;
+  final Quantity rejectedBatchQty;
+
+  /// A receipt still being checked, carrying a rejection. Not eligible: a decision may
+  /// still be revised while the parent is open (§16).
+  final String checkingGoodReceiptId;
+
+  /// A posted receipt that accepted everything. Not eligible: nothing to send back.
+  final String cleanGoodReceiptId;
+
+  /// A posted receipt with a rejection, belonging to the *other* branch. The document
+  /// every cross-branch security assertion points at (§47).
+  final String otherBranchGoodReceiptId;
+  final String otherBranchRejectedLineId;
+
+  MasterBranch get branch => delivery.branch;
+  MasterBranch get otherBranch => delivery.otherBranch;
+  MasterLocation get warehouse => delivery.warehouse;
+  MasterLocation get branchStore => delivery.branchStore;
+  MasterUser get branchHead => delivery.branchHead;
+  MasterUser get otherBranchHead => delivery.otherBranchHead;
+  MasterUser get warehouseUser => delivery.warehouseUser;
+
+  /// The second Warehouse account. The one that may legitimately confirm a return the
+  /// first one shipped — and the account every G-R4 test contrasts against.
+  MasterUser get secondWarehouseUser => delivery.secondWarehouseUser;
+
+  MasterUser get nurse => delivery.nurse;
+  MasterItem get simpleItem => delivery.simpleItem;
+  MasterItem get batchItem => delivery.batchItem;
+  MasterItem get tieItem => delivery.tieItem;
+  MasterBatch get nearBatch => delivery.nearBatch;
+  MasterBatch get tieBatchA => delivery.tieBatchA;
+
+  /// The two `good_receipt_lines.id`s a return must snapshot, and nothing else.
+  Set<String> get rejectedLineIds => {
+    rejectedSimpleLineId,
+    rejectedBatchLineId,
+  };
+}
+
+/// Builds the chain in [GoodsReturnFixture], entirely through the real use cases.
+Future<GoodsReturnFixture> buildGoodsReturnFixture(
+  TestContext context, {
+  required DateTime nowUtc,
+}) async {
+  final delivery = await buildDeliveryFixture(context, nowUtc: nowUtc);
+  final master = context.master;
+
+  final superAdmin = await master.ensureUser(
+    email: 'superadmin-ret@test.local',
+    fullName: 'Super Admin Retur',
+    role: UserRole.superAdmin,
+  );
+
+  // --- the primary receipt: two rejections and one shortage ------------------
+  //
+  // The quantities are deliberately small. `DeliveryFixture` stocks the warehouse with
+  // 2.5 of `simpleItem`, 1.5 of `nearBatch` and 2 of `tieBatchA`, and this fixture
+  // ships three separate orders out of that — so each one takes a share rather than
+  // the lot.
+  final doId = await shipDeliveryOrderFor(
+    context,
+    delivery,
+    nowUtc: nowUtc,
+    allocations: [
+      simpleAllocation(delivery, qty: '1'),
+      // `nearBatch` is the nearest non-expired batch, so FEFO is satisfied and no
+      // override reason is needed — but it *is* inside the alert window, which G-E4
+      // makes the warehouse confirm in writing.
+      batchAllocation(
+        delivery,
+        batchId: delivery.nearBatch.id,
+        qty: '0.5',
+        nearExpiryConfirmed: true,
+        nearExpiryNote: 'Cabang bersedia menerima sisa umur pendek',
+      ),
+      tieAllocation(delivery, qty: '1', batchId: delivery.tieBatchA.id),
+    ],
+  );
+
+  final grId = await startGoodReceiptFor(
+    context,
+    delivery,
+    deliveryOrderId: doId,
+    nowUtc: nowUtc,
+  );
+  final lines = await goodReceiptLinesByItem(context, grId);
+  final rejectedSimpleLineId = lines[delivery.simpleItem.id]!.id;
+  final rejectedBatchLineId = lines[delivery.batchItem.id]!.id;
+  final shortageLineId = lines[delivery.tieItem.id]!.id;
+  final rejectedSimpleQty = lines[delivery.simpleItem.id]!.shippedQty;
+  final rejectedBatchQty = lines[delivery.batchItem.id]!.shippedQty;
+
+  final reject = context.rejectGoodReceiptLine(clock: () => nowUtc);
+  await reject.call(
+    actorUserId: delivery.branchHead.id,
+    goodReceiptId: grId,
+    goodReceiptLineId: rejectedSimpleLineId,
+    reason: 'Kemasan rusak saat diterima',
+  );
+  await reject.call(
+    actorUserId: delivery.branchHead.id,
+    goodReceiptId: grId,
+    goodReceiptLineId: rejectedBatchLineId,
+    reason: 'Sisa umur simpan terlalu pendek',
+  );
+  // The shortage: accepted, but less than was shipped. This is *not* a return (§16.10).
+  await context
+      .checkGoodReceiptLine(clock: () => nowUtc)
+      .call(
+        actorUserId: delivery.branchHead.id,
+        goodReceiptId: grId,
+        goodReceiptLineId: shortageLineId,
+        receivedQty: Quantity.parse('0.5'),
+      );
+  await context
+      .postGoodReceipt(clock: () => nowUtc)
+      .call(actorUserId: delivery.branchHead.id, goodReceiptId: grId);
+
+  // --- a posted receipt with nothing rejected --------------------------------
+  final cleanDoId = await shipDeliveryOrderFor(
+    context,
+    delivery,
+    nowUtc: nowUtc,
+    allocations: [simpleAllocation(delivery, qty: '1')],
+  );
+  final cleanGrId = await startGoodReceiptFor(
+    context,
+    delivery,
+    deliveryOrderId: cleanDoId,
+    nowUtc: nowUtc,
+  );
+  await checkEveryGoodReceiptLine(
+    context,
+    delivery,
+    grId: cleanGrId,
+    nowUtc: nowUtc,
+  );
+  await context
+      .postGoodReceipt(clock: () => nowUtc)
+      .call(actorUserId: delivery.branchHead.id, goodReceiptId: cleanGrId);
+
+  // --- a receipt still being checked, with a rejection on it ------------------
+  final checkingDoId = await shipDeliveryOrderFor(
+    context,
+    delivery,
+    nowUtc: nowUtc,
+    allocations: [simpleAllocation(delivery, qty: '0.5')],
+  );
+  final checkingGrId = await startGoodReceiptFor(
+    context,
+    delivery,
+    deliveryOrderId: checkingDoId,
+    nowUtc: nowUtc,
+  );
+  final checkingLines = await goodReceiptLinesByItem(context, checkingGrId);
+  await reject.call(
+    actorUserId: delivery.branchHead.id,
+    goodReceiptId: checkingGrId,
+    goodReceiptLineId: checkingLines[delivery.simpleItem.id]!.id,
+    reason: 'Sedang diperiksa ulang',
+  );
+
+  // --- the other branch's chain, so cross-branch reads have a target ----------
+  //
+  // `DeliveryFixture` gives the second branch a head but no store, because nothing
+  // before this milestone ever posted a receipt there. Posting one does — G-G5 credits
+  // the branch store — so the location has to exist.
+  await master.ensureLocation(
+    type: StockLocationType.branchStore,
+    name: 'Gudang ${delivery.otherBranch.name}',
+    branchId: delivery.otherBranch.id,
+  );
+
+  final otherPrId = await writeProcessingPurchaseRequest(
+    context,
+    branchId: delivery.otherBranch.id,
+    requestedBy: delivery.otherBranchHead.id,
+    processedBy: delivery.warehouseUser.id,
+    nowUtc: nowUtc,
+    lines: {delivery.batchItem.id: '2'},
+    prId: 'pr-other-branch-return',
+  );
+  final otherLineIds = await purchaseRequestLineIdsByItem(context, otherPrId);
+  final otherOrder = await context
+      .createDeliveryOrder(clock: () => nowUtc)
+      .call(
+        actorUserId: delivery.warehouseUser.id,
+        purchaseRequestId: otherPrId,
+      );
+  await context.deliveries.replacePreparingLines(
+    doId: otherOrder.id,
+    allocations: [
+      DeliveryAllocation(
+        prLineId: otherLineIds[delivery.batchItem.id]!,
+        itemId: delivery.batchItem.id,
+        batchId: delivery.safeBatch.id,
+        qty: Quantity.parse('2'),
+        // `C-SAFE` skips `B-NEAR`, which still holds stock — G-E3 wants that in
+        // writing.
+        fefoOverrideReason: 'Cabang meminta batch dengan sisa umur panjang',
+      ),
+    ],
+  );
+  await context
+      .shipDeliveryOrder(clock: () => nowUtc)
+      .call(
+        actorUserId: delivery.warehouseUser.id,
+        deliveryOrderId: otherOrder.id,
+      );
+  final otherGr = await context
+      .createGoodReceipt(clock: () => nowUtc)
+      .call(
+        actorUserId: delivery.otherBranchHead.id,
+        deliveryOrderId: otherOrder.id,
+      );
+  final otherGrLines = await goodReceiptLinesByItem(context, otherGr.id);
+  final otherRejectedLineId = otherGrLines[delivery.batchItem.id]!.id;
+  await reject.call(
+    actorUserId: delivery.otherBranchHead.id,
+    goodReceiptId: otherGr.id,
+    goodReceiptLineId: otherRejectedLineId,
+    reason: 'Segel kemasan terbuka',
+  );
+  await context
+      .postGoodReceipt(clock: () => nowUtc)
+      .call(
+        actorUserId: delivery.otherBranchHead.id,
+        goodReceiptId: otherGr.id,
+      );
+
+  return GoodsReturnFixture(
+    delivery: delivery,
+    superAdmin: superAdmin,
+    nowUtc: nowUtc,
+    deliveryOrderId: doId,
+    goodReceiptId: grId,
+    rejectedSimpleLineId: rejectedSimpleLineId,
+    rejectedBatchLineId: rejectedBatchLineId,
+    shortageLineId: shortageLineId,
+    rejectedSimpleQty: rejectedSimpleQty,
+    rejectedBatchQty: rejectedBatchQty,
+    checkingGoodReceiptId: checkingGrId,
+    cleanGoodReceiptId: cleanGrId,
+    otherBranchGoodReceiptId: otherGr.id,
+    otherBranchRejectedLineId: otherRejectedLineId,
+  );
+}
+
+/// Raises the Retur of the fixture's primary receipt and returns it.
+Future<GoodsReturn> createGoodsReturnFor(
+  TestContext context,
+  GoodsReturnFixture fixture, {
+  DateTime? nowUtc,
+  String? actorUserId,
+  String? goodReceiptId,
+  String? note,
+}) {
+  final at = nowUtc ?? fixture.nowUtc;
+  return context
+      .createGoodsReturn(clock: () => at)
+      .call(
+        actorUserId: actorUserId ?? fixture.branchHead.id,
+        goodReceiptId: goodReceiptId ?? fixture.goodReceiptId,
+        note: note,
+      );
+}
+
+/// Raises and ships one, leaving it `shipped` — the state the Warehouse queue shows.
+Future<GoodsReturn> shippedGoodsReturnFor(
+  TestContext context,
+  GoodsReturnFixture fixture, {
+  DateTime? nowUtc,
+  DateTime? shippedAtUtc,
+  String? actorUserId,
+  String? goodReceiptId,
+  String? note,
+}) async {
+  final created = await createGoodsReturnFor(
+    context,
+    fixture,
+    nowUtc: nowUtc,
+    actorUserId: actorUserId,
+    goodReceiptId: goodReceiptId,
+    note: note,
+  );
+  final at = shippedAtUtc ?? nowUtc ?? fixture.nowUtc;
+  return context
+      .shipGoodsReturn(clock: () => at)
+      .call(
+        actorUserId: actorUserId ?? fixture.branchHead.id,
+        goodsReturnId: created.id,
+      );
+}
+
+/// The whole chain, ending `received` — the state the ledger assertions read.
+///
+/// The receiving actor defaults to the **second** Warehouse account, because the first
+/// one is the fixture's shipper on every other document and G-R4 would refuse it here
+/// on a document it happened to have shipped.
+Future<GoodsReturnDetail> receivedGoodsReturnFor(
+  TestContext context,
+  GoodsReturnFixture fixture, {
+  DateTime? nowUtc,
+  DateTime? receivedAtUtc,
+  String? receiverUserId,
+  String? goodReceiptId,
+  String? note,
+  String? warehouseNote,
+}) async {
+  final shipped = await shippedGoodsReturnFor(
+    context,
+    fixture,
+    nowUtc: nowUtc,
+    goodReceiptId: goodReceiptId,
+    note: note,
+  );
+  final at = receivedAtUtc ?? nowUtc ?? fixture.nowUtc;
+  return context
+      .receiveGoodsReturn(clock: () => at)
+      .call(
+        actorUserId: receiverUserId ?? fixture.warehouseUser.id,
+        goodsReturnId: shipped.id,
+        warehouseNote: warehouseNote,
+      );
+}
+
+/// `gr_line_id → goods_return_lines.id` for one Retur.
+Future<Map<String, String>> goodsReturnLineIdsByGrLine(
+  TestContext context,
+  String goodsReturnId,
+) async {
+  final rows = await context.database
+      .customSelect(
+        'SELECT id, gr_line_id FROM goods_return_lines '
+        'WHERE goods_return_id = ? AND deleted_at IS NULL;',
+        variables: [Variable<String>(goodsReturnId)],
+      )
+      .get();
+  return {
+    for (final row in rows)
+      row.read<String>('gr_line_id'): row.read<String>('id'),
   };
 }

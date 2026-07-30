@@ -388,6 +388,33 @@ class _SessionCard extends ConsumerWidget {
               const SizedBox(height: AppSpacing.sm),
               const ConsumptionDashboardCards(),
             ],
+            // Milestone 9. Two entry points, two roles, and they are never both shown:
+            // a branch raises and ships returns, the Warehouse receives them.
+            if (session.value?.canManageGoodsReturn ?? false) ...[
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('homeBranchGoodsReturns'),
+                  onPressed: () => context.pushNamed(AppRoutes.returnsName),
+                  icon: const Icon(Icons.assignment_return_outlined),
+                  label: const Text('Retur Barang'),
+                ),
+              ),
+            ],
+            if (session.value?.canReceiveGoodsReturn ?? false) ...[
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('homeWarehouseGoodsReturns'),
+                  onPressed: () =>
+                      context.pushNamed(AppRoutes.warehouseReturnsName),
+                  icon: const Icon(Icons.assignment_returned_outlined),
+                  label: const Text('Retur dari Cabang'),
+                ),
+              ),
+            ],
             if (session.value?.canReadConsumptionHistory ?? false) ...[
               const SizedBox(height: AppSpacing.sm),
               SizedBox(

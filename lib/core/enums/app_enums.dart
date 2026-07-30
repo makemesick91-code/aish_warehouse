@@ -76,6 +76,15 @@ enum StockMovementType {
   distribution('distribution'),
   opnameAdjustment('opname_adjustment'),
   consumption('consumption'),
+
+  /// Retur barang rejected dari Good Receipt, kembali ke Warehouse Pusat
+  /// (schema v11, G-G5).
+  ///
+  /// The database value is `return`, exactly as §2.2 lists it. The Dart identifier
+  /// cannot be: `return` is a reserved keyword. `itemReturn` is therefore the name
+  /// the code uses and `'return'` the string the ledger stores — the split the
+  /// `dbValue` field on every enum in this library exists for, so a Dart rename can
+  /// never change the database contract.
   itemReturn('return'),
   disposal('disposal'),
   reversal('reversal');
@@ -85,11 +94,17 @@ enum StockMovementType {
   final String dbValue;
 
   /// Movement types that always move stock between two known locations.
+  ///
+  /// [itemReturn] is deliberately **not** here, and that is a Milestone 9 correction
+  /// rather than an oversight. A Good Receipt rejection never entered the branch
+  /// store's balance — G-G5 credits only `checked` lines — so the goods have no source
+  /// location to leave: the shipment already debited the Warehouse and left them in
+  /// transit. The return therefore posts `from_location_id = NULL` and credits the
+  /// Warehouse alone (§12/§22), which is the same one-legged shape
+  /// [inboundWarehouse] has. Listing it here would make [StockPostingService.postTransfer]
+  /// accept it and then demand two locations it must not have.
   bool get isLocationToLocation =>
-      this == shipment ||
-      this == goodReceipt ||
-      this == distribution ||
-      this == itemReturn;
+      this == shipment || this == goodReceipt || this == distribution;
 
   static StockMovementType fromDbValue(String value) => values.firstWhere(
     (type) => type.dbValue == value,
@@ -625,6 +640,138 @@ enum ConsumptionStatus {
   );
 }
 
+/// Lifecycle of a Retur Barang / Goods Return (schema v11, §8).
+///
+/// ```
+/// draft ──▶ shipped ──▶ received   (final)
+/// ```
+///
+/// ### Every one of these three states is an extension decision
+///
+/// **The specification defines no Return document.** §2.3 lists no such table and
+/// §3.2 gives it no state machine. What it does state is that
+/// `stock_movements.movement_type` has a `return` value (§2.2), that a rejected Good
+/// Receipt line *"masuk daftar retur ke Warehouse"* (G-G5), that rejected lines stay
+/// as audit records carrying a reason (G-G4), and that the Warehouse UI shows
+/// *"daftar barang rejected dari GR cabang untuk ditindaklanjuti"* (§4.2). Milestone 9
+/// therefore wraps that movement in the smallest auditable document that can carry
+/// the two physical events the specification implies — the goods leaving the branch
+/// and the goods arriving at the Warehouse — and stops there. **The three states
+/// below, their names and their actors are documented decisions rather than rules the
+/// specification states.**
+///
+/// ### Why `shipped` exists at all
+///
+/// Because the goods spend real time in transit, and the ledger must not pretend
+/// otherwise. G-A2 forbids a negative balance and G-A1 makes the ledger append-only,
+/// so a Warehouse balance credited the moment a branch says *"sent"* would be stock
+/// the Warehouse could distribute before the box arrives. `shipped` is therefore a
+/// purely documentary state: it records that a Kepala Cabang handed the goods over,
+/// and posts **nothing** (§20).
+///
+/// ### Why there is no approval, cancel, un-ship or un-receive
+///
+/// G-R4 — *"tidak ada satu peran pun yang bisa membuat sekaligus menyetujui dokumen
+/// yang sama"* — is satisfied structurally here: the branch ships and the Warehouse
+/// receives, two different roles, and the receiving actor may be neither the creator
+/// nor the shipper. Adding an approval stage on top would be inventing a third half
+/// of a two-half workflow. `received` is final for the reason `reviewed`, `received`
+/// and every `posted` in this schema are final (G-S1/G-S2): a mistake is corrected by
+/// a new adjusting document or a reversal movement, never by editing history.
+///
+/// Which transitions are permitted, and who may drive them, is
+/// [GoodsReturnStatePolicy]'s to decide; this enum only answers questions about a
+/// single status.
+enum GoodsReturnStatus {
+  draft('draft'),
+  shipped('shipped'),
+  received('received');
+
+  const GoodsReturnStatus(this.dbValue);
+
+  final String dbValue;
+
+  bool get isDraft => this == draft;
+
+  bool get isShipped => this == shipped;
+
+  bool get isReceived => this == received;
+
+  /// Only a draft may have its note changed (§19). The *lines* are immutable from
+  /// the moment they are snapshotted, in every status including this one — see
+  /// `GoodsReturnSnapshotPolicy` — so "editable" here means the header note and
+  /// nothing else.
+  bool get isEditable => this == draft;
+
+  /// Read-only permanently (G-S2).
+  ///
+  /// `shipped` is deliberately **not** final: the goods are in transit but the
+  /// Warehouse has not confirmed them yet.
+  bool get isFinal => this == received;
+
+  /// Whether the Kepala Cabang may still mark the goods as handed over (§20).
+  bool get canShip => this == draft;
+
+  /// Whether the Petugas Warehouse may still confirm arrival and post the ledger
+  /// (§21).
+  bool get canReceive => this == shipped;
+
+  /// The single source of truth for allowed transitions on one status. Everything
+  /// else — `draft → received` (skipping the transit leg), `shipped → draft` (no
+  /// un-ship), any move out of `received` (no un-receive, no reopen) and re-entering
+  /// the current state (no double ship, no double receive) — is refused.
+  bool canTransitionTo(GoodsReturnStatus next) => switch (this) {
+    draft => next == shipped,
+    shipped => next == received,
+    received => false,
+  };
+
+  /// Indonesian label for chips and document timelines (§8).
+  ///
+  /// Deliberately *not* approval wording: there is no "Menunggu Persetujuan" and no
+  /// "Disetujui" anywhere in this workflow, because there is no approval stage to
+  /// describe. The two action labels the screens show are *Kirim Retur* and
+  /// *Terima Retur*.
+  String get label => switch (this) {
+    draft => 'Draft',
+    shipped => 'Dikirim ke Warehouse',
+    received => 'Diterima Warehouse',
+  };
+
+  static GoodsReturnStatus fromDbValue(String value) => values.firstWhere(
+    (status) => status.dbValue == value,
+    orElse: () =>
+        throw ArgumentError.value(value, 'value', 'Unknown GoodsReturnStatus'),
+  );
+}
+
+/// Which Retur documents a query is allowed to reach (§15/§24).
+///
+/// The third enum in this library that is **not** persisted anywhere, and it carries no
+/// `dbValue` for exactly that reason: it is a *query scope*, resolved into a predicate
+/// on `goods_returns` by `GoodsReturnDao`, and stored nowhere. It lives here rather
+/// than beside either of them for the reason [DisposalLocationScope] spells out: both
+/// the DAO and the domain access policy have to name it, and `lib/core/db/daos` may not
+/// import a feature while a feature policy may not import drift — so a shared
+/// vocabulary needs a home neither side owns.
+///
+/// A closed set of two rather than a free predicate: the scope a screen may ask for is a
+/// property of the *role*, not of the request. There is deliberately no value meaning
+/// "every return" — no screen in this milestone is allowed one, and the unscoped reads
+/// the use cases perform pass no scope at all.
+enum GoodsReturnQueryScope {
+  /// Every return of one branch, in every status — the Kepala Cabang's own section.
+  /// Needs a branch id; a scope asked for without one matches nothing.
+  branch,
+
+  /// Every return that has physically left a branch — the Petugas Warehouse's queue and
+  /// history, across every branch. The `status IN ('shipped', 'received')` half is baked
+  /// into the DAO's predicate rather than left to the caller's status set: a Warehouse
+  /// user must never see a branch's unfinished draft (§15), and a rule that depended on
+  /// a parameter being passed correctly would be one call site away from leaking one.
+  warehouseInTransitOrReceived,
+}
+
 /// Which locations a Pemusnahan query is allowed to reach (§14/§26).
 ///
 /// The one enum in this library that is **not** persisted anywhere, and it carries
@@ -703,6 +850,17 @@ abstract final class RefDocType {
   /// `DSP`, is an extension this milestone documents rather than a rule the
   /// specification states.
   static const consumption = 'CONS';
+
+  /// Retur barang rejected ke Warehouse Pusat (schema v11, §9).
+  ///
+  /// Deliberately not `GR`, which is the Good Receipt's. A return is *raised from* a
+  /// Good Receipt and snapshots its rejected lines, so sharing `GR` would be the most
+  /// tempting mistake here — and the most damaging: `movementsByRef` would return the
+  /// receipt's inbound credits and the return's alongside each other, and a stock card
+  /// could no longer say which document moved which quantity. §2.2 lists only
+  /// `PR / DO / GR / DIST / SO`, so this value, like `DSP` and `CONS`, is an extension
+  /// this milestone documents rather than a rule the specification states.
+  static const goodsReturn = 'RET';
 
   /// Only used by the development seed so opening balances stay idempotent.
   static const seed = 'SEED';

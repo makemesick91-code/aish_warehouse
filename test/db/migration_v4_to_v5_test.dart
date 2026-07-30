@@ -88,6 +88,11 @@ void main() {
   /// added a table would fail this test until somebody accounted for it.
   const consumptionTables = <String>['consumptions', 'consumption_lines'];
 
+  /// Milestone 9's tables. Declared here — in a test about an *earlier* step — because
+  /// every migration lands a device on the current schema, so the exhaustive table
+  /// assertions below have to know about every table that exists today.
+  const goodsReturnTables = <String>['goods_returns', 'goods_return_lines'];
+
   const purchaseRequestIndexes = <String>[
     'idx_purchase_requests_branch_status',
     'idx_purchase_requests_requested_by_status',
@@ -291,7 +296,7 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 10);
+      expect(row.read<int>('user_version'), 11);
 
       await database.close();
     });
@@ -312,6 +317,7 @@ void main() {
         ...distributionTables,
         ...disposalTables,
         ...consumptionTables,
+        ...goodsReturnTables,
       });
 
       await database.close();
@@ -545,7 +551,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 10);
+      expect(version.read<int>('user_version'), 11);
 
       final tables = await objectNames(second, 'table');
       expect(tables, containsAll(purchaseRequestTables));
@@ -618,7 +624,7 @@ void main() {
       final version = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 10);
+      expect(version.read<int>('user_version'), 11);
 
       // `10` whole units became `10000` milli-units — scaled once, not twice. A
       // second application of the `from < 2` block would leave `10000000`.
@@ -670,7 +676,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 10);
+        expect(version.read<int>('user_version'), 11);
 
         // v4's rebuild must still have happened on the way through.
         final row = await database

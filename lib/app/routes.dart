@@ -229,6 +229,43 @@ abstract final class AppRoutes {
   static const String branchConsumptionDetail = ':id';
   static const String branchConsumptionDetailName = 'branchConsumptionDetail';
 
+  // --- Retur Barang (Milestone 9) -------------------------------------------
+
+  /// The Kepala Cabang's Retur section: the receipts that still owe one, their own
+  /// drafts, what is in transit and what the Warehouse has confirmed.
+  static const String returns = '/returns';
+  static const String returnsName = 'returns';
+
+  /// `/returns/new/{goodReceiptId}` — raise a return from one posted Good Receipt.
+  /// Names a **receipt**, not a return: the return does not exist yet. Declared
+  /// **before** the `:id` pattern, or the literal `new` segment would be matched as a
+  /// document id.
+  static const String returnNew = 'new/:goodReceiptId';
+  static const String returnNewName = 'returnNew';
+
+  static const String returnDetail = ':id';
+  static const String returnDetailName = 'returnDetail';
+
+  /// `/returns/{id}/edit` — the note editor, nested under the detail route so both
+  /// share the same `:id`. A distinct route rather than a mode of the detail page,
+  /// because the editor additionally requires the document to still be a draft and that
+  /// is a *route* precondition the guard can enforce before anything is fetched.
+  static const String returnEdit = 'edit';
+  static const String returnEditName = 'returnEdit';
+
+  /// The Petugas Warehouse's Retur queue and history, across every branch.
+  ///
+  /// A separate top-level path rather than a child of [returns], and the separation is
+  /// the point: the two are different *scopes*, not two views of one list. A nested
+  /// route would share a prefix with a branch's own documents — including its drafts —
+  /// and make the redirect decide between them by role, which is exactly the kind of
+  /// shared path an IDOR hides in.
+  static const String warehouseReturns = '/warehouse/returns';
+  static const String warehouseReturnsName = 'warehouseReturns';
+
+  static const String warehouseReturnDetail = ':id';
+  static const String warehouseReturnDetailName = 'warehouseReturnDetail';
+
   // There is deliberately no `/akses-ditolak` route. A refused document route
   // renders `AccessDeniedPage` *in place*, keeping the URL the user typed:
   // redirecting to a dedicated path would tell them, by the address bar alone,

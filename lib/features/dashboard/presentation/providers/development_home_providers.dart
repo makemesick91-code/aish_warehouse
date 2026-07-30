@@ -9,6 +9,7 @@ import '../../../delivery/presentation/providers/delivery_providers.dart';
 import '../../../disposal/presentation/providers/disposal_providers.dart';
 import '../../../distribution/presentation/providers/distribution_providers.dart';
 import '../../../good_receipt/presentation/providers/good_receipt_providers.dart';
+import '../../../goods_return/presentation/providers/goods_return_providers.dart';
 import '../../../inventory/domain/models/inventory_models.dart';
 import '../../../inventory/presentation/providers/inventory_providers.dart';
 import '../../../master/presentation/providers/master_providers.dart';
@@ -27,6 +28,7 @@ final developmentSeedProvider = Provider<DevelopmentSeed>(
     distributions: ref.watch(distributionRepositoryProvider),
     disposals: ref.watch(disposalRepositoryProvider),
     consumptions: ref.watch(consumptionRepositoryProvider),
+    goodsReturns: ref.watch(goodsReturnRepositoryProvider),
   ),
 );
 

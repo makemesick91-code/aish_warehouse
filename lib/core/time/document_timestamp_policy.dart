@@ -139,6 +139,47 @@ abstract final class DocumentTimestampPolicy {
     );
   }
 
+  /// `draft → shipped` on a Retur Barang (§39).
+  ///
+  /// Ordered against the document's own creation, because that is the event
+  /// immediately before it: a device whose clock is behind must not stamp goods as
+  /// having left before the document that describes them existed.
+  static void requireShipNotBeforeCreate({
+    required String documentId,
+    required DateTime createdAtUtc,
+    required DateTime shippedAtUtc,
+  }) {
+    _requireAfter(
+      documentId: documentId,
+      earlierLabel: 'created_at',
+      earlierUtc: createdAtUtc,
+      laterLabel: 'shipped_at',
+      laterUtc: shippedAtUtc,
+    );
+  }
+
+  /// `shipped → received` on a Retur Barang (§39).
+  ///
+  /// Ordered against `shipped_at` rather than `created_at` because that is the event
+  /// immediately before it; `shipped_at` was itself already ordered against the
+  /// creation when it was written, so the chain holds transitively without comparing
+  /// every pair. The null case cannot arise on a `shipped` document — the table's own
+  /// CHECK pairs the status with the instant — so it is the no-op the other wrappers
+  /// use rather than a second error about a status the guard has already refused.
+  static void requireReceiveNotBeforeShip({
+    required String documentId,
+    required DateTime? shippedAtUtc,
+    required DateTime receivedAtUtc,
+  }) {
+    _requireAfter(
+      documentId: documentId,
+      earlierLabel: 'shipped_at',
+      earlierUtc: shippedAtUtc,
+      laterLabel: 'received_at',
+      laterUtc: receivedAtUtc,
+    );
+  }
+
   static void _requireAfter({
     required String documentId,
     required String earlierLabel,

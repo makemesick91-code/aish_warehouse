@@ -7,6 +7,7 @@ import '../../../../core/time/app_date_time_formatter.dart';
 import '../../../../core/time/app_time_zone.dart';
 import '../../../../core/widgets/historical_master_badge.dart';
 import '../../../../core/widgets/status_card.dart';
+import '../../../goods_return/presentation/widgets/goods_return_link_chip.dart';
 import '../../../purchase_request/presentation/providers/purchase_request_providers.dart';
 import '../../domain/models/good_receipt_models.dart';
 import '../providers/good_receipt_providers.dart';
@@ -178,13 +179,13 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-class _DiscrepancyTile extends StatelessWidget {
+class _DiscrepancyTile extends ConsumerWidget {
   const _DiscrepancyTile({required this.entry});
 
   final GoodReceiptDiscrepancy entry;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
 
     return Padding(
@@ -298,6 +299,12 @@ class _DiscrepancyTile extends StatelessWidget {
                     ),
                   ),
                   GoodReceiptLineStatusChip(status: entry.lineStatus),
+                  // Milestone 9. Only a *rejected* line can have a return, and that
+                  // asymmetry is the whole rule: a shortage is a quantity that never
+                  // arrived, so there is no box to send back and no document to show a
+                  // status for. It keeps reading `Kekurangan` and nothing else (§33).
+                  if (entry.returnRequired)
+                    GoodsReturnLinkChip(grId: entry.grId, lineId: entry.lineId),
                   if (entry.usesHistoricalMaster)
                     HistoricalMasterBadge.forDetail(
                       [

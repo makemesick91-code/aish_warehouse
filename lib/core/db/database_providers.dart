@@ -6,6 +6,7 @@ import 'daos/delivery_order_dao.dart';
 import 'daos/disposal_dao.dart';
 import 'daos/distribution_dao.dart';
 import 'daos/good_receipt_dao.dart';
+import 'daos/goods_return_dao.dart';
 import 'daos/inventory_dao.dart';
 import 'daos/master_data_dao.dart';
 import 'daos/opname_dao.dart';
@@ -56,4 +57,8 @@ final disposalDaoProvider = Provider<DisposalDao>(
 
 final consumptionDaoProvider = Provider<ConsumptionDao>(
   (ref) => ref.watch(appDatabaseProvider).consumptionDao,
+);
+
+final goodsReturnDaoProvider = Provider<GoodsReturnDao>(
+  (ref) => ref.watch(appDatabaseProvider).goodsReturnDao,
 );

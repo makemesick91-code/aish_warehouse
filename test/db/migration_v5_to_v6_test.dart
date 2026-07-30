@@ -82,6 +82,11 @@ void main() {
   /// added a table would fail this test until somebody accounted for it.
   const consumptionTables = <String>['consumptions', 'consumption_lines'];
 
+  /// Milestone 9's tables. Declared here — in a test about an *earlier* step — because
+  /// every migration lands a device on the current schema, so the exhaustive table
+  /// assertions below have to know about every table that exists today.
+  const goodsReturnTables = <String>['goods_returns', 'goods_return_lines'];
+
   const deliveryIndexes = <String>[
     'idx_delivery_orders_pr_status',
     'idx_delivery_orders_status_created',
@@ -312,7 +317,7 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 10);
+      expect(row.read<int>('user_version'), 11);
 
       await database.close();
     });
@@ -335,6 +340,7 @@ void main() {
           ...distributionTables,
           ...disposalTables,
           ...consumptionTables,
+          ...goodsReturnTables,
         });
 
         await database.close();
@@ -769,7 +775,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 10);
+      expect(version.read<int>('user_version'), 11);
 
       final tables = await objectNames(second, 'table');
       expect(tables, containsAll(deliveryTables));
@@ -856,7 +862,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 10);
+        expect(version.read<int>('user_version'), 11);
 
         final tables = await objectNames(database, 'table');
         expect(tables, containsAll(deliveryTables));

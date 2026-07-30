@@ -102,6 +102,25 @@ class CurrentUserSession {
   /// account of a shift until they post it.
   bool get canReadConsumptionHistory => isKepalaCabang && branchId != null;
 
+  /// Whether this session may raise, edit and ship Retur documents (Milestone 9, §15).
+  ///
+  /// The same branch-scoped shape [canDistribute] has, and for the same reason: the
+  /// goods being sent back are physically at *their* branch, and the rejection that
+  /// produced them was their own decision (G-G4/G-G5).
+  bool get canManageGoodsReturn => isKepalaCabang && branchId != null;
+
+  /// Whether this session may work the Retur queue and confirm arrivals (§15).
+  ///
+  /// Deliberately **not** branch-scoped: a Petugas Warehouse operates Warehouse Pusat,
+  /// which belongs to no branch, and the returns from every branch arrive at that one
+  /// building. What keeps them out of a branch's unfinished work is the status scope on
+  /// the query, not a branch predicate.
+  ///
+  /// Says nothing about *which* document they may confirm — G-R4 forbids the creator or
+  /// the shipper from being the receiver, and that is a question about a person and a
+  /// document rather than about a session.
+  bool get canReceiveGoodsReturn => isWarehouse;
+
   String get roleLabel => user.role.label;
 
   @override

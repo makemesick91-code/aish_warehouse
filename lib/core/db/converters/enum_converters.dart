@@ -128,6 +128,18 @@ class ConsumptionStatusConverter
   String toSql(ConsumptionStatus value) => value.dbValue;
 }
 
+class GoodsReturnStatusConverter
+    extends TypeConverter<GoodsReturnStatus, String> {
+  const GoodsReturnStatusConverter();
+
+  @override
+  GoodsReturnStatus fromSql(String fromDb) =>
+      GoodsReturnStatus.fromDbValue(fromDb);
+
+  @override
+  String toSql(GoodsReturnStatus value) => value.dbValue;
+}
+
 class StockMovementTypeConverter
     extends TypeConverter<StockMovementType, String> {
   const StockMovementTypeConverter();

@@ -749,7 +749,9 @@ void main() {
         StockMovementType.distribution: 'Distribusi',
         StockMovementType.opnameAdjustment: 'Penyesuaian Opname',
         StockMovementType.consumption: 'Pemakaian',
-        StockMovementType.itemReturn: 'Retur',
+        // Milestone 9 narrowed this from the placeholder *"Retur"*: the ledger now has
+        // exactly one kind of `return` row and it always credits the Warehouse (§34).
+        StockMovementType.itemReturn: 'Retur ke Warehouse',
         StockMovementType.disposal: 'Pemusnahan',
         StockMovementType.reversal: 'Pembalikan',
       };

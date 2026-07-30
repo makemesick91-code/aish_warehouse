@@ -630,7 +630,15 @@ void main() {
         expect(
           RegExp(
             r'(status:\s*(const\s+)?Value\(DeliveryOrderStatus\.received|'
-            r'markDeliveryOrderReceived|markReceived)',
+            // Narrowed in Milestone 9. The bare `markReceived` this used to also match
+            // was a guess at what a future method might be called, and Milestone 9
+            // shipped one with exactly that name on an unrelated table —
+            // `goods_returns.markReceived`, which moves a Retur to `received` and never
+            // touches a Delivery Order. Matching it would have been a false positive,
+            // and adding those files to `allowed` would have asserted the opposite of
+            // the truth: they may *not* mark a shipment received. What this rule is
+            // about is the Delivery Order, so that is what it now names.
+            r'markDeliveryOrderReceived)',
           ).hasMatch(code),
           isFalse,
           reason: '$file dapat menulis status received.',

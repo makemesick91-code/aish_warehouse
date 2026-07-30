@@ -8,6 +8,7 @@ import 'daos/delivery_order_dao.dart';
 import 'daos/disposal_dao.dart';
 import 'daos/distribution_dao.dart';
 import 'daos/good_receipt_dao.dart';
+import 'daos/goods_return_dao.dart';
 import 'daos/inventory_dao.dart';
 import 'daos/master_data_dao.dart';
 import 'daos/opname_dao.dart';
@@ -18,6 +19,7 @@ import 'tables/delivery_tables.dart';
 import 'tables/disposal_tables.dart';
 import 'tables/distribution_tables.dart';
 import 'tables/good_receipt_tables.dart';
+import 'tables/goods_return_tables.dart';
 import 'tables/inventory_tables.dart';
 import 'tables/master_tables.dart';
 import 'tables/opname_tables.dart';
@@ -51,6 +53,8 @@ part 'app_database.g.dart';
     DisposalLines,
     Consumptions,
     ConsumptionLines,
+    GoodsReturns,
+    GoodsReturnLines,
   ],
   daos: [
     MasterDataDao,
@@ -62,6 +66,7 @@ part 'app_database.g.dart';
     DistributionDao,
     DisposalDao,
     ConsumptionDao,
+    GoodsReturnDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -82,8 +87,9 @@ class AppDatabase extends _$AppDatabase {
   /// * v8 — Milestone 6, Distribusi (`distributions`, `distribution_lines`).
   /// * v9 — Milestone 7, Pemusnahan (`disposals`, `disposal_lines`).
   /// * v10 — Milestone 8, Pemakaian (`consumptions`, `consumption_lines`).
+  /// * v11 — Milestone 9, Retur Barang (`goods_returns`, `goods_return_lines`).
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -321,6 +327,42 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(consumptions);
         await m.createTable(consumptionLines);
         for (final statement in _v10ConsumptionIndexes) {
+          await customStatement(statement);
+        }
+      }
+      if (from < 11) {
+        // Milestone 9, purely additive in the sense the `from < 3` block established:
+        // two new tables and their indexes, and not one statement touching an existing
+        // column.
+        //
+        // The Retur is the document that brings rejected goods *back into* the
+        // Warehouse (G-G5), and this step still does not migrate stock: the posting
+        // happens when a Petugas Warehouse confirms arrival, at runtime, not when the
+        // schema is upgraded. So ledger quantities keep the scaling the `from < 2`
+        // block gave them, `stock_opnames` keeps the shape the `from < 4` rebuild left
+        // it in, and every Purchase Request, Delivery Order, Good Receipt, Distribusi,
+        // Pemusnahan and Pemakaian row is untouched.
+        //
+        // In particular this step creates **no return for the rejected Good Receipt
+        // lines already on the device** — and there will be some, because nothing
+        // before this milestone could send them back. Writing documents for them would
+        // be a migration asserting that a named Kepala Cabang raised a return, that
+        // somebody shipped it on a date, and — worse — it would then be one Warehouse
+        // confirmation away from crediting stock that may have been sitting in a branch
+        // corridor for months, or thrown away. They surface instead in the *Perlu
+        // Dibuat* queue the moment a branch head opens the new screen, which is the
+        // honest outcome: the goods are still wherever they are, and a person decides.
+        //
+        // It also has to leave `stock_opnames` alone for the second reason the
+        // `from < 5` block spells out: the `from < 4` block reads the *current* Dart
+        // definition of that table through `alterTable`, so a v11 that changed its shape
+        // would make a v3 → v11 upgrade land on the v11 shape at step 4 and then apply
+        // steps 5 to 11 on top. Retur only references `good_receipts`,
+        // `good_receipt_lines`, `branches`, `users`, `items` and `item_batches` by
+        // foreign key, so that trap stays shut.
+        await m.createTable(goodsReturns);
+        await m.createTable(goodsReturnLines);
+        for (final statement in _v11GoodsReturnIndexes) {
           await customStatement(statement);
         }
       }
@@ -658,5 +700,63 @@ class AppDatabase extends _$AppDatabase {
     'CREATE UNIQUE INDEX IF NOT EXISTS idx_consumption_lines_unbatched '
         'ON consumption_lines (consumption_id, item_id) '
         'WHERE batch_id IS NULL AND deleted_at IS NULL;',
+  ];
+
+  /// The Retur Barang indexes **exactly as schema v11 defined them**.
+  ///
+  /// Frozen as literal SQL for the reason [_v3OpnameIndexes] spells out: a migration
+  /// step must keep doing what it did the day it shipped, so this list must not be
+  /// derived from `allSchemaEntities` — that getter always describes the current
+  /// schema, and a v12 index added to one of these tables would silently change what
+  /// the `from < 11` block creates.
+  ///
+  /// Three of these are load-bearing, and all three are **unqualified** unique indexes
+  /// rather than the partial `WHERE deleted_at IS NULL` shape most document tables use:
+  ///
+  /// * `idx_goods_returns_gr` is the database half of *one Good Receipt, one Retur*
+  ///   (§10). A partial index would let a soft-deleted return be followed by a second
+  ///   one for the same receipt, and receiving that second return would credit the
+  ///   Warehouse twice for goods that came back once.
+  /// * `idx_goods_return_lines_gr_line_unique` is the same rule one level down: a
+  ///   rejected position is returned exactly once, ever, across every document.
+  /// * `idx_goods_returns_doc_number` follows `disposals` and `consumptions` rather
+  ///   than the opname / PR / DO / GR shape, and G-A3 is why — *"nomor dokumen berurut
+  ///   dan tidak dipakai ulang."*
+  ///
+  /// Nothing in this workflow soft-deletes a return or a return line (§24), so
+  /// "live rows only" would be a qualification with nothing behind it — and the one
+  /// thing it would reliably do is open the doors above.
+  static const List<String> _v11GoodsReturnIndexes = [
+    'CREATE INDEX IF NOT EXISTS idx_goods_returns_branch_status '
+        'ON goods_returns (branch_id, status);',
+    'CREATE INDEX IF NOT EXISTS idx_goods_returns_created_by_status '
+        'ON goods_returns (created_by, status);',
+    'CREATE INDEX IF NOT EXISTS idx_goods_returns_shipped_by_status '
+        'ON goods_returns (shipped_by, status);',
+    'CREATE INDEX IF NOT EXISTS idx_goods_returns_received_by_status '
+        'ON goods_returns (received_by, status);',
+    'CREATE INDEX IF NOT EXISTS idx_goods_returns_created_at '
+        'ON goods_returns (created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_goods_returns_shipped_at '
+        'ON goods_returns (shipped_at);',
+    'CREATE INDEX IF NOT EXISTS idx_goods_returns_received_at '
+        'ON goods_returns (received_at);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_goods_returns_gr '
+        'ON goods_returns (gr_id);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_goods_returns_doc_number '
+        'ON goods_returns (doc_number);',
+    'CREATE INDEX IF NOT EXISTS idx_goods_return_lines_return '
+        'ON goods_return_lines (goods_return_id);',
+    'CREATE INDEX IF NOT EXISTS idx_goods_return_lines_gr_line '
+        'ON goods_return_lines (gr_line_id);',
+    'CREATE INDEX IF NOT EXISTS idx_goods_return_lines_item '
+        'ON goods_return_lines (item_id);',
+    'CREATE INDEX IF NOT EXISTS idx_goods_return_lines_batch '
+        'ON goods_return_lines (batch_id);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS '
+        'idx_goods_return_lines_gr_line_unique '
+        'ON goods_return_lines (gr_line_id);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_goods_return_lines_unique '
+        'ON goods_return_lines (goods_return_id, gr_line_id);',
   ];
 }

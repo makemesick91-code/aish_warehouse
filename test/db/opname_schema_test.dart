@@ -103,6 +103,8 @@ void main() {
         'disposal_lines',
         'consumptions',
         'consumption_lines',
+        'goods_returns',
+        'goods_return_lines',
       });
     });
 

@@ -16610,6 +16610,1667 @@ class ConsumptionLinesCompanion extends UpdateCompanion<ConsumptionLineRow> {
   }
 }
 
+class $GoodsReturnsTable extends GoodsReturns
+    with TableInfo<$GoodsReturnsTable, GoodsReturnRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GoodsReturnsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>($GoodsReturnsTable.$convertersyncStatus);
+  static const VerificationMeta _docNumberMeta = const VerificationMeta(
+    'docNumber',
+  );
+  @override
+  late final GeneratedColumn<String> docNumber = GeneratedColumn<String>(
+    'doc_number',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _grIdMeta = const VerificationMeta('grId');
+  @override
+  late final GeneratedColumn<String> grId = GeneratedColumn<String>(
+    'gr_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES good_receipts (id)',
+    ),
+  );
+  static const VerificationMeta _branchIdMeta = const VerificationMeta(
+    'branchId',
+  );
+  @override
+  late final GeneratedColumn<String> branchId = GeneratedColumn<String>(
+    'branch_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES branches (id)',
+    ),
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<GoodsReturnStatus, String>
+  status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => GoodsReturnStatus.draft.dbValue,
+  ).withConverter<GoodsReturnStatus>($GoodsReturnsTable.$converterstatus);
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _shippedAtMeta = const VerificationMeta(
+    'shippedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> shippedAt = GeneratedColumn<DateTime>(
+    'shipped_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _shippedByMeta = const VerificationMeta(
+    'shippedBy',
+  );
+  @override
+  late final GeneratedColumn<String> shippedBy = GeneratedColumn<String>(
+    'shipped_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _receivedAtMeta = const VerificationMeta(
+    'receivedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> receivedAt = GeneratedColumn<DateTime>(
+    'received_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _receivedByMeta = const VerificationMeta(
+    'receivedBy',
+  );
+  @override
+  late final GeneratedColumn<String> receivedBy = GeneratedColumn<String>(
+    'received_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _warehouseNoteMeta = const VerificationMeta(
+    'warehouseNote',
+  );
+  @override
+  late final GeneratedColumn<String> warehouseNote = GeneratedColumn<String>(
+    'warehouse_note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    docNumber,
+    grId,
+    branchId,
+    createdBy,
+    status,
+    note,
+    shippedAt,
+    shippedBy,
+    receivedAt,
+    receivedBy,
+    warehouseNote,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'goods_returns';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<GoodsReturnRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('doc_number')) {
+      context.handle(
+        _docNumberMeta,
+        docNumber.isAcceptableOrUnknown(data['doc_number']!, _docNumberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_docNumberMeta);
+    }
+    if (data.containsKey('gr_id')) {
+      context.handle(
+        _grIdMeta,
+        grId.isAcceptableOrUnknown(data['gr_id']!, _grIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_grIdMeta);
+    }
+    if (data.containsKey('branch_id')) {
+      context.handle(
+        _branchIdMeta,
+        branchId.isAcceptableOrUnknown(data['branch_id']!, _branchIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_branchIdMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdByMeta);
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('shipped_at')) {
+      context.handle(
+        _shippedAtMeta,
+        shippedAt.isAcceptableOrUnknown(data['shipped_at']!, _shippedAtMeta),
+      );
+    }
+    if (data.containsKey('shipped_by')) {
+      context.handle(
+        _shippedByMeta,
+        shippedBy.isAcceptableOrUnknown(data['shipped_by']!, _shippedByMeta),
+      );
+    }
+    if (data.containsKey('received_at')) {
+      context.handle(
+        _receivedAtMeta,
+        receivedAt.isAcceptableOrUnknown(data['received_at']!, _receivedAtMeta),
+      );
+    }
+    if (data.containsKey('received_by')) {
+      context.handle(
+        _receivedByMeta,
+        receivedBy.isAcceptableOrUnknown(data['received_by']!, _receivedByMeta),
+      );
+    }
+    if (data.containsKey('warehouse_note')) {
+      context.handle(
+        _warehouseNoteMeta,
+        warehouseNote.isAcceptableOrUnknown(
+          data['warehouse_note']!,
+          _warehouseNoteMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  GoodsReturnRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GoodsReturnRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $GoodsReturnsTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      docNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}doc_number'],
+      )!,
+      grId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gr_id'],
+      )!,
+      branchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}branch_id'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      )!,
+      status: $GoodsReturnsTable.$converterstatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}status'],
+        )!,
+      ),
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      shippedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}shipped_at'],
+      ),
+      shippedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}shipped_by'],
+      ),
+      receivedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}received_at'],
+      ),
+      receivedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}received_by'],
+      ),
+      warehouseNote: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}warehouse_note'],
+      ),
+    );
+  }
+
+  @override
+  $GoodsReturnsTable createAlias(String alias) {
+    return $GoodsReturnsTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+  static TypeConverter<GoodsReturnStatus, String> $converterstatus =
+      const GoodsReturnStatusConverter();
+}
+
+class GoodsReturnRow extends DataClass implements Insertable<GoodsReturnRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+
+  /// Temporary local number `TMP-RET-{uuid}` until a sync backend assigns the final
+  /// `RET-{cabang}-{yyyyMMdd}-{seq}` (G-Y4). Minting a server-shaped number offline
+  /// would collide across devices — every branch returns on its own.
+  final String docNumber;
+
+  /// The Good Receipt whose rejections this document sends back. Unique: see the
+  /// class note. Fixed at creation — there is no statement anywhere that updates it.
+  final String grId;
+
+  /// The branch sending the goods back. Must be the receipt's branch — a cross-table
+  /// equality SQLite cannot express, so the use cases enforce it (see the class note).
+  final String branchId;
+
+  /// The Kepala Cabang who raised the document (G-A3). Immutable.
+  final String createdBy;
+  final GoodsReturnStatus status;
+
+  /// Free-text remark from the branch, e.g. *"dikirim via kurir internal"*.
+  ///
+  /// **Optional.** Every line already carries the mandatory reason G-G4 demanded when
+  /// the position was rejected, snapshotted below, so requiring a second explanation
+  /// on the header would be inventing a rule. What the CHECK does refuse is
+  /// *whitespace* pretending to be a remark.
+  final String? note;
+
+  /// UTC instant the branch handed the goods to the carrier (T-1).
+  ///
+  /// Records a *physical* event and nothing else: no balance moves when this is
+  /// written (§20). The goods left the branch's care, but they were never in the
+  /// branch's stock — G-G5 credits only `checked` lines — so there is no balance to
+  /// take them out of.
+  final DateTime? shippedAt;
+
+  /// Who shipped it. Null exactly while the document is a draft.
+  final String? shippedBy;
+
+  /// UTC instant the Warehouse confirmed arrival and the ledger was posted (T-1).
+  final DateTime? receivedAt;
+
+  /// The Petugas Warehouse who confirmed arrival. Null until then, and never equal to
+  /// [createdBy] or [shippedBy] — see the class note on G-R4.
+  final String? receivedBy;
+
+  /// Optional remark the Warehouse adds when confirming, e.g. *"kardus penyok tapi
+  /// isi lengkap"*.
+  ///
+  /// Writable only by the receive transaction (§21). A branch cannot write it and the
+  /// Warehouse cannot write the branch's [note]: the two sides of this document each
+  /// own their own words, which is what makes either of them evidence.
+  final String? warehouseNote;
+  const GoodsReturnRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.docNumber,
+    required this.grId,
+    required this.branchId,
+    required this.createdBy,
+    required this.status,
+    this.note,
+    this.shippedAt,
+    this.shippedBy,
+    this.receivedAt,
+    this.receivedBy,
+    this.warehouseNote,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $GoodsReturnsTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    map['doc_number'] = Variable<String>(docNumber);
+    map['gr_id'] = Variable<String>(grId);
+    map['branch_id'] = Variable<String>(branchId);
+    map['created_by'] = Variable<String>(createdBy);
+    {
+      map['status'] = Variable<String>(
+        $GoodsReturnsTable.$converterstatus.toSql(status),
+      );
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    if (!nullToAbsent || shippedAt != null) {
+      map['shipped_at'] = Variable<DateTime>(shippedAt);
+    }
+    if (!nullToAbsent || shippedBy != null) {
+      map['shipped_by'] = Variable<String>(shippedBy);
+    }
+    if (!nullToAbsent || receivedAt != null) {
+      map['received_at'] = Variable<DateTime>(receivedAt);
+    }
+    if (!nullToAbsent || receivedBy != null) {
+      map['received_by'] = Variable<String>(receivedBy);
+    }
+    if (!nullToAbsent || warehouseNote != null) {
+      map['warehouse_note'] = Variable<String>(warehouseNote);
+    }
+    return map;
+  }
+
+  GoodsReturnsCompanion toCompanion(bool nullToAbsent) {
+    return GoodsReturnsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      docNumber: Value(docNumber),
+      grId: Value(grId),
+      branchId: Value(branchId),
+      createdBy: Value(createdBy),
+      status: Value(status),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      shippedAt: shippedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shippedAt),
+      shippedBy: shippedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shippedBy),
+      receivedAt: receivedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(receivedAt),
+      receivedBy: receivedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(receivedBy),
+      warehouseNote: warehouseNote == null && nullToAbsent
+          ? const Value.absent()
+          : Value(warehouseNote),
+    );
+  }
+
+  factory GoodsReturnRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GoodsReturnRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      docNumber: serializer.fromJson<String>(json['docNumber']),
+      grId: serializer.fromJson<String>(json['grId']),
+      branchId: serializer.fromJson<String>(json['branchId']),
+      createdBy: serializer.fromJson<String>(json['createdBy']),
+      status: serializer.fromJson<GoodsReturnStatus>(json['status']),
+      note: serializer.fromJson<String?>(json['note']),
+      shippedAt: serializer.fromJson<DateTime?>(json['shippedAt']),
+      shippedBy: serializer.fromJson<String?>(json['shippedBy']),
+      receivedAt: serializer.fromJson<DateTime?>(json['receivedAt']),
+      receivedBy: serializer.fromJson<String?>(json['receivedBy']),
+      warehouseNote: serializer.fromJson<String?>(json['warehouseNote']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'docNumber': serializer.toJson<String>(docNumber),
+      'grId': serializer.toJson<String>(grId),
+      'branchId': serializer.toJson<String>(branchId),
+      'createdBy': serializer.toJson<String>(createdBy),
+      'status': serializer.toJson<GoodsReturnStatus>(status),
+      'note': serializer.toJson<String?>(note),
+      'shippedAt': serializer.toJson<DateTime?>(shippedAt),
+      'shippedBy': serializer.toJson<String?>(shippedBy),
+      'receivedAt': serializer.toJson<DateTime?>(receivedAt),
+      'receivedBy': serializer.toJson<String?>(receivedBy),
+      'warehouseNote': serializer.toJson<String?>(warehouseNote),
+    };
+  }
+
+  GoodsReturnRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    String? docNumber,
+    String? grId,
+    String? branchId,
+    String? createdBy,
+    GoodsReturnStatus? status,
+    Value<String?> note = const Value.absent(),
+    Value<DateTime?> shippedAt = const Value.absent(),
+    Value<String?> shippedBy = const Value.absent(),
+    Value<DateTime?> receivedAt = const Value.absent(),
+    Value<String?> receivedBy = const Value.absent(),
+    Value<String?> warehouseNote = const Value.absent(),
+  }) => GoodsReturnRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    docNumber: docNumber ?? this.docNumber,
+    grId: grId ?? this.grId,
+    branchId: branchId ?? this.branchId,
+    createdBy: createdBy ?? this.createdBy,
+    status: status ?? this.status,
+    note: note.present ? note.value : this.note,
+    shippedAt: shippedAt.present ? shippedAt.value : this.shippedAt,
+    shippedBy: shippedBy.present ? shippedBy.value : this.shippedBy,
+    receivedAt: receivedAt.present ? receivedAt.value : this.receivedAt,
+    receivedBy: receivedBy.present ? receivedBy.value : this.receivedBy,
+    warehouseNote: warehouseNote.present
+        ? warehouseNote.value
+        : this.warehouseNote,
+  );
+  GoodsReturnRow copyWithCompanion(GoodsReturnsCompanion data) {
+    return GoodsReturnRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      docNumber: data.docNumber.present ? data.docNumber.value : this.docNumber,
+      grId: data.grId.present ? data.grId.value : this.grId,
+      branchId: data.branchId.present ? data.branchId.value : this.branchId,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      status: data.status.present ? data.status.value : this.status,
+      note: data.note.present ? data.note.value : this.note,
+      shippedAt: data.shippedAt.present ? data.shippedAt.value : this.shippedAt,
+      shippedBy: data.shippedBy.present ? data.shippedBy.value : this.shippedBy,
+      receivedAt: data.receivedAt.present
+          ? data.receivedAt.value
+          : this.receivedAt,
+      receivedBy: data.receivedBy.present
+          ? data.receivedBy.value
+          : this.receivedBy,
+      warehouseNote: data.warehouseNote.present
+          ? data.warehouseNote.value
+          : this.warehouseNote,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GoodsReturnRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('docNumber: $docNumber, ')
+          ..write('grId: $grId, ')
+          ..write('branchId: $branchId, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('status: $status, ')
+          ..write('note: $note, ')
+          ..write('shippedAt: $shippedAt, ')
+          ..write('shippedBy: $shippedBy, ')
+          ..write('receivedAt: $receivedAt, ')
+          ..write('receivedBy: $receivedBy, ')
+          ..write('warehouseNote: $warehouseNote')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    docNumber,
+    grId,
+    branchId,
+    createdBy,
+    status,
+    note,
+    shippedAt,
+    shippedBy,
+    receivedAt,
+    receivedBy,
+    warehouseNote,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GoodsReturnRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.docNumber == this.docNumber &&
+          other.grId == this.grId &&
+          other.branchId == this.branchId &&
+          other.createdBy == this.createdBy &&
+          other.status == this.status &&
+          other.note == this.note &&
+          other.shippedAt == this.shippedAt &&
+          other.shippedBy == this.shippedBy &&
+          other.receivedAt == this.receivedAt &&
+          other.receivedBy == this.receivedBy &&
+          other.warehouseNote == this.warehouseNote);
+}
+
+class GoodsReturnsCompanion extends UpdateCompanion<GoodsReturnRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<String> docNumber;
+  final Value<String> grId;
+  final Value<String> branchId;
+  final Value<String> createdBy;
+  final Value<GoodsReturnStatus> status;
+  final Value<String?> note;
+  final Value<DateTime?> shippedAt;
+  final Value<String?> shippedBy;
+  final Value<DateTime?> receivedAt;
+  final Value<String?> receivedBy;
+  final Value<String?> warehouseNote;
+  final Value<int> rowid;
+  const GoodsReturnsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.docNumber = const Value.absent(),
+    this.grId = const Value.absent(),
+    this.branchId = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.status = const Value.absent(),
+    this.note = const Value.absent(),
+    this.shippedAt = const Value.absent(),
+    this.shippedBy = const Value.absent(),
+    this.receivedAt = const Value.absent(),
+    this.receivedBy = const Value.absent(),
+    this.warehouseNote = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GoodsReturnsCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String docNumber,
+    required String grId,
+    required String branchId,
+    required String createdBy,
+    this.status = const Value.absent(),
+    this.note = const Value.absent(),
+    this.shippedAt = const Value.absent(),
+    this.shippedBy = const Value.absent(),
+    this.receivedAt = const Value.absent(),
+    this.receivedBy = const Value.absent(),
+    this.warehouseNote = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : docNumber = Value(docNumber),
+       grId = Value(grId),
+       branchId = Value(branchId),
+       createdBy = Value(createdBy);
+  static Insertable<GoodsReturnRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? docNumber,
+    Expression<String>? grId,
+    Expression<String>? branchId,
+    Expression<String>? createdBy,
+    Expression<String>? status,
+    Expression<String>? note,
+    Expression<DateTime>? shippedAt,
+    Expression<String>? shippedBy,
+    Expression<DateTime>? receivedAt,
+    Expression<String>? receivedBy,
+    Expression<String>? warehouseNote,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (docNumber != null) 'doc_number': docNumber,
+      if (grId != null) 'gr_id': grId,
+      if (branchId != null) 'branch_id': branchId,
+      if (createdBy != null) 'created_by': createdBy,
+      if (status != null) 'status': status,
+      if (note != null) 'note': note,
+      if (shippedAt != null) 'shipped_at': shippedAt,
+      if (shippedBy != null) 'shipped_by': shippedBy,
+      if (receivedAt != null) 'received_at': receivedAt,
+      if (receivedBy != null) 'received_by': receivedBy,
+      if (warehouseNote != null) 'warehouse_note': warehouseNote,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GoodsReturnsCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<String>? docNumber,
+    Value<String>? grId,
+    Value<String>? branchId,
+    Value<String>? createdBy,
+    Value<GoodsReturnStatus>? status,
+    Value<String?>? note,
+    Value<DateTime?>? shippedAt,
+    Value<String?>? shippedBy,
+    Value<DateTime?>? receivedAt,
+    Value<String?>? receivedBy,
+    Value<String?>? warehouseNote,
+    Value<int>? rowid,
+  }) {
+    return GoodsReturnsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      docNumber: docNumber ?? this.docNumber,
+      grId: grId ?? this.grId,
+      branchId: branchId ?? this.branchId,
+      createdBy: createdBy ?? this.createdBy,
+      status: status ?? this.status,
+      note: note ?? this.note,
+      shippedAt: shippedAt ?? this.shippedAt,
+      shippedBy: shippedBy ?? this.shippedBy,
+      receivedAt: receivedAt ?? this.receivedAt,
+      receivedBy: receivedBy ?? this.receivedBy,
+      warehouseNote: warehouseNote ?? this.warehouseNote,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $GoodsReturnsTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (docNumber.present) {
+      map['doc_number'] = Variable<String>(docNumber.value);
+    }
+    if (grId.present) {
+      map['gr_id'] = Variable<String>(grId.value);
+    }
+    if (branchId.present) {
+      map['branch_id'] = Variable<String>(branchId.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(
+        $GoodsReturnsTable.$converterstatus.toSql(status.value),
+      );
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (shippedAt.present) {
+      map['shipped_at'] = Variable<DateTime>(shippedAt.value);
+    }
+    if (shippedBy.present) {
+      map['shipped_by'] = Variable<String>(shippedBy.value);
+    }
+    if (receivedAt.present) {
+      map['received_at'] = Variable<DateTime>(receivedAt.value);
+    }
+    if (receivedBy.present) {
+      map['received_by'] = Variable<String>(receivedBy.value);
+    }
+    if (warehouseNote.present) {
+      map['warehouse_note'] = Variable<String>(warehouseNote.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GoodsReturnsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('docNumber: $docNumber, ')
+          ..write('grId: $grId, ')
+          ..write('branchId: $branchId, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('status: $status, ')
+          ..write('note: $note, ')
+          ..write('shippedAt: $shippedAt, ')
+          ..write('shippedBy: $shippedBy, ')
+          ..write('receivedAt: $receivedAt, ')
+          ..write('receivedBy: $receivedBy, ')
+          ..write('warehouseNote: $warehouseNote, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $GoodsReturnLinesTable extends GoodsReturnLines
+    with TableInfo<$GoodsReturnLinesTable, GoodsReturnLineRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GoodsReturnLinesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>($GoodsReturnLinesTable.$convertersyncStatus);
+  static const VerificationMeta _goodsReturnIdMeta = const VerificationMeta(
+    'goodsReturnId',
+  );
+  @override
+  late final GeneratedColumn<String> goodsReturnId = GeneratedColumn<String>(
+    'goods_return_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES goods_returns (id)',
+    ),
+  );
+  static const VerificationMeta _grLineIdMeta = const VerificationMeta(
+    'grLineId',
+  );
+  @override
+  late final GeneratedColumn<String> grLineId = GeneratedColumn<String>(
+    'gr_line_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES good_receipt_lines (id)',
+    ),
+  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+    'item_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES items (id)',
+    ),
+  );
+  static const VerificationMeta _batchIdMeta = const VerificationMeta(
+    'batchId',
+  );
+  @override
+  late final GeneratedColumn<String> batchId = GeneratedColumn<String>(
+    'batch_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES item_batches (id)',
+    ),
+  );
+  static const VerificationMeta _qtyMeta = const VerificationMeta('qty');
+  @override
+  late final GeneratedColumn<int> qty = GeneratedColumn<int>(
+    'qty',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rejectReasonSnapshotMeta =
+      const VerificationMeta('rejectReasonSnapshot');
+  @override
+  late final GeneratedColumn<String> rejectReasonSnapshot =
+      GeneratedColumn<String>(
+        'reject_reason_snapshot',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    goodsReturnId,
+    grLineId,
+    itemId,
+    batchId,
+    qty,
+    rejectReasonSnapshot,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'goods_return_lines';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<GoodsReturnLineRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('goods_return_id')) {
+      context.handle(
+        _goodsReturnIdMeta,
+        goodsReturnId.isAcceptableOrUnknown(
+          data['goods_return_id']!,
+          _goodsReturnIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_goodsReturnIdMeta);
+    }
+    if (data.containsKey('gr_line_id')) {
+      context.handle(
+        _grLineIdMeta,
+        grLineId.isAcceptableOrUnknown(data['gr_line_id']!, _grLineIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_grLineIdMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('batch_id')) {
+      context.handle(
+        _batchIdMeta,
+        batchId.isAcceptableOrUnknown(data['batch_id']!, _batchIdMeta),
+      );
+    }
+    if (data.containsKey('qty')) {
+      context.handle(
+        _qtyMeta,
+        qty.isAcceptableOrUnknown(data['qty']!, _qtyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_qtyMeta);
+    }
+    if (data.containsKey('reject_reason_snapshot')) {
+      context.handle(
+        _rejectReasonSnapshotMeta,
+        rejectReasonSnapshot.isAcceptableOrUnknown(
+          data['reject_reason_snapshot']!,
+          _rejectReasonSnapshotMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_rejectReasonSnapshotMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  GoodsReturnLineRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GoodsReturnLineRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $GoodsReturnLinesTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      goodsReturnId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}goods_return_id'],
+      )!,
+      grLineId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gr_line_id'],
+      )!,
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}item_id'],
+      )!,
+      batchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}batch_id'],
+      ),
+      qty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}qty'],
+      )!,
+      rejectReasonSnapshot: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reject_reason_snapshot'],
+      )!,
+    );
+  }
+
+  @override
+  $GoodsReturnLinesTable createAlias(String alias) {
+    return $GoodsReturnLinesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+}
+
+class GoodsReturnLineRow extends DataClass
+    implements Insertable<GoodsReturnLineRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+  final String goodsReturnId;
+
+  /// The rejected Good Receipt position this line sends back. Unique twice: see the
+  /// class note.
+  final String grLineId;
+  final String itemId;
+
+  /// The batch that was rejected. NULL, and only NULL, for an item without expiry
+  /// (G-E2); the create use case enforces both directions because the rule depends on
+  /// `items.has_expiry`, which this table cannot read.
+  ///
+  /// An **expired** batch is entirely legitimate here, unlike on every outbound
+  /// document in this schema. G-E5 says so directly — goods too close to their expiry
+  /// date are a reason to reject, and a rejection has to be able to go home (§36).
+  final String? batchId;
+
+  /// Returned quantity in **milli-units** (Q-3), always equal to the source Good
+  /// Receipt line's `shipped_qty`. Strictly positive: a return of nothing is not a
+  /// line, and the ledger records changes rather than confirmations (G-A1).
+  final int qty;
+
+  /// The reason the branch head gave when refusing this position (G-G4), copied at
+  /// creation. Mandatory and non-blank — see the class note.
+  final String rejectReasonSnapshot;
+  const GoodsReturnLineRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.goodsReturnId,
+    required this.grLineId,
+    required this.itemId,
+    this.batchId,
+    required this.qty,
+    required this.rejectReasonSnapshot,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $GoodsReturnLinesTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    map['goods_return_id'] = Variable<String>(goodsReturnId);
+    map['gr_line_id'] = Variable<String>(grLineId);
+    map['item_id'] = Variable<String>(itemId);
+    if (!nullToAbsent || batchId != null) {
+      map['batch_id'] = Variable<String>(batchId);
+    }
+    map['qty'] = Variable<int>(qty);
+    map['reject_reason_snapshot'] = Variable<String>(rejectReasonSnapshot);
+    return map;
+  }
+
+  GoodsReturnLinesCompanion toCompanion(bool nullToAbsent) {
+    return GoodsReturnLinesCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      goodsReturnId: Value(goodsReturnId),
+      grLineId: Value(grLineId),
+      itemId: Value(itemId),
+      batchId: batchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(batchId),
+      qty: Value(qty),
+      rejectReasonSnapshot: Value(rejectReasonSnapshot),
+    );
+  }
+
+  factory GoodsReturnLineRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GoodsReturnLineRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      goodsReturnId: serializer.fromJson<String>(json['goodsReturnId']),
+      grLineId: serializer.fromJson<String>(json['grLineId']),
+      itemId: serializer.fromJson<String>(json['itemId']),
+      batchId: serializer.fromJson<String?>(json['batchId']),
+      qty: serializer.fromJson<int>(json['qty']),
+      rejectReasonSnapshot: serializer.fromJson<String>(
+        json['rejectReasonSnapshot'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'goodsReturnId': serializer.toJson<String>(goodsReturnId),
+      'grLineId': serializer.toJson<String>(grLineId),
+      'itemId': serializer.toJson<String>(itemId),
+      'batchId': serializer.toJson<String?>(batchId),
+      'qty': serializer.toJson<int>(qty),
+      'rejectReasonSnapshot': serializer.toJson<String>(rejectReasonSnapshot),
+    };
+  }
+
+  GoodsReturnLineRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    String? goodsReturnId,
+    String? grLineId,
+    String? itemId,
+    Value<String?> batchId = const Value.absent(),
+    int? qty,
+    String? rejectReasonSnapshot,
+  }) => GoodsReturnLineRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    goodsReturnId: goodsReturnId ?? this.goodsReturnId,
+    grLineId: grLineId ?? this.grLineId,
+    itemId: itemId ?? this.itemId,
+    batchId: batchId.present ? batchId.value : this.batchId,
+    qty: qty ?? this.qty,
+    rejectReasonSnapshot: rejectReasonSnapshot ?? this.rejectReasonSnapshot,
+  );
+  GoodsReturnLineRow copyWithCompanion(GoodsReturnLinesCompanion data) {
+    return GoodsReturnLineRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      goodsReturnId: data.goodsReturnId.present
+          ? data.goodsReturnId.value
+          : this.goodsReturnId,
+      grLineId: data.grLineId.present ? data.grLineId.value : this.grLineId,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      batchId: data.batchId.present ? data.batchId.value : this.batchId,
+      qty: data.qty.present ? data.qty.value : this.qty,
+      rejectReasonSnapshot: data.rejectReasonSnapshot.present
+          ? data.rejectReasonSnapshot.value
+          : this.rejectReasonSnapshot,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GoodsReturnLineRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('goodsReturnId: $goodsReturnId, ')
+          ..write('grLineId: $grLineId, ')
+          ..write('itemId: $itemId, ')
+          ..write('batchId: $batchId, ')
+          ..write('qty: $qty, ')
+          ..write('rejectReasonSnapshot: $rejectReasonSnapshot')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    goodsReturnId,
+    grLineId,
+    itemId,
+    batchId,
+    qty,
+    rejectReasonSnapshot,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GoodsReturnLineRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.goodsReturnId == this.goodsReturnId &&
+          other.grLineId == this.grLineId &&
+          other.itemId == this.itemId &&
+          other.batchId == this.batchId &&
+          other.qty == this.qty &&
+          other.rejectReasonSnapshot == this.rejectReasonSnapshot);
+}
+
+class GoodsReturnLinesCompanion extends UpdateCompanion<GoodsReturnLineRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<String> goodsReturnId;
+  final Value<String> grLineId;
+  final Value<String> itemId;
+  final Value<String?> batchId;
+  final Value<int> qty;
+  final Value<String> rejectReasonSnapshot;
+  final Value<int> rowid;
+  const GoodsReturnLinesCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.goodsReturnId = const Value.absent(),
+    this.grLineId = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.batchId = const Value.absent(),
+    this.qty = const Value.absent(),
+    this.rejectReasonSnapshot = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GoodsReturnLinesCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String goodsReturnId,
+    required String grLineId,
+    required String itemId,
+    this.batchId = const Value.absent(),
+    required int qty,
+    required String rejectReasonSnapshot,
+    this.rowid = const Value.absent(),
+  }) : goodsReturnId = Value(goodsReturnId),
+       grLineId = Value(grLineId),
+       itemId = Value(itemId),
+       qty = Value(qty),
+       rejectReasonSnapshot = Value(rejectReasonSnapshot);
+  static Insertable<GoodsReturnLineRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? goodsReturnId,
+    Expression<String>? grLineId,
+    Expression<String>? itemId,
+    Expression<String>? batchId,
+    Expression<int>? qty,
+    Expression<String>? rejectReasonSnapshot,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (goodsReturnId != null) 'goods_return_id': goodsReturnId,
+      if (grLineId != null) 'gr_line_id': grLineId,
+      if (itemId != null) 'item_id': itemId,
+      if (batchId != null) 'batch_id': batchId,
+      if (qty != null) 'qty': qty,
+      if (rejectReasonSnapshot != null)
+        'reject_reason_snapshot': rejectReasonSnapshot,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GoodsReturnLinesCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<String>? goodsReturnId,
+    Value<String>? grLineId,
+    Value<String>? itemId,
+    Value<String?>? batchId,
+    Value<int>? qty,
+    Value<String>? rejectReasonSnapshot,
+    Value<int>? rowid,
+  }) {
+    return GoodsReturnLinesCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      goodsReturnId: goodsReturnId ?? this.goodsReturnId,
+      grLineId: grLineId ?? this.grLineId,
+      itemId: itemId ?? this.itemId,
+      batchId: batchId ?? this.batchId,
+      qty: qty ?? this.qty,
+      rejectReasonSnapshot: rejectReasonSnapshot ?? this.rejectReasonSnapshot,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $GoodsReturnLinesTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (goodsReturnId.present) {
+      map['goods_return_id'] = Variable<String>(goodsReturnId.value);
+    }
+    if (grLineId.present) {
+      map['gr_line_id'] = Variable<String>(grLineId.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (batchId.present) {
+      map['batch_id'] = Variable<String>(batchId.value);
+    }
+    if (qty.present) {
+      map['qty'] = Variable<int>(qty.value);
+    }
+    if (rejectReasonSnapshot.present) {
+      map['reject_reason_snapshot'] = Variable<String>(
+        rejectReasonSnapshot.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GoodsReturnLinesCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('goodsReturnId: $goodsReturnId, ')
+          ..write('grLineId: $grLineId, ')
+          ..write('itemId: $itemId, ')
+          ..write('batchId: $batchId, ')
+          ..write('qty: $qty, ')
+          ..write('rejectReasonSnapshot: $rejectReasonSnapshot, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   late final $BranchesTable branches = $BranchesTable(this);
@@ -16646,6 +18307,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $DisposalLinesTable disposalLines = $DisposalLinesTable(this);
   late final $ConsumptionsTable consumptions = $ConsumptionsTable(this);
   late final $ConsumptionLinesTable consumptionLines = $ConsumptionLinesTable(
+    this,
+  );
+  late final $GoodsReturnsTable goodsReturns = $GoodsReturnsTable(this);
+  late final $GoodsReturnLinesTable goodsReturnLines = $GoodsReturnLinesTable(
     this,
   );
   late final Index idxStockBalancesBatched = Index(
@@ -16964,6 +18629,66 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_consumption_lines_unbatched',
     'CREATE UNIQUE INDEX idx_consumption_lines_unbatched ON consumption_lines (consumption_id, item_id) WHERE batch_id IS NULL AND deleted_at IS NULL',
   );
+  late final Index idxGoodsReturnsBranchStatus = Index(
+    'idx_goods_returns_branch_status',
+    'CREATE INDEX idx_goods_returns_branch_status ON goods_returns (branch_id, status)',
+  );
+  late final Index idxGoodsReturnsCreatedByStatus = Index(
+    'idx_goods_returns_created_by_status',
+    'CREATE INDEX idx_goods_returns_created_by_status ON goods_returns (created_by, status)',
+  );
+  late final Index idxGoodsReturnsShippedByStatus = Index(
+    'idx_goods_returns_shipped_by_status',
+    'CREATE INDEX idx_goods_returns_shipped_by_status ON goods_returns (shipped_by, status)',
+  );
+  late final Index idxGoodsReturnsReceivedByStatus = Index(
+    'idx_goods_returns_received_by_status',
+    'CREATE INDEX idx_goods_returns_received_by_status ON goods_returns (received_by, status)',
+  );
+  late final Index idxGoodsReturnsCreatedAt = Index(
+    'idx_goods_returns_created_at',
+    'CREATE INDEX idx_goods_returns_created_at ON goods_returns (created_at)',
+  );
+  late final Index idxGoodsReturnsShippedAt = Index(
+    'idx_goods_returns_shipped_at',
+    'CREATE INDEX idx_goods_returns_shipped_at ON goods_returns (shipped_at)',
+  );
+  late final Index idxGoodsReturnsReceivedAt = Index(
+    'idx_goods_returns_received_at',
+    'CREATE INDEX idx_goods_returns_received_at ON goods_returns (received_at)',
+  );
+  late final Index idxGoodsReturnsGr = Index(
+    'idx_goods_returns_gr',
+    'CREATE UNIQUE INDEX idx_goods_returns_gr ON goods_returns (gr_id)',
+  );
+  late final Index idxGoodsReturnsDocNumber = Index(
+    'idx_goods_returns_doc_number',
+    'CREATE UNIQUE INDEX idx_goods_returns_doc_number ON goods_returns (doc_number)',
+  );
+  late final Index idxGoodsReturnLinesReturn = Index(
+    'idx_goods_return_lines_return',
+    'CREATE INDEX idx_goods_return_lines_return ON goods_return_lines (goods_return_id)',
+  );
+  late final Index idxGoodsReturnLinesGrLine = Index(
+    'idx_goods_return_lines_gr_line',
+    'CREATE INDEX idx_goods_return_lines_gr_line ON goods_return_lines (gr_line_id)',
+  );
+  late final Index idxGoodsReturnLinesItem = Index(
+    'idx_goods_return_lines_item',
+    'CREATE INDEX idx_goods_return_lines_item ON goods_return_lines (item_id)',
+  );
+  late final Index idxGoodsReturnLinesBatch = Index(
+    'idx_goods_return_lines_batch',
+    'CREATE INDEX idx_goods_return_lines_batch ON goods_return_lines (batch_id)',
+  );
+  late final Index idxGoodsReturnLinesGrLineUnique = Index(
+    'idx_goods_return_lines_gr_line_unique',
+    'CREATE UNIQUE INDEX idx_goods_return_lines_gr_line_unique ON goods_return_lines (gr_line_id)',
+  );
+  late final Index idxGoodsReturnLinesUnique = Index(
+    'idx_goods_return_lines_unique',
+    'CREATE UNIQUE INDEX idx_goods_return_lines_unique ON goods_return_lines (goods_return_id, gr_line_id)',
+  );
   late final MasterDataDao masterDataDao = MasterDataDao(this as AppDatabase);
   late final InventoryDao inventoryDao = InventoryDao(this as AppDatabase);
   late final OpnameDao opnameDao = OpnameDao(this as AppDatabase);
@@ -16981,6 +18706,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final DisposalDao disposalDao = DisposalDao(this as AppDatabase);
   late final ConsumptionDao consumptionDao = ConsumptionDao(
+    this as AppDatabase,
+  );
+  late final GoodsReturnDao goodsReturnDao = GoodsReturnDao(
     this as AppDatabase,
   );
   @override
@@ -17012,6 +18740,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     disposalLines,
     consumptions,
     consumptionLines,
+    goodsReturns,
+    goodsReturnLines,
     idxStockBalancesBatched,
     idxStockBalancesUnbatched,
     idxStockMovementsItem,
@@ -17091,6 +18821,21 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxConsumptionLinesBatch,
     idxConsumptionLinesBatched,
     idxConsumptionLinesUnbatched,
+    idxGoodsReturnsBranchStatus,
+    idxGoodsReturnsCreatedByStatus,
+    idxGoodsReturnsShippedByStatus,
+    idxGoodsReturnsReceivedByStatus,
+    idxGoodsReturnsCreatedAt,
+    idxGoodsReturnsShippedAt,
+    idxGoodsReturnsReceivedAt,
+    idxGoodsReturnsGr,
+    idxGoodsReturnsDocNumber,
+    idxGoodsReturnLinesReturn,
+    idxGoodsReturnLinesGrLine,
+    idxGoodsReturnLinesItem,
+    idxGoodsReturnLinesBatch,
+    idxGoodsReturnLinesGrLineUnique,
+    idxGoodsReturnLinesUnique,
   ];
   @override
   DriftDatabaseOptions get options =>

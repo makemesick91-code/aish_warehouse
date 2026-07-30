@@ -34,7 +34,11 @@ abstract final class StockMovementPresenter {
     // Milestone 8. The one label this hardening adds; every other line above is the
     // wording the earlier milestones' own screens already used.
     StockMovementType.consumption => 'Pemakaian',
-    StockMovementType.itemReturn => 'Retur',
+    // Milestone 9. Narrowed from the placeholder *"Retur"* the previous milestone
+    // carried: the ledger now has exactly one kind of `return` row and it always
+    // credits the Warehouse (§22/§34), so naming the destination is the difference
+    // between a label an auditor can act on and one they have to look up.
+    StockMovementType.itemReturn => 'Retur ke Warehouse',
     StockMovementType.disposal => 'Pemusnahan',
     StockMovementType.reversal => 'Pembalikan',
   };
@@ -120,6 +124,8 @@ abstract final class StockMovementPresenter {
     RefDocType.disposal => 'dokumen Pemusnahan',
     // Milestone 8.
     RefDocType.consumption => 'dokumen Pemakaian',
+    // Milestone 9.
+    RefDocType.goodsReturn => 'dokumen Retur',
     RefDocType.seed => 'saldo awal',
     _ => unknownDocumentLabel(refDocType),
   };

@@ -89,6 +89,11 @@ void main() {
 
   const consumptionTables = <String>['consumptions', 'consumption_lines'];
 
+  /// Milestone 9's tables. Declared here — in a test about an *earlier* step — because
+  /// every migration lands a device on the current schema, so the exhaustive table
+  /// assertions below have to know about every table that exists today.
+  const goodsReturnTables = <String>['goods_returns', 'goods_return_lines'];
+
   const consumptionIndexes = <String>[
     'idx_consumptions_branch_status',
     'idx_consumptions_room_status',
@@ -362,7 +367,7 @@ void main() {
     // Drop the Pemakaian objects, leaving exactly a v9 database. Indexes go with
     // their tables in SQLite, so only the tables have to be named.
     await database.customStatement('PRAGMA foreign_keys = OFF;');
-    for (final table in consumptionTables) {
+    for (final table in [...goodsReturnTables, ...consumptionTables]) {
       await database.customStatement('DROP TABLE IF EXISTS $table;');
     }
     await database.customStatement('PRAGMA foreign_keys = ON;');
@@ -410,7 +415,7 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 10);
+      expect(row.read<int>('user_version'), 11);
 
       await database.close();
     });
@@ -422,7 +427,7 @@ void main() {
       final tables = await objectNames(database, 'table');
       expect(tables, containsAll(consumptionTables));
       // Exhaustive: v10 adds two tables, no more.
-      expect(tables, {...v9Tables, ...consumptionTables});
+      expect(tables, {...v9Tables, ...consumptionTables, ...goodsReturnTables});
 
       await database.close();
     });
@@ -645,7 +650,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 10);
+      expect(version.read<int>('user_version'), 11);
       expect(
         await objectNames(second, 'table'),
         containsAll(consumptionTables),
@@ -757,6 +762,7 @@ void main() {
       await database.customStatement('PRAGMA foreign_keys = OFF;');
 
       const byVersion = <int, List<String>>{
+        11: goodsReturnTables,
         10: consumptionTables,
         9: ['disposals', 'disposal_lines'],
         8: ['distributions', 'distribution_lines'],
@@ -796,7 +802,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 10);
+        expect(version.read<int>('user_version'), 11);
 
         final tables = await objectNames(database, 'table');
         expect(tables, containsAll(consumptionTables));

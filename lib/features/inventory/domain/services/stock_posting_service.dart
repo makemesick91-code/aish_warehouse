@@ -1198,6 +1198,133 @@ class StockPostingService {
     return movements;
   }
 
+  /// Posts every position of a Retur Barang as **one** unit of work (§22/§23).
+  ///
+  /// This method opens no transaction of its own: the caller —
+  /// `ReceiveGoodsReturnUseCase` — already owns one, and that is precisely the point.
+  /// Writing the movements, increasing the Warehouse balances, flipping the document to
+  /// `received` and stamping its actor all have to commit or roll back together, so a
+  /// failure on the last position cannot leave the first one's stock already counted
+  /// in. There is deliberately **no** single-shot `postGoodsReturn` counterpart: nothing
+  /// in this application returns a single position outside a document, and offering a
+  /// method that opened its own transaction would be offering exactly the loop §23
+  /// forbids.
+  ///
+  /// ### Why `from_location_id` is NULL
+  ///
+  /// This is the decision that makes the whole milestone hang together, and it is a
+  /// decision this milestone documents rather than a rule the specification states.
+  ///
+  /// A rejected Good Receipt line **never entered the branch store's balance**: G-G5
+  /// credits `checked` lines only, and [postGoodReceiptInTransaction] filters on
+  /// exactly that. Meanwhile the Delivery Order that carried the goods already debited
+  /// the Warehouse when it shipped, writing `to_location_id = NULL` — the goods went
+  /// into transit and never arrived anywhere the ledger tracks. So at the moment a
+  /// return is confirmed there is no location holding this stock: debiting the branch
+  /// would create a negative balance out of nothing (G-A2), and debiting the Warehouse
+  /// would debit it twice for one shipment.
+  ///
+  /// The honest movement therefore has one leg — nothing on the source side, the
+  /// Warehouse on the destination side — which is the exact mirror of the shipment that
+  /// sent the goods out. `stock_movements`' own CHECK allows it: it requires *one* of
+  /// the two locations, not both.
+  ///
+  /// ### Why there is no expiry check here, and why that is the opposite of a bug
+  ///
+  /// [postTransfer], [postInboundWarehouse] and the shipment / receipt / distribution /
+  /// consumption paths all refuse an expired batch outright (G-E4). This one must not,
+  /// and [postDisposalLinesInTransaction] is the only other method in this class that
+  /// shares the exemption — for a related reason. G-E5 states that goods which are
+  /// expired or too close to their expiry date *are* legitimate grounds for a branch
+  /// head to reject a delivery. Refusing to let such a batch come home would leave it
+  /// in a branch that may not use it, may not distribute it and has no document to
+  /// account for it (§36).
+  ///
+  /// What happens to it afterwards is not this method's business and is not lost: an
+  /// expired batch back in the Warehouse balance shows up on the Warehouse dashboard as
+  /// expired and becomes a Pemusnahan candidate, which is the one route G-E7 gives it
+  /// out of the system.
+  ///
+  /// [warehouseLocationId] must be the `warehouse` location the caller resolved by type
+  /// (§21); it is re-checked here so no caller can nominate a branch store or a room as
+  /// the destination. Every position is validated before **any** of them is written: a
+  /// positive quantity, a non-empty note, and item/batch consistency (G-E1/G-E2). No
+  /// sufficiency check is needed or possible — nothing is being taken out of anything.
+  Future<List<InventoryMovement>> postGoodsReturnLinesInTransaction({
+    required String warehouseLocationId,
+    required List<GoodsReturnPostingEntry> lines,
+    required String actorUserId,
+    required String goodsReturnId,
+  }) async {
+    if (lines.isEmpty) {
+      throw const ValidationFailure('Retur tanpa baris tidak dapat diterima.');
+    }
+
+    final destination = await _requireLocation(warehouseLocationId);
+    if (destination.type != StockLocationType.warehouse) {
+      throw InvalidLocationFailure(
+        'Retur hanya boleh diterima di Warehouse Pusat, bukan di '
+        '"${destination.name}".',
+      );
+    }
+
+    // --- validate the whole document first -----------------------------------
+    for (final line in lines) {
+      _requirePositiveQty(line.qty);
+      if (line.note.trim().isEmpty) {
+        // G-G4 made the reject reason mandatory upstream and the snapshot carries it,
+        // so a blank note here means that guarantee failed somewhere. Refusing is how
+        // the ledger declines to record a return nobody explained.
+        throw const ValidationFailure(
+          'Baris retur wajib menyertakan alasan penolakan.',
+        );
+      }
+      final item = await _requireItem(line.itemId);
+      // G-E1/G-E2: the batch must exist and belong to the item, an expiry-tracked item
+      // must carry one, and an item without expiry must not. Note what is *absent*: no
+      // `_rejectExpiredBatch`. See the note above.
+      await _validateBatch(item: item, batchId: line.batchId);
+    }
+
+    // --- post ----------------------------------------------------------------
+    final movements = <InventoryMovement>[];
+    for (final line in lines) {
+      movements.add(
+        await _append(
+          MovementDraft(
+            id: _newId(),
+            itemId: line.itemId,
+            batchId: line.batchId,
+            // Nothing on this side: the goods were in transit, held by no location
+            // the ledger tracks. See the note above.
+            fromLocationId: null,
+            toLocationId: warehouseLocationId,
+            qty: line.qty,
+            movementType: StockMovementType.itemReturn,
+            actorUserId: actorUserId,
+            refDocType: RefDocType.goodsReturn,
+            refDocId: goodsReturnId,
+            note: line.note,
+          ),
+        ),
+      );
+
+      await _increase(
+        locationId: warehouseLocationId,
+        itemId: line.itemId,
+        batchId: line.batchId,
+        qty: line.qty,
+      );
+    }
+
+    // No closing negative-balance assertion, unlike the disposal and consumption
+    // paths. Every movement here *increases* a balance, so G-A2 cannot be violated by
+    // this method — and a check that could never fail is a check that misleads the next
+    // reader into thinking something was at risk.
+
+    return movements;
+  }
+
   /// Corrects a posted movement by appending its mirror image (G-A1). The
   /// original row is never touched.
   Future<InventoryMovement> postReversal({

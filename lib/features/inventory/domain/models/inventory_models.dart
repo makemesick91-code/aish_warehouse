@@ -404,3 +404,55 @@ class InventoryMovement {
 
   bool get isReversal => movementType == StockMovementType.reversal;
 }
+
+/// One position a Retur Barang credits back to the Warehouse (§22/§23).
+///
+/// Carries only what the ledger needs. Which branch sent it and which Good Receipt
+/// refused it are the Retur's business — except the reject reason, which travels as
+/// [note] because the ledger row is *about* it.
+///
+/// Three things distinguish it from every other posting line in this file, and each is
+/// a decision this milestone documents rather than a rule the specification states:
+///
+/// * **There is no source.** A rejected position never entered the branch store's
+///   balance — G-G5 credits `checked` lines only — and the shipment already debited the
+///   Warehouse. So the movement has one leg, `from_location_id IS NULL`, and the
+///   destination is the Warehouse Pusat. That is the mirror image of a
+///   [ConsumptionPostingLine], which has a source and no destination.
+/// * **There is no destination parameter either.** It lives on the method, resolved by
+///   type from `stock_locations`, once per document (§21) — because a return credits
+///   exactly one location and no screen may nominate it.
+/// * **Expiry is not checked anywhere on this path.** G-E5 makes an expired or
+///   near-expiry batch a legitimate reason to reject a delivery, and a rejection has to
+///   be able to go home (§36). Refusing it here would leave the branch holding goods it
+///   may not use, may not distribute and has no document for.
+class GoodsReturnPostingEntry {
+  const GoodsReturnPostingEntry({
+    required this.lineId,
+    required this.itemId,
+    this.batchId,
+    required this.qty,
+    required this.note,
+  });
+
+  /// The return line this movement came from, so a failure can name it.
+  final String lineId;
+
+  final String itemId;
+
+  /// The batch that was rejected, or `null` for an item without expiry (G-E2).
+  final String? batchId;
+
+  /// Strictly positive, and always the source Good Receipt line's `shipped_qty`: a
+  /// rejection accepted nothing, so everything that was sent is coming back.
+  final Quantity qty;
+
+  /// The deterministic movement note. **Non-nullable**, unlike
+  /// [ConsumptionPostingLine]'s: G-G4 makes a reject reason mandatory on every rejected
+  /// Good Receipt line, the return snapshots it, and the posting plan composes the note
+  /// from it — so a return movement with no note would mean that guarantee failed
+  /// somewhere upstream. Requiring it here is how the ledger says so.
+  final String note;
+
+  bool get isBatched => batchId != null;
+}

@@ -10,6 +10,10 @@ import '../../../features/delivery/domain/use_cases/create_delivery_order_use_ca
 import '../../../features/delivery/domain/use_cases/ship_delivery_order_use_case.dart';
 import '../../../features/consumption/domain/models/consumption_models.dart';
 import '../../../features/consumption/domain/repositories/consumption_repository.dart';
+import '../../../features/goods_return/domain/repositories/goods_return_repository.dart';
+import '../../../features/goods_return/domain/use_cases/create_goods_return_use_case.dart';
+import '../../../features/goods_return/domain/use_cases/receive_goods_return_use_case.dart';
+import '../../../features/goods_return/domain/use_cases/ship_goods_return_use_case.dart';
 import '../../../features/consumption/domain/services/consumption_stock_reader.dart';
 import '../../../features/consumption/domain/use_cases/add_consumption_line_use_case.dart';
 import '../../../features/consumption/domain/use_cases/create_consumption_use_case.dart';
@@ -160,6 +164,7 @@ class DevelopmentSeed {
     required this._distributions,
     required this._disposals,
     required this._consumptions,
+    required this._goodsReturns,
     bool? isDevelopmentBuild,
   }) : _opnameRepository = opnames,
        _isDevelopmentBuild = isDevelopmentBuild ?? !kReleaseMode;
@@ -174,6 +179,7 @@ class DevelopmentSeed {
   final DistributionRepository _distributions;
   final DisposalRepository _disposals;
   final ConsumptionRepository _consumptions;
+  final GoodsReturnRepository _goodsReturns;
   final bool _isDevelopmentBuild;
 
   static const _categoryNames = <String>[
@@ -1189,6 +1195,127 @@ class DevelopmentSeed {
     ).call(actorUserId: head.id, goodReceiptId: grId);
 
     return grId;
+  }
+
+  /// Creates a `draft` Retur from the seeded posted Good Receipt (§40).
+  ///
+  /// Opt-in and idempotent: a receipt that already has a return gets it back, whatever
+  /// status it reached, so a second run is a no-op rather than the start of a second
+  /// document — which the unique index on `gr_id` would refuse anyway.
+  ///
+  /// Everything runs through `CreateGoodsReturnUseCase`, so the snapshot the demo shows
+  /// is the snapshot the rules produce: every rejected line, at its shipped quantity,
+  /// with the reason G-G4 demanded. Nothing here writes a line, a balance or a movement
+  /// directly.
+  ///
+  /// Returns `null` when there is no posted receipt with rejections to raise one from —
+  /// the honest answer, rather than inventing a rejection to have something to return.
+  Future<String?> seedDraftGoodsReturn() async {
+    _requireDevelopmentBuild();
+
+    final users = await _master.activeUsers();
+    final heads = users.where((user) => user.role == UserRole.kepalaCabang);
+    if (heads.isEmpty) return null;
+    final head = heads.first;
+
+    final grId = await seedPostedGoodReceipt();
+    if (grId == null) return null;
+
+    final existing = await _goodsReturns.findByGoodReceipt(grId);
+    if (existing != null) return existing.id;
+
+    // The receipt may legitimately have refused nothing — `seedPostedGoodReceipt` only
+    // rejects when there is a second acceptable position or a near-expiry batch. A
+    // return with no lines is not a document, so this stops rather than inventing one.
+    final rejected = await _goodsReturns.rejectedGoodReceiptLineIds(grId);
+    if (rejected.isEmpty) return null;
+
+    final created =
+        await CreateGoodsReturnUseCase(
+          returns: _goodsReturns,
+          master: _master,
+        ).call(
+          actorUserId: head.id,
+          goodReceiptId: grId,
+          note: 'Dikirim balik ke Warehouse Pusat (demo seed)',
+        );
+    return created.id;
+  }
+
+  /// Ships the seeded draft, leaving it `shipped` — the state the Warehouse queue shows.
+  ///
+  /// Posts **nothing**: the goods are on a road, and the Warehouse balance moves only
+  /// when somebody counts them in (§20). A second run returns the same document.
+  Future<String?> seedShippedGoodsReturn() async {
+    _requireDevelopmentBuild();
+
+    final users = await _master.activeUsers();
+    final heads = users.where((user) => user.role == UserRole.kepalaCabang);
+    if (heads.isEmpty) return null;
+    final head = heads.first;
+
+    final returnId = await seedDraftGoodsReturn();
+    if (returnId == null) return null;
+
+    final document = await _goodsReturns.getById(returnId);
+    if (document == null) return null;
+    // Already shipped — or already received — by an earlier run.
+    if (!document.isDraft) return returnId;
+
+    await ShipGoodsReturnUseCase(
+      returns: _goodsReturns,
+      master: _master,
+    ).call(actorUserId: head.id, goodsReturnId: returnId);
+
+    return returnId;
+  }
+
+  /// Confirms the seeded shipment, posting the `return` movements (§40).
+  ///
+  /// The receiving actor is a **Petugas Warehouse**, and never the branch head who
+  /// raised and shipped it — G-R4, which the use case would refuse anyway. Returns
+  /// `null` when the demo data has no Warehouse account, rather than reaching for
+  /// somebody who happens to be available.
+  Future<String?> seedReceivedGoodsReturn() async {
+    _requireDevelopmentBuild();
+
+    final users = await _master.activeUsers();
+    final warehouseUsers = users.where(
+      (user) => user.role == UserRole.warehouse,
+    );
+    if (warehouseUsers.isEmpty) return null;
+
+    final returnId = await seedShippedGoodsReturn();
+    if (returnId == null) return null;
+
+    final document = await _goodsReturns.getById(returnId);
+    if (document == null) return null;
+    // Already received by an earlier run.
+    if (document.isReceived) return returnId;
+
+    final receiver = warehouseUsers.firstWhere(
+      (user) => user.id != document.createdBy && user.id != document.shippedBy,
+      orElse: () => warehouseUsers.first,
+    );
+    if (receiver.id == document.createdBy ||
+        receiver.id == document.shippedBy) {
+      // Every Warehouse account is disqualified by G-R4. Refusing is the honest
+      // outcome; the use case would refuse too, and swallowing that here would hide a
+      // demo dataset that cannot demonstrate the workflow.
+      return null;
+    }
+
+    await ReceiveGoodsReturnUseCase(
+      returns: _goodsReturns,
+      master: _master,
+      posting: _posting,
+    ).call(
+      actorUserId: receiver.id,
+      goodsReturnId: returnId,
+      warehouseNote: 'Diterima lengkap sesuai dokumen (demo seed)',
+    );
+
+    return returnId;
   }
 
   /// Creates a `draft` Distribusi with lines for **two** rooms, so the multi-room form
