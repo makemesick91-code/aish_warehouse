@@ -1478,3 +1478,330 @@ final class InvalidDistributionTimestampFailure extends AppFailure {
   final DateTime createdAtUtc;
   final DateTime postedAtUtc;
 }
+
+// --- Pemusnahan / Disposal (Milestone 7) ------------------------------------
+
+/// The disposal document does not exist, or has been soft deleted.
+final class DisposalNotFoundFailure extends AppFailure {
+  const DisposalNotFoundFailure(super.message, {required this.disposalId});
+
+  final String disposalId;
+}
+
+/// The requested transition is not one the state machine lists (G-S1).
+final class InvalidDisposalStateFailure extends AppFailure {
+  const InvalidDisposalStateFailure(
+    super.message, {
+    required this.disposalId,
+    required this.currentStatus,
+    this.attemptedStatus,
+  });
+
+  final String disposalId;
+  final DisposalStatus currentStatus;
+
+  /// `null` when the caller only asserted a status rather than a transition.
+  final DisposalStatus? attemptedStatus;
+}
+
+/// The document is already `posted`, and `posted` is final (G-S2).
+///
+/// Separate from [InvalidDisposalStateFailure] so the message can say *when* it was
+/// posted — the fact that makes "you cannot change this" understandable rather than
+/// merely true.
+final class DisposalAlreadyPostedFailure extends AppFailure {
+  const DisposalAlreadyPostedFailure(
+    super.message, {
+    required this.disposalId,
+    this.postedAt,
+  });
+
+  final String disposalId;
+
+  /// UTC instant (T-1).
+  final DateTime? postedAt;
+}
+
+/// A disposal with no lines cannot be posted: there is nothing to destroy.
+final class DisposalLineRequiredFailure extends AppFailure {
+  const DisposalLineRequiredFailure(super.message, {required this.disposalId});
+
+  final String disposalId;
+}
+
+/// The line is not on this disposal, or does not exist. Both answer the same way,
+/// so the id cannot be probed.
+final class DisposalLineNotFoundFailure extends AppFailure {
+  const DisposalLineNotFoundFailure(super.message, {required this.lineId});
+
+  final String lineId;
+}
+
+/// G-E7's mandatory note is missing or blank.
+///
+/// Raised by the domain rather than by the database CHECK, and the difference
+/// matters: `String.trim()` in Dart strips tabs and newlines, SQLite's `trim()`
+/// strips spaces only, so a reason of `"\n\n"` satisfies the CHECK and is refused
+/// here (§19).
+final class DisposalReasonRequiredFailure extends AppFailure {
+  const DisposalReasonRequiredFailure(
+    super.message, {
+    required this.disposalId,
+  });
+
+  final String disposalId;
+}
+
+/// The nominated source location does not exist.
+final class DisposalSourceLocationNotFoundFailure extends AppFailure {
+  const DisposalSourceLocationNotFoundFailure(
+    super.message, {
+    required this.locationId,
+  });
+
+  final String locationId;
+}
+
+/// The source location exists but has been archived, and the document is a *new*
+/// one (§15).
+///
+/// An existing draft against an archived source may still be posted: a disposal
+/// takes goods *out of* a shelf that still physically holds them, which lowers risk
+/// rather than moving stock somewhere nobody is working.
+final class DisposalSourceLocationInactiveFailure extends AppFailure {
+  const DisposalSourceLocationInactiveFailure(
+    super.message, {
+    required this.locationId,
+  });
+
+  final String locationId;
+}
+
+/// The acting user's role and the source location do not go together (§15).
+///
+/// A warehouse account naming a branch store or a room, a branch head naming
+/// Warehouse Pusat, or a role with no disposal scope at all. The message
+/// deliberately does not confirm which of those it was.
+final class DisposalSourceLocationAccessDeniedFailure extends AppFailure {
+  const DisposalSourceLocationAccessDeniedFailure(
+    super.message, {
+    required this.actorUserId,
+    required this.locationId,
+  });
+
+  final String actorUserId;
+  final String locationId;
+}
+
+/// The source location belongs to another branch — the core scope refusal.
+///
+/// SQLite cannot express `stock_locations.branch_id = users.branch_id`, so this is
+/// where the rule is actually enforced. The message deliberately does not confirm
+/// which branch the location *is* in.
+final class DisposalBranchMismatchFailure extends AppFailure {
+  const DisposalBranchMismatchFailure(
+    super.message, {
+    required this.actorUserId,
+    this.actorBranchId,
+    required this.locationId,
+  });
+
+  final String actorUserId;
+  final String? actorBranchId;
+  final String locationId;
+}
+
+/// A `room` source whose room row does not belong to the actor's branch, or whose
+/// location row carries no room at all.
+///
+/// Distinct from [DisposalBranchMismatchFailure] because the broken relationship is
+/// a different one: the location's branch may be right while the room it names is
+/// not, which is a corrupt row rather than a permission question.
+final class DisposalRoomMismatchFailure extends AppFailure {
+  const DisposalRoomMismatchFailure(
+    super.message, {
+    required this.locationId,
+    this.roomId,
+  });
+
+  final String locationId;
+  final String? roomId;
+}
+
+/// The item is not tracked per batch, so nothing about it can be expired (§9).
+///
+/// Disposal of goods that are damaged, recalled or rejected on arrival is a
+/// different workflow with different eligibility rules, and this milestone does not
+/// open it.
+final class DisposalItemMustHaveExpiryFailure extends AppFailure {
+  const DisposalItemMustHaveExpiryFailure(
+    super.message, {
+    required this.itemId,
+  });
+
+  final String itemId;
+}
+
+/// A disposal position was submitted without a batch.
+final class DisposalBatchRequiredFailure extends AppFailure {
+  const DisposalBatchRequiredFailure(super.message, {required this.itemId});
+
+  final String itemId;
+}
+
+/// The batch does not belong to the item, or the two disagree in some other way.
+final class InvalidDisposalBatchFailure extends AppFailure {
+  const InvalidDisposalBatchFailure(
+    super.message, {
+    required this.itemId,
+    required this.batchId,
+  });
+
+  final String itemId;
+  final String batchId;
+}
+
+/// The batch has **not** expired, and only expired stock may be destroyed (G-E7).
+///
+/// No note, no confirmation and no preset reason can pass this. A batch is usable
+/// for the whole of its expiry day and becomes disposable from the next operational
+/// day onwards (T-10).
+final class BatchNotExpiredForDisposalFailure extends AppFailure {
+  const BatchNotExpiredForDisposalFailure(
+    super.message, {
+    required this.batchId,
+    required this.batchNo,
+    required this.expiryDate,
+    this.lineId,
+  });
+
+  final String batchId;
+  final String batchNo;
+
+  /// Civil date — never timezone converted (T-8).
+  final DateTime expiryDate;
+
+  final String? lineId;
+}
+
+/// A destroyed quantity is zero, negative, or otherwise not a legal quantity.
+final class InvalidDisposalQuantityFailure extends AppFailure {
+  const InvalidDisposalQuantityFailure(
+    super.message, {
+    this.lineId,
+    required this.qty,
+  });
+
+  /// `null` while the line does not exist yet — an add that was asked for zero.
+  final String? lineId;
+  final Quantity qty;
+}
+
+/// The source location does not hold enough of one position (§18).
+final class InsufficientDisposalStockFailure extends AppFailure {
+  const InsufficientDisposalStockFailure(
+    super.message, {
+    required this.itemId,
+    required this.locationId,
+    required this.batchId,
+    required this.available,
+    required this.requested,
+  });
+
+  final String itemId;
+  final String locationId;
+  final String batchId;
+
+  /// What the shelf holds for this exact position.
+  final Quantity available;
+
+  /// What the document asks of it.
+  final Quantity requested;
+}
+
+/// The same `(item, batch)` position already exists on this document.
+///
+/// The domain half of the partial unique index: the database refuses it too, but as
+/// a driver error, and a user needs a sentence.
+final class DuplicateDisposalLineFailure extends AppFailure {
+  const DuplicateDisposalLineFailure(
+    super.message, {
+    required this.disposalId,
+    required this.itemId,
+    required this.batchId,
+  });
+
+  final String disposalId;
+  final String itemId;
+  final String batchId;
+}
+
+/// The document's own lines and what the joined read produced no longer agree: a
+/// line is missing from one side, or one is present that the other cannot account
+/// for (§23).
+final class DisposalLineIntegrityFailure extends AppFailure {
+  const DisposalLineIntegrityFailure(
+    super.message, {
+    required this.disposalId,
+    this.missingLineIds = const <String>[],
+    this.extraLineIds = const <String>[],
+  });
+
+  final String disposalId;
+
+  /// Lines the plain select found and the joined read dropped — posting on that
+  /// basis would destroy less stock than the document says.
+  final List<String> missingLineIds;
+
+  /// Lines the joined read produced that no live row accounts for.
+  final List<String> extraLineIds;
+}
+
+/// A master row a disposal depends on is physically gone.
+///
+/// The same distinction [HistoricalReferenceMissingFailure] draws for Stok Opname: a
+/// deactivated or soft-deleted row is still there and a document may still be posted
+/// against it, but a row that cannot be found at all means the reference is broken.
+/// Nothing may be invented, substituted or guessed to paper over it (§34).
+final class HistoricalDisposalReferenceMissingFailure extends AppFailure {
+  const HistoricalDisposalReferenceMissingFailure(
+    super.message, {
+    required this.entity,
+    required this.id,
+    required this.disposalId,
+  });
+
+  /// The table whose row is missing: `items`, `item_batches`, `stock_locations`…
+  final String entity;
+
+  /// The id the document still points at.
+  final String id;
+
+  final String disposalId;
+}
+
+/// A guarded write affected no rows: somebody else changed the disposal between
+/// reading it and writing it. The caller must reload rather than retry blindly.
+final class ConcurrentDisposalUpdateFailure extends AppFailure {
+  const ConcurrentDisposalUpdateFailure(
+    super.message, {
+    required this.disposalId,
+  });
+
+  final String disposalId;
+}
+
+/// `posted_at` would land before `created_at` — a device clock behind the document
+/// it is stamping (§36).
+final class InvalidDisposalTimestampFailure extends AppFailure {
+  const InvalidDisposalTimestampFailure(
+    super.message, {
+    required this.disposalId,
+    required this.createdAtUtc,
+    required this.postedAtUtc,
+  });
+
+  final String disposalId;
+  final DateTime createdAtUtc;
+  final DateTime postedAtUtc;
+}

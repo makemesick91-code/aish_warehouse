@@ -78,6 +78,10 @@ void main() {
 
   const distributionTables = <String>['distributions', 'distribution_lines'];
 
+  /// Schema v9 own tables, named here so the exhaustive assertions below stay
+  /// exhaustive rather than being loosened to `containsAll` every milestone.
+  const disposalTables = <String>['disposals', 'disposal_lines'];
+
   const receiptIndexes = <String>[
     'idx_good_receipts_received_by_status',
     'idx_good_receipts_status_created',
@@ -334,7 +338,7 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 8);
+      expect(row.read<int>('user_version'), 9);
 
       await database.close();
     });
@@ -347,7 +351,12 @@ void main() {
       expect(tables, containsAll(receiptTables));
       // Exhaustive: v7 adds two tables, no more — and the versions after it add
       // their own, which is what `distributionTables` accounts for.
-      expect(tables, {...v6Tables, ...receiptTables, ...distributionTables});
+      expect(tables, {
+        ...v6Tables,
+        ...receiptTables,
+        ...distributionTables,
+        ...disposalTables,
+      });
 
       await database.close();
     });
@@ -660,7 +669,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 8);
+      expect(version.read<int>('user_version'), 9);
 
       final tables = await objectNames(second, 'table');
       expect(tables, containsAll(receiptTables));
@@ -753,7 +762,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 8);
+        expect(version.read<int>('user_version'), 9);
 
         final tables = await objectNames(database, 'table');
         expect(tables, containsAll(receiptTables));

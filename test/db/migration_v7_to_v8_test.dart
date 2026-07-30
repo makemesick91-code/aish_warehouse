@@ -80,6 +80,10 @@ void main() {
 
   const distributionTables = <String>['distributions', 'distribution_lines'];
 
+  /// Schema v9 own tables, named here so the exhaustive assertions below stay
+  /// exhaustive rather than being loosened to `containsAll` every milestone.
+  const disposalTables = <String>['disposals', 'disposal_lines'];
+
   const distributionIndexes = <String>[
     'idx_distributions_branch_status',
     'idx_distributions_distributed_by_status',
@@ -405,7 +409,7 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 8);
+      expect(row.read<int>('user_version'), 9);
 
       await database.close();
     });
@@ -417,7 +421,7 @@ void main() {
       final tables = await objectNames(database, 'table');
       expect(tables, containsAll(distributionTables));
       // Exhaustive: v8 adds two tables, no more.
-      expect(tables, {...v7Tables, ...distributionTables});
+      expect(tables, {...v7Tables, ...distributionTables, ...disposalTables});
 
       await database.close();
     });
@@ -763,7 +767,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 8);
+      expect(version.read<int>('user_version'), 9);
 
       final tables = await objectNames(second, 'table');
       expect(tables, containsAll(distributionTables));
@@ -862,7 +866,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 8);
+        expect(version.read<int>('user_version'), 9);
 
         final tables = await objectNames(database, 'table');
         expect(tables, containsAll(distributionTables));

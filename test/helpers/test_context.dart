@@ -13,6 +13,16 @@ import 'package:aish_warehouse/features/delivery/domain/use_cases/create_deliver
 import 'package:aish_warehouse/features/delivery/domain/use_cases/remove_delivery_order_line_use_case.dart';
 import 'package:aish_warehouse/features/delivery/domain/use_cases/ship_delivery_order_use_case.dart';
 import 'package:aish_warehouse/features/delivery/domain/use_cases/update_delivery_order_line_use_case.dart';
+import 'package:aish_warehouse/features/disposal/data/repositories/drift_disposal_repository.dart';
+import 'package:aish_warehouse/features/disposal/domain/models/disposal_models.dart';
+import 'package:aish_warehouse/features/disposal/domain/repositories/disposal_repository.dart';
+import 'package:aish_warehouse/features/disposal/domain/services/disposal_stock_reader.dart';
+import 'package:aish_warehouse/features/disposal/domain/use_cases/add_disposal_line_use_case.dart';
+import 'package:aish_warehouse/features/disposal/domain/use_cases/create_disposal_use_case.dart';
+import 'package:aish_warehouse/features/disposal/domain/use_cases/post_disposal_use_case.dart';
+import 'package:aish_warehouse/features/disposal/domain/use_cases/remove_disposal_line_use_case.dart';
+import 'package:aish_warehouse/features/disposal/domain/use_cases/update_disposal_header_use_case.dart';
+import 'package:aish_warehouse/features/disposal/domain/use_cases/update_disposal_line_use_case.dart';
 import 'package:aish_warehouse/features/distribution/data/repositories/drift_distribution_repository.dart';
 import 'package:aish_warehouse/features/distribution/domain/models/distribution_models.dart';
 import 'package:aish_warehouse/features/distribution/domain/repositories/distribution_repository.dart';
@@ -70,6 +80,7 @@ class TestContext {
     required this.deliveries,
     required this.receipts,
     required this.distributions,
+    required this.disposals,
     required this.posting,
     required this.clock,
   });
@@ -88,6 +99,7 @@ class TestContext {
     final deliveries = DriftDeliveryOrderRepository(database.deliveryOrderDao);
     final receipts = DriftGoodReceiptRepository(database.goodReceiptDao);
     final distributions = DriftDistributionRepository(database.distributionDao);
+    final disposals = DriftDisposalRepository(database.disposalDao);
     return TestContext._(
       database: database,
       master: master,
@@ -97,6 +109,7 @@ class TestContext {
       deliveries: deliveries,
       receipts: receipts,
       distributions: distributions,
+      disposals: disposals,
       clock: clock,
       posting: StockPostingService(
         inventory: inventory,
@@ -115,6 +128,7 @@ class TestContext {
   final DeliveryOrderRepository deliveries;
   final GoodReceiptRepository receipts;
   final DistributionRepository distributions;
+  final DisposalRepository disposals;
   final StockPostingService posting;
 
   /// The injected UTC clock, or `null` when the real one is in use.
@@ -444,6 +458,71 @@ class TestContext {
     );
   }
 
+  // --- Pemusnahan (Milestone 7) ---------------------------------------------
+  //
+  // Every factory takes an optional clock, and on this document it is the whole
+  // subject: G-E7 is a function of the current operational day, and a batch that
+  // may not be destroyed today may be destroyed tomorrow. Omitting it falls back
+  // to the context's clock, and omitting that too uses the real one.
+
+  DisposalStockReader get disposalStock => DisposalStockReader(inventory);
+
+  CreateDisposalUseCase createDisposal({
+    DateTime Function()? clock,
+    String Function()? idGenerator,
+  }) => CreateDisposalUseCase(
+    disposals: disposals,
+    master: master,
+    clock: clock ?? this.clock,
+    idGenerator: idGenerator,
+  );
+
+  UpdateDisposalHeaderUseCase get updateDisposalHeader =>
+      UpdateDisposalHeaderUseCase(disposals: disposals, master: master);
+
+  AddDisposalLineUseCase addDisposalLine({DateTime Function()? clock}) =>
+      AddDisposalLineUseCase(
+        disposals: disposals,
+        master: master,
+        stock: disposalStock,
+        clock: clock ?? this.clock,
+      );
+
+  UpdateDisposalLineUseCase updateDisposalLine({DateTime Function()? clock}) =>
+      UpdateDisposalLineUseCase(
+        disposals: disposals,
+        master: master,
+        stock: disposalStock,
+        clock: clock ?? this.clock,
+      );
+
+  RemoveDisposalLineUseCase get removeDisposalLine =>
+      RemoveDisposalLineUseCase(disposals: disposals, master: master);
+
+  /// The post use case, with both clocks pointing at the same instant.
+  ///
+  /// [posting] is injectable so an atomicity test can hand it a service that fails
+  /// on a chosen line and then assert that *nothing* was written — the rollback
+  /// assertion §21 exists for, and the one that matters most on this document
+  /// because a `disposal` movement has no counter-entry to reconcile against.
+  PostDisposalUseCase postDisposal({
+    DateTime Function()? clock,
+    StockPostingService? posting,
+  }) {
+    final effectiveClock = clock ?? this.clock;
+    return PostDisposalUseCase(
+      disposals: disposals,
+      master: master,
+      posting:
+          posting ??
+          (effectiveClock == null
+              ? this.posting
+              : postingWithClock(effectiveClock)),
+      stock: disposalStock,
+      clock: effectiveClock,
+    );
+  }
+
   /// A posting service on the same database but with a different notion of
   /// "now", used to test expiry rules without waiting.
   StockPostingService postingWithClock(DateTime Function() clock) =>
@@ -474,6 +553,7 @@ class TestContext {
     deliveries: deliveries,
     receipts: receipts,
     distributions: distributions,
+    disposals: disposals,
     isDevelopmentBuild: true,
   );
 
@@ -487,6 +567,7 @@ class TestContext {
     deliveries: deliveries,
     receipts: receipts,
     distributions: distributions,
+    disposals: disposals,
     isDevelopmentBuild: false,
   );
 
@@ -967,6 +1048,126 @@ class TestContext {
           },
         )
         .toList(growable: false);
+  }
+
+  // --- Pemusnahan raw reads, for rollback and atomicity assertions -----------
+  //
+  // All of these read the columns directly, so an assertion about a rolled-back
+  // transaction cannot be fooled by a cached repository read.
+
+  /// The stored status of one Pemusnahan.
+  Future<String> disposalStatusOf(String disposalId) async {
+    final row = await database
+        .customSelect(
+          'SELECT status FROM disposals WHERE id = ?;',
+          variables: [Variable<String>(disposalId)],
+        )
+        .getSingle();
+    return row.read<String>('status');
+  }
+
+  /// One raw column of a Pemusnahan, for assertions about audit metadata.
+  Future<String?> disposalColumn(String disposalId, String column) async {
+    final row = await database
+        .customSelect(
+          'SELECT $column AS value FROM disposals WHERE id = ?;',
+          variables: [Variable<String>(disposalId)],
+        )
+        .getSingle();
+    return row.read<String?>('value');
+  }
+
+  /// Live line count of one disposal, read without any join.
+  Future<int> disposalLineCount(String disposalId) async {
+    final row = await database
+        .customSelect(
+          'SELECT COUNT(*) AS c FROM disposal_lines '
+          'WHERE disposal_id = ? AND deleted_at IS NULL;',
+          variables: [Variable<String>(disposalId)],
+        )
+        .getSingle();
+    return row.read<int>('c');
+  }
+
+  /// Raw line rows of one disposal, keyed by line id.
+  Future<Map<String, Map<String, Object?>>> disposalLineRows(
+    String disposalId,
+  ) async {
+    final rows = await database
+        .customSelect(
+          'SELECT id, item_id, batch_id, qty, note FROM disposal_lines '
+          'WHERE disposal_id = ? AND deleted_at IS NULL;',
+          variables: [Variable<String>(disposalId)],
+        )
+        .get();
+    return {
+      for (final row in rows)
+        row.read<String>('id'): <String, Object?>{
+          'item_id': row.read<String>('item_id'),
+          'batch_id': row.read<String>('batch_id'),
+          'qty': row.read<int>('qty'),
+          'note': row.read<String?>('note'),
+        },
+    };
+  }
+
+  /// Ledger rows written against one Pemusnahan.
+  ///
+  /// The assertion behind every rollback test: a failed posting must leave **zero**
+  /// of these, whichever line it failed on (§21).
+  Future<int> disposalMovementCount(String disposalId) async {
+    final row = await database
+        .customSelect(
+          "SELECT COUNT(*) AS c FROM stock_movements "
+          "WHERE ref_doc_type = 'DSP' AND ref_doc_id = ?;",
+          variables: [Variable<String>(disposalId)],
+        )
+        .getSingle();
+    return row.read<int>('c');
+  }
+
+  /// Every `disposal` movement of one document, as raw column values.
+  Future<List<Map<String, Object?>>> disposalMovements(
+    String disposalId,
+  ) async {
+    final rows = await database
+        .customSelect(
+          'SELECT item_id, batch_id, from_location_id, to_location_id, qty, '
+          'movement_type, ref_doc_type, ref_doc_id, actor_user_id, note '
+          "FROM stock_movements WHERE ref_doc_type = 'DSP' AND ref_doc_id = ? "
+          'ORDER BY created_at, id;',
+          variables: [Variable<String>(disposalId)],
+        )
+        .get();
+    return rows
+        .map(
+          (row) => <String, Object?>{
+            'item_id': row.read<String>('item_id'),
+            'batch_id': row.read<String?>('batch_id'),
+            'from_location_id': row.read<String?>('from_location_id'),
+            'to_location_id': row.read<String?>('to_location_id'),
+            'qty': row.read<int>('qty'),
+            'movement_type': row.read<String>('movement_type'),
+            'ref_doc_type': row.read<String?>('ref_doc_type'),
+            'ref_doc_id': row.read<String?>('ref_doc_id'),
+            'actor_user_id': row.read<String>('actor_user_id'),
+            'note': row.read<String?>('note'),
+          },
+        )
+        .toList(growable: false);
+  }
+
+  /// Every movement of one type, regardless of document — so a test can assert
+  /// that a `disposal` movement was written *nowhere*, not merely nowhere under
+  /// this document's reference.
+  Future<int> movementCountOfType(StockMovementType type) async {
+    final row = await database
+        .customSelect(
+          'SELECT COUNT(*) AS c FROM stock_movements WHERE movement_type = ?;',
+          variables: [Variable<String>(type.dbValue)],
+        )
+        .getSingle();
+    return row.read<int>('c');
   }
 
   /// Total movement count across every document type, so a rollback test can assert
@@ -2900,6 +3101,518 @@ Future<Quantity> roomBalance(
   String? batchId,
 }) => context.inventory.balanceQty(
   locationId: fixture.locationForRoom(roomId).id,
+  itemId: itemId,
+  batchId: batchId,
+);
+
+// --- Pemusnahan helpers (Milestone 7) ---------------------------------------
+
+/// Expired, near-expiry and valid stock spread across all three location kinds —
+/// the state every Pemusnahan test starts from.
+///
+/// The quantities and dates are the interesting part, and each exists to make a
+/// specific rule reachable. Every batch below belongs to `expiryItem`, which is
+/// tracked per batch; `plainItem` has no expiry at all and therefore no batch.
+///
+/// | batch          | expiry (operational)  | warehouse | branch store | room 1 |
+/// |----------------|-----------------------|-----------|--------------|--------|
+/// | `expiredBatch` | 3 days ago            | `5.5`     | `4`          | `2.5`  |
+/// | `staleBatch`   | 30 days ago           | `1.25`    | —            | —      |
+/// | `todayBatch`   | **today**             | `3`       | `2`          | —      |
+/// | `nearBatch`    | 10 days from now      | `2`       | `2`          | —      |
+/// | `validBatch`   | 200 days from now     | `6`       | `3`          | —      |
+///
+/// * `expiredBatch` is the ordinary case, and it is stocked at **all three** kinds
+///   of location so the warehouse scope and the branch scope each have something
+///   real to destroy — and each has something the other must not be able to touch.
+/// * `todayBatch` is the boundary G-E7 turns on: expiring *today* is not expired
+///   (T-10), so it must be refused on the day and accepted the day after. It is the
+///   single most important row in this fixture.
+/// * `nearBatch` sits inside the default 30-day alert window. It is what G-E6
+///   badges orange and what §28 says must appear as information and never as a
+///   candidate.
+/// * `validBatch` is comfortably in date and must never be selectable.
+/// * `staleBatch` exists only at the warehouse, so a test can assert the risk
+///   ordering — oldest expiry first — with something older than `expiredBatch`.
+/// * `plainItem` has no expiry, so nothing about it can be past one; it is what
+///   §9's *"hanya barang kedaluwarsa"* is asserted against.
+/// * `otherBranch` exists with its own store, room and branch head, so every scope
+///   refusal has something real to be refused against rather than a fabricated id.
+///
+/// The decimal quantities are not decoration: `5.5`, `1.25` and `2.5` are what make
+/// a partial disposal of `2.375` exercise the fixed-point path rather than integer
+/// arithmetic that would work either way.
+class DisposalFixture {
+  const DisposalFixture({
+    required this.branch,
+    required this.otherBranch,
+    required this.warehouse,
+    required this.branchStore,
+    required this.otherBranchStore,
+    required this.roomOne,
+    required this.roomTwo,
+    required this.otherBranchRoom,
+    required this.locationOne,
+    required this.locationTwo,
+    required this.otherBranchRoomLocation,
+    required this.warehouseUser,
+    required this.branchHead,
+    required this.otherBranchHead,
+    required this.nurse,
+    required this.superAdmin,
+    required this.category,
+    required this.otherCategory,
+    required this.expiryItem,
+    required this.otherExpiryItem,
+    required this.plainItem,
+    required this.expiredBatch,
+    required this.staleBatch,
+    required this.todayBatch,
+    required this.nearBatch,
+    required this.validBatch,
+    required this.otherExpiredBatch,
+  });
+
+  final MasterBranch branch;
+  final MasterBranch otherBranch;
+
+  final MasterLocation warehouse;
+  final MasterLocation branchStore;
+  final MasterLocation otherBranchStore;
+
+  final MasterRoom roomOne;
+  final MasterRoom roomTwo;
+  final MasterRoom otherBranchRoom;
+
+  final MasterLocation locationOne;
+  final MasterLocation locationTwo;
+  final MasterLocation otherBranchRoomLocation;
+
+  final MasterUser warehouseUser;
+  final MasterUser branchHead;
+  final MasterUser otherBranchHead;
+  final MasterUser nurse;
+  final MasterUser superAdmin;
+
+  final MasterCategory category;
+  final MasterCategory otherCategory;
+
+  /// Batch-tracked. Every batch below belongs to it.
+  final MasterItem expiryItem;
+
+  /// A second batch-tracked item in the other category, so the category filter has
+  /// something to exclude.
+  final MasterItem otherExpiryItem;
+
+  /// `has_expiry = false`. Nothing about it can be expired (§9).
+  final MasterItem plainItem;
+
+  /// Expired three days ago. Stocked at the warehouse, the branch store and room 1.
+  final MasterBatch expiredBatch;
+
+  /// Expired thirty days ago, warehouse only — the oldest, for risk ordering.
+  final MasterBatch staleBatch;
+
+  /// Expires **today** in operational time. Not disposable until tomorrow (T-10).
+  final MasterBatch todayBatch;
+
+  /// Ten days of shelf life left — inside the alert window, never a candidate.
+  final MasterBatch nearBatch;
+
+  /// Two hundred days left. Never a candidate.
+  final MasterBatch validBatch;
+
+  /// An expired batch of [otherExpiryItem], for the category filter.
+  final MasterBatch otherExpiredBatch;
+}
+
+/// Builds [DisposalFixture] against the injected [nowUtc].
+///
+/// Stock is placed **through the ledger** — an inbound movement into the central
+/// warehouse, then transfers down to the branch store and into a room — never by
+/// writing `stock_balances` directly, which is the same rule the production code
+/// follows (G-A1). Every posting runs on a clock 400 days before [nowUtc], so the
+/// already-expired batches can be stocked while they were still in date: a transfer
+/// refuses an expired batch (G-E4), and that refusal is precisely the situation a
+/// disposal then has to resolve.
+Future<DisposalFixture> buildDisposalFixture(
+  TestContext context, {
+  required DateTime nowUtc,
+}) async {
+  final master = context.master;
+  final today = AppTimeZone.operationalDate(nowUtc);
+
+  final branch = await master.ensureBranch(
+    code: 'CAB-01',
+    name: 'Cabang Uji',
+    address: 'Jl. Uji No. 1',
+  );
+  final otherBranch = await master.ensureBranch(
+    code: 'CAB-02',
+    name: 'Cabang Lain',
+  );
+
+  final roomOne = await master.ensureRoom(
+    branchId: branch.id,
+    code: 'R1',
+    name: 'Ruang Dental 1',
+  );
+  final roomTwo = await master.ensureRoom(
+    branchId: branch.id,
+    code: 'R2',
+    name: 'Ruang Dental 2',
+  );
+  final otherBranchRoom = await master.ensureRoom(
+    branchId: otherBranch.id,
+    code: 'R1',
+    name: 'Ruang Dental 1 Cabang Lain',
+  );
+
+  final warehouse = await master.ensureLocation(
+    type: StockLocationType.warehouse,
+    name: 'Warehouse Pusat',
+  );
+  final branchStore = await master.ensureLocation(
+    type: StockLocationType.branchStore,
+    name: 'Gudang Cabang Uji',
+    branchId: branch.id,
+  );
+  final otherBranchStore = await master.ensureLocation(
+    type: StockLocationType.branchStore,
+    name: 'Gudang Cabang Lain',
+    branchId: otherBranch.id,
+  );
+  final locationOne = await master.ensureLocation(
+    type: StockLocationType.room,
+    name: roomOne.name,
+    branchId: branch.id,
+    roomId: roomOne.id,
+  );
+  final locationTwo = await master.ensureLocation(
+    type: StockLocationType.room,
+    name: roomTwo.name,
+    branchId: branch.id,
+    roomId: roomTwo.id,
+  );
+  final otherBranchRoomLocation = await master.ensureLocation(
+    type: StockLocationType.room,
+    name: otherBranchRoom.name,
+    branchId: otherBranch.id,
+    roomId: otherBranchRoom.id,
+  );
+
+  final warehouseUser = await master.ensureUser(
+    email: 'warehouse@test.local',
+    fullName: 'Petugas Warehouse Uji',
+    role: UserRole.warehouse,
+  );
+  final branchHead = await master.ensureUser(
+    email: 'kacab@test.local',
+    fullName: 'Kepala Cabang Uji',
+    role: UserRole.kepalaCabang,
+    branchId: branch.id,
+  );
+  final otherBranchHead = await master.ensureUser(
+    email: 'kacab2@test.local',
+    fullName: 'Kepala Cabang Lain',
+    role: UserRole.kepalaCabang,
+    branchId: otherBranch.id,
+  );
+  final nurse = await master.ensureUser(
+    email: 'perawat@test.local',
+    fullName: 'Perawat Uji',
+    role: UserRole.perawat,
+    branchId: branch.id,
+  );
+  final superAdmin = await master.ensureUser(
+    email: 'admin@test.local',
+    fullName: 'Super Admin Uji',
+    role: UserRole.superAdmin,
+  );
+
+  final category = await master.ensureCategory('Obat');
+  final otherCategory = await master.ensureCategory('Alat Sekali Pakai');
+
+  final expiryItem = await master.ensureItem(
+    sku: 'DSP-0001',
+    name: 'Anestesi Lokal',
+    categoryId: category.id,
+    unit: 'ampul',
+    minStockRoom: 10,
+    minStockBranch: 40,
+    hasExpiry: true,
+  );
+  final otherExpiryItem = await master.ensureItem(
+    sku: 'DSP-0002',
+    name: 'Kasa Steril',
+    categoryId: otherCategory.id,
+    unit: 'roll',
+    minStockRoom: 4,
+    minStockBranch: 12,
+    hasExpiry: true,
+  );
+  final plainItem = await master.ensureItem(
+    sku: 'DSP-0003',
+    name: 'Masker Bedah',
+    categoryId: otherCategory.id,
+    unit: 'box',
+    minStockRoom: 5,
+    minStockBranch: 20,
+    hasExpiry: false,
+  );
+
+  // `expiry_alert_days` defaults to 30, so 10 days is inside the alert window and
+  // 200 is comfortably outside it. `todayBatch` is the T-10 boundary.
+  final expiredBatch = await master.ensureBatch(
+    itemId: expiryItem.id,
+    batchNo: 'B-EXPIRED',
+    expiryDate: DateOnly.addDays(today, -3),
+  );
+  final staleBatch = await master.ensureBatch(
+    itemId: expiryItem.id,
+    batchNo: 'A-STALE',
+    expiryDate: DateOnly.addDays(today, -30),
+  );
+  final todayBatch = await master.ensureBatch(
+    itemId: expiryItem.id,
+    batchNo: 'C-TODAY',
+    expiryDate: today,
+  );
+  final nearBatch = await master.ensureBatch(
+    itemId: expiryItem.id,
+    batchNo: 'D-NEAR',
+    expiryDate: DateOnly.addDays(today, 10),
+  );
+  final validBatch = await master.ensureBatch(
+    itemId: expiryItem.id,
+    batchNo: 'E-VALID',
+    expiryDate: DateOnly.addDays(today, 200),
+  );
+  final otherExpiredBatch = await master.ensureBatch(
+    itemId: otherExpiryItem.id,
+    batchNo: 'F-EXPIRED',
+    expiryDate: DateOnly.addDays(today, -5),
+  );
+
+  // Every posting runs 400 days before "now", which is before the *oldest* expiry
+  // date above — so no transfer here is ever refused for carrying expired stock.
+  final earlyPosting = context.postingWithClock(
+    () => nowUtc.subtract(const Duration(days: 400)),
+  );
+
+  Future<void> stockWarehouse(
+    String itemId,
+    String? batchId,
+    String qty,
+  ) async {
+    await earlyPosting.postInboundWarehouse(
+      itemId: itemId,
+      batchId: batchId,
+      toLocationId: warehouse.id,
+      qty: Quantity.parse(qty),
+      actorUserId: warehouseUser.id,
+      refDocType: RefDocType.seed,
+      refDocId: 'fixture-wh-$itemId-${batchId ?? 'nobatch'}-$qty',
+      note: 'Saldo awal fixture',
+    );
+  }
+
+  Future<void> moveDown(
+    String itemId,
+    String? batchId,
+    String qty,
+    String toLocationId,
+    String fromLocationId,
+  ) async {
+    await earlyPosting.postTransfer(
+      itemId: itemId,
+      batchId: batchId,
+      fromLocationId: fromLocationId,
+      toLocationId: toLocationId,
+      qty: Quantity.parse(qty),
+      movementType: fromLocationId == warehouse.id
+          ? StockMovementType.goodReceipt
+          : StockMovementType.distribution,
+      actorUserId: warehouseUser.id,
+      refDocType: RefDocType.seed,
+      refDocId:
+          'fixture-move-$itemId-${batchId ?? 'nobatch'}-$toLocationId-$qty',
+      note: 'Perpindahan awal fixture',
+    );
+  }
+
+  // Warehouse totals cover what stays there plus what moves on.
+  await stockWarehouse(expiryItem.id, expiredBatch.id, '12');
+  await moveDown(
+    expiryItem.id,
+    expiredBatch.id,
+    '6.5',
+    branchStore.id,
+    warehouse.id,
+  );
+  await moveDown(
+    expiryItem.id,
+    expiredBatch.id,
+    '2.5',
+    locationOne.id,
+    branchStore.id,
+  );
+
+  await stockWarehouse(expiryItem.id, staleBatch.id, '1.25');
+
+  await stockWarehouse(expiryItem.id, todayBatch.id, '5');
+  await moveDown(
+    expiryItem.id,
+    todayBatch.id,
+    '2',
+    branchStore.id,
+    warehouse.id,
+  );
+
+  await stockWarehouse(expiryItem.id, nearBatch.id, '4');
+  await moveDown(
+    expiryItem.id,
+    nearBatch.id,
+    '2',
+    branchStore.id,
+    warehouse.id,
+  );
+
+  await stockWarehouse(expiryItem.id, validBatch.id, '9');
+  await moveDown(
+    expiryItem.id,
+    validBatch.id,
+    '3',
+    branchStore.id,
+    warehouse.id,
+  );
+
+  await stockWarehouse(otherExpiryItem.id, otherExpiredBatch.id, '3');
+  await moveDown(
+    otherExpiryItem.id,
+    otherExpiredBatch.id,
+    '1',
+    branchStore.id,
+    warehouse.id,
+  );
+
+  // No batch, and therefore nothing that can ever be expired (§9).
+  await stockWarehouse(plainItem.id, null, '10.5');
+  await moveDown(plainItem.id, null, '4', branchStore.id, warehouse.id);
+
+  // The other branch gets its own expired stock, so a cross-branch refusal is
+  // refused against something real.
+  await stockWarehouse(expiryItem.id, expiredBatch.id, '4');
+  await moveDown(
+    expiryItem.id,
+    expiredBatch.id,
+    '4',
+    otherBranchStore.id,
+    warehouse.id,
+  );
+
+  return DisposalFixture(
+    branch: branch,
+    otherBranch: otherBranch,
+    warehouse: warehouse,
+    branchStore: branchStore,
+    otherBranchStore: otherBranchStore,
+    roomOne: roomOne,
+    roomTwo: roomTwo,
+    otherBranchRoom: otherBranchRoom,
+    locationOne: locationOne,
+    locationTwo: locationTwo,
+    otherBranchRoomLocation: otherBranchRoomLocation,
+    warehouseUser: warehouseUser,
+    branchHead: branchHead,
+    otherBranchHead: otherBranchHead,
+    nurse: nurse,
+    superAdmin: superAdmin,
+    category: category,
+    otherCategory: otherCategory,
+    expiryItem: expiryItem,
+    otherExpiryItem: otherExpiryItem,
+    plainItem: plainItem,
+    expiredBatch: expiredBatch,
+    staleBatch: staleBatch,
+    todayBatch: todayBatch,
+    nearBatch: nearBatch,
+    validBatch: validBatch,
+    otherExpiredBatch: otherExpiredBatch,
+  );
+}
+
+/// Creates a `draft` disposal against one source location and returns its id.
+Future<String> createDisposalDraft(
+  TestContext context,
+  DisposalFixture fixture, {
+  required String sourceLocationId,
+  required DateTime nowUtc,
+  String? actorUserId,
+  String? reason,
+}) async {
+  final disposal = await context
+      .createDisposal(clock: () => nowUtc)
+      .call(
+        actorUserId: actorUserId ?? fixture.warehouseUser.id,
+        sourceLocationId: sourceLocationId,
+        reason: reason,
+      );
+  return disposal.id;
+}
+
+/// Adds one expired position to a draft.
+Future<DisposalLineReference> addDisposalPosition(
+  TestContext context,
+  DisposalFixture fixture, {
+  required String disposalId,
+  required String itemId,
+  required String batchId,
+  required String qty,
+  required DateTime nowUtc,
+  String? note,
+  String? actorUserId,
+}) => context
+    .addDisposalLine(clock: () => nowUtc)
+    .call(
+      actorUserId: actorUserId ?? fixture.warehouseUser.id,
+      disposalId: disposalId,
+      itemId: itemId,
+      batchId: batchId,
+      qty: Quantity.parse(qty),
+      note: note,
+    );
+
+/// `item|batch → disposal_lines.id` for one document.
+///
+/// The same grain as the partial unique index, so a test addresses a line the way
+/// the database identifies it.
+Future<Map<String, String>> disposalLineIdsByPosition(
+  TestContext context,
+  String disposalId,
+) async {
+  final rows = await context.database
+      .customSelect(
+        'SELECT id, item_id, batch_id FROM disposal_lines '
+        'WHERE disposal_id = ? AND deleted_at IS NULL;',
+        variables: [Variable<String>(disposalId)],
+      )
+      .get();
+  return {
+    for (final row in rows)
+      '${row.read<String>('item_id')}|${row.read<String>('batch_id')}': row
+          .read<String>('id'),
+  };
+}
+
+/// One location's balance of one position, read through the repository.
+Future<Quantity> locationBalance(
+  TestContext context, {
+  required String locationId,
+  required String itemId,
+  String? batchId,
+}) => context.inventory.balanceQty(
+  locationId: locationId,
   itemId: itemId,
   batchId: batchId,
 );

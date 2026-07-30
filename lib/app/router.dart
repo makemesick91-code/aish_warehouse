@@ -2,13 +2,16 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/enums/app_enums.dart';
 import '../core/session/current_user_session.dart';
 import '../features/delivery/domain/services/delivery_order_access_policy.dart';
+import '../features/disposal/domain/services/disposal_access_policy.dart';
 import '../features/distribution/domain/services/distribution_access_policy.dart';
 import '../features/good_receipt/domain/services/good_receipt_access_policy.dart';
 import '../features/opname/domain/services/opname_access_policy.dart';
 import '../features/purchase_request/domain/services/purchase_request_access_policy.dart';
 import 'guards/delivery_order_route_guard.dart';
+import 'guards/disposal_route_guard.dart';
 import 'guards/distribution_route_guard.dart';
 import 'guards/good_receipt_route_guard.dart';
 import 'guards/opname_route_guard.dart';
@@ -21,6 +24,9 @@ import '../features/delivery/presentation/pages/delivery_order_detail_page.dart'
 import '../features/delivery/presentation/pages/delivery_order_form_page.dart';
 import '../features/delivery/presentation/pages/delivery_waybill_page.dart';
 import '../features/delivery/presentation/pages/warehouse_delivery_order_list_page.dart';
+import '../features/disposal/presentation/pages/disposal_detail_page.dart';
+import '../features/disposal/presentation/pages/disposal_form_page.dart';
+import '../features/disposal/presentation/pages/disposal_list_page.dart';
 import '../features/distribution/presentation/pages/distribution_detail_page.dart';
 import '../features/distribution/presentation/pages/distribution_form_page.dart';
 import '../features/distribution/presentation/pages/distribution_list_page.dart';
@@ -186,6 +192,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               user: session.user,
               kind: DistributionRouteKind.branchList,
             ).isGranted
+            ? null
+            : AppRoutes.home;
+      }
+
+      // Pemusnahan. The first document with two symmetric sides, so the redirect
+      // asks the cheap section half of the rule twice — once per scope — and the
+      // warehouse branch is tested first because its path is a different prefix
+      // (`/warehouse/…`) rather than a nested one. Whether a *document* may be
+      // opened, and on the editor whether it is still a draft, is the guard's
+      // question, because only the database knows which shelf a document drew from.
+      DisposalAccess disposalSectionFor(DisposalRouteKind kind) =>
+          DisposalAccessPolicy.forSection(user: session.user, kind: kind);
+
+      if (location.startsWith(AppRoutes.warehouseDisposals)) {
+        return disposalSectionFor(DisposalRouteKind.warehouseList).isGranted
+            ? null
+            : AppRoutes.home;
+      }
+      if (location.startsWith(AppRoutes.disposals)) {
+        return disposalSectionFor(DisposalRouteKind.branchList).isGranted
             ? null
             : AppRoutes.home;
       }
@@ -524,6 +550,105 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     kind: DistributionRouteKind.branchDraft,
                     distributionId: id,
                     builder: (_) => DistributionFormPage(distributionId: id),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+      GoRoute(
+        path: AppRoutes.warehouseDisposals,
+        name: AppRoutes.warehouseDisposalsName,
+        builder: (context, state) => const DisposalSectionGuard(
+          kind: DisposalRouteKind.warehouseList,
+          builder: warehouseDisposalListPage,
+        ),
+        routes: [
+          // Listed first: the literal `new` segment must win over the `:id`
+          // pattern, or `/warehouse/disposals/new` would be read as a document id.
+          GoRoute(
+            path: AppRoutes.warehouseDisposalNew,
+            name: AppRoutes.warehouseDisposalNewName,
+            builder: (context, state) => const DisposalSectionGuard(
+              kind: DisposalRouteKind.warehouseCreate,
+              builder: warehouseDisposalListPage,
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.warehouseDisposalDetail,
+            name: AppRoutes.warehouseDisposalDetailName,
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return DisposalRouteGuard(
+                kind: DisposalRouteKind.warehouseDocument,
+                disposalId: id,
+                builder: (_) => DisposalDetailPage(disposalId: id),
+              );
+            },
+            routes: [
+              GoRoute(
+                path: AppRoutes.warehouseDisposalEdit,
+                name: AppRoutes.warehouseDisposalEditName,
+                builder: (context, state) {
+                  final id = state.pathParameters['id']!;
+                  // A distinct kind, not the same one as the detail route: the
+                  // editor additionally requires the document to still be a draft
+                  // (G-S2), and the policy is where that is decided.
+                  return DisposalRouteGuard(
+                    kind: DisposalRouteKind.warehouseDraft,
+                    disposalId: id,
+                    builder: (_) => DisposalFormPage(
+                      disposalId: id,
+                      scope: DisposalLocationScope.warehouse,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+      GoRoute(
+        path: AppRoutes.disposals,
+        name: AppRoutes.disposalsName,
+        builder: (context, state) => const DisposalSectionGuard(
+          kind: DisposalRouteKind.branchList,
+          builder: branchDisposalListPage,
+        ),
+        routes: [
+          GoRoute(
+            path: AppRoutes.disposalNew,
+            name: AppRoutes.disposalNewName,
+            builder: (context, state) => const DisposalSectionGuard(
+              kind: DisposalRouteKind.branchCreate,
+              builder: branchDisposalListPage,
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.disposalDetail,
+            name: AppRoutes.disposalDetailName,
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return DisposalRouteGuard(
+                kind: DisposalRouteKind.branchDocument,
+                disposalId: id,
+                builder: (_) => DisposalDetailPage(disposalId: id),
+              );
+            },
+            routes: [
+              GoRoute(
+                path: AppRoutes.disposalEdit,
+                name: AppRoutes.disposalEditName,
+                builder: (context, state) {
+                  final id = state.pathParameters['id']!;
+                  return DisposalRouteGuard(
+                    kind: DisposalRouteKind.branchDraft,
+                    disposalId: id,
+                    builder: (_) => DisposalFormPage(
+                      disposalId: id,
+                      scope: DisposalLocationScope.branch,
+                    ),
                   );
                 },
               ),

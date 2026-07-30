@@ -468,6 +468,106 @@ enum DistributionStatus {
   );
 }
 
+/// Lifecycle of a Pemusnahan / Disposal (schema v9, G-E7).
+///
+/// ```
+/// draft ──▶ posted   (final)
+/// ```
+///
+/// There is no third value and there never will be one on this document: a
+/// disposal is not submitted for approval, not cancelled, not un-posted and not
+/// reopened. A mistake in a posted disposal is corrected by a reversal movement
+/// against the ledger, never by editing the document — the same rule `reviewed`,
+/// `received`, the Good Receipt's `posted` and the Distribusi's `posted` follow
+/// (G-S1/G-S2).
+///
+/// ### Why there is no `submitted` / `approved` / `rejected`
+///
+/// The specification does not define a Disposal document at all — §2.3 lists no
+/// such table and §3.2 no such state machine. What it does state is G-E7:
+/// expired stock leaves *only* through a `disposal` movement carrying a note and
+/// an actor. Milestone 7 therefore wraps that movement in the smallest auditable
+/// document that can carry the note, the actor and the timestamps, and stops
+/// there. Inventing an approval stage would be inventing a rule — and G-R4
+/// (segregation of duties) is about not letting one person create *and approve*
+/// the same document, which is a reason to have no approval stage here rather
+/// than a licence to make one up. Posting is not approving: it is the moment the
+/// stock physically leaves, performed by the one person the location's scope
+/// allows.
+enum DisposalStatus {
+  draft('draft'),
+  posted('posted');
+
+  const DisposalStatus(this.dbValue);
+
+  final String dbValue;
+
+  bool get isDraft => this == draft;
+
+  bool get isPosted => this == posted;
+
+  /// Only a draft may have its source lines, quantities or reason changed
+  /// (G-S2). A posted disposal is read-only permanently.
+  bool get isEditable => this == draft;
+
+  /// Read-only permanently (G-S2).
+  bool get isFinal => this == posted;
+
+  /// Whether the actor may still post this disposal to the ledger.
+  ///
+  /// Says nothing about whether the document has any lines or a reason — those
+  /// are facts about the *lines* and the *header text*, which this enum cannot
+  /// see. `DisposalDetail.canPost` asks all three.
+  bool get canPost => this == draft;
+
+  /// The single source of truth for allowed transitions on one status.
+  /// Everything else — `posted → draft`, `posted → posted`, re-entering
+  /// `draft` — is refused.
+  bool canTransitionTo(DisposalStatus next) => switch (this) {
+    draft => next == posted,
+    posted => false,
+  };
+
+  /// Indonesian label for chips and document timelines.
+  ///
+  /// Deliberately *not* approval wording: there is no "Menunggu Persetujuan" and
+  /// no "Disetujui" anywhere in this workflow, because there is no approval
+  /// stage to describe.
+  String get label => switch (this) {
+    draft => 'Draft',
+    posted => 'Sudah Diposting',
+  };
+
+  static DisposalStatus fromDbValue(String value) => values.firstWhere(
+    (status) => status.dbValue == value,
+    orElse: () =>
+        throw ArgumentError.value(value, 'value', 'Unknown DisposalStatus'),
+  );
+}
+
+/// Which locations a Pemusnahan query is allowed to reach (§14/§26).
+///
+/// The one enum in this library that is **not** persisted anywhere, and it carries
+/// no `dbValue` for exactly that reason: it is a *query scope*, resolved into a
+/// predicate on `stock_locations` by `DisposalDao`, and stored nowhere. It lives
+/// here rather than beside either of them because both the DAO and the domain
+/// access policy have to name it, and `lib/core/db/daos` may not import a feature
+/// while a feature policy may not import drift — so a shared vocabulary needs a
+/// home neither side owns.
+///
+/// A closed set of two rather than a free location id: the scope a screen may ask
+/// for is a property of the *role*, not of the request. There is deliberately no
+/// value meaning "any location" — no screen in this milestone is allowed one, and
+/// the unscoped reads the use cases perform pass no scope at all.
+enum DisposalLocationScope {
+  /// Every `warehouse` location. The Petugas Warehouse's own shelves.
+  warehouse,
+
+  /// Every `branch_store` and `room` location of one branch — the Kepala Cabang's
+  /// scope, which is why it needs a branch id and [warehouse] does not.
+  branch,
+}
+
 /// Document types referenced by ledger entries (`ref_doc_type`).
 abstract final class RefDocType {
   static const stockOpname = 'SO';
@@ -475,6 +575,13 @@ abstract final class RefDocType {
   static const deliveryOrder = 'DO';
   static const goodReceipt = 'GR';
   static const distribution = 'DIST';
+
+  /// Pemusnahan stok kedaluwarsa (schema v9, G-E7).
+  ///
+  /// Deliberately not `DIST`, which is the Distribusi's: a `ref_doc_type` that
+  /// two document types shared would make the stock card unable to say which
+  /// document a movement came from, and `movementsByRef` would return both.
+  static const disposal = 'DSP';
 
   /// Only used by the development seed so opening balances stay idempotent.
   static const seed = 'SEED';

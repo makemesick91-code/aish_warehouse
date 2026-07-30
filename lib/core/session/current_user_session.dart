@@ -63,6 +63,23 @@ class CurrentUserSession {
   /// reason to offer it somebody else's job (G-R4).
   bool get canDistribute => isKepalaCabang && branchId != null;
 
+  /// The Petugas Warehouse destroys expired stock at Warehouse Pusat (G-E7, §14).
+  ///
+  /// Unscoped by branch, exactly like [canProcessPurchaseRequest]: the central
+  /// warehouse carries `users.branch_id = NULL` by design, so asking for one here
+  /// would refuse the only account that has this job.
+  bool get canDisposeWarehouseStock => isWarehouse;
+
+  /// The Kepala Cabang destroys expired stock in their own *Gudang Cabang* and
+  /// rooms (G-E7, §14).
+  ///
+  /// Branch-scoped, and the branch is part of the predicate rather than an
+  /// afterthought: *"stok cabangnya sendiri"* is meaningless without one. Perawat and
+  /// Super Admin answer `false` to both — a nurse sees the expiry badges through the
+  /// stock module (G-E6) but has no document that removes inventory, and an account
+  /// being powerful is not a reason to hand it somebody else's job (G-R4).
+  bool get canDisposeBranchStock => isKepalaCabang && branchId != null;
+
   String get roleLabel => user.role.label;
 
   @override

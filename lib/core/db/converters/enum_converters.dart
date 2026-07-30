@@ -106,6 +106,16 @@ class DistributionStatusConverter
   String toSql(DistributionStatus value) => value.dbValue;
 }
 
+class DisposalStatusConverter extends TypeConverter<DisposalStatus, String> {
+  const DisposalStatusConverter();
+
+  @override
+  DisposalStatus fromSql(String fromDb) => DisposalStatus.fromDbValue(fromDb);
+
+  @override
+  String toSql(DisposalStatus value) => value.dbValue;
+}
+
 class StockMovementTypeConverter
     extends TypeConverter<StockMovementType, String> {
   const StockMovementTypeConverter();

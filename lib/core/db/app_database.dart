@@ -4,6 +4,7 @@ import '../enums/app_enums.dart';
 import '../quantity/quantity.dart';
 import 'converters/enum_converters.dart';
 import 'daos/delivery_order_dao.dart';
+import 'daos/disposal_dao.dart';
 import 'daos/distribution_dao.dart';
 import 'daos/good_receipt_dao.dart';
 import 'daos/inventory_dao.dart';
@@ -12,6 +13,7 @@ import 'daos/opname_dao.dart';
 import 'daos/purchase_request_dao.dart';
 import 'tables/base_columns.dart';
 import 'tables/delivery_tables.dart';
+import 'tables/disposal_tables.dart';
 import 'tables/distribution_tables.dart';
 import 'tables/good_receipt_tables.dart';
 import 'tables/inventory_tables.dart';
@@ -43,6 +45,8 @@ part 'app_database.g.dart';
     GoodReceiptLines,
     Distributions,
     DistributionLines,
+    Disposals,
+    DisposalLines,
   ],
   daos: [
     MasterDataDao,
@@ -52,6 +56,7 @@ part 'app_database.g.dart';
     DeliveryOrderDao,
     GoodReceiptDao,
     DistributionDao,
+    DisposalDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -70,8 +75,9 @@ class AppDatabase extends _$AppDatabase {
   ///   `delivery_order_lines`).
   /// * v7 — Milestone 5, Good Receipt (`good_receipts`, `good_receipt_lines`).
   /// * v8 — Milestone 6, Distribusi (`distributions`, `distribution_lines`).
+  /// * v9 — Milestone 7, Pemusnahan (`disposals`, `disposal_lines`).
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -241,6 +247,40 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(distributions);
         await m.createTable(distributionLines);
         for (final statement in _v8DistributionIndexes) {
+          await customStatement(statement);
+        }
+      }
+      if (from < 9) {
+        // Milestone 7, purely additive in the sense the `from < 3` block
+        // established: two new tables and their indexes, and not one statement
+        // touching an existing column.
+        //
+        // The Pemusnahan is the document that takes expired stock *out of* the
+        // system (G-E7), and this step still does not migrate stock: the posting
+        // happens when a document is posted, at runtime, not when the schema is
+        // upgraded. So ledger quantities keep the scaling the `from < 2` block gave
+        // them, `stock_opnames` keeps the shape the `from < 4` rebuild left it in,
+        // and every Purchase Request, Delivery Order, Good Receipt and Distribusi
+        // row is untouched.
+        //
+        // In particular this step invents no disposals for the expired batches
+        // already sitting on the devices' shelves — and there will be some, because
+        // nothing before this milestone could remove them. Writing documents for
+        // them would be a migration asserting that somebody destroyed goods and
+        // wrote a reason, on a date, which nobody did. They surface instead as
+        // candidates the moment a Warehouse or Kepala Cabang user opens the new
+        // screen, which is the honest outcome: the stock is still on the shelf.
+        //
+        // It also has to leave `stock_opnames` alone for the second reason the
+        // `from < 5` block spells out: the `from < 4` block reads the *current* Dart
+        // definition of that table through `alterTable`, so a v9 that changed its
+        // shape would make a v3 → v9 upgrade land on the v9 shape at step 4 and then
+        // apply steps 5 to 9 on top. Pemusnahan only references `stock_locations`,
+        // `users`, `items` and `item_batches` by foreign key, so that trap stays
+        // shut.
+        await m.createTable(disposals);
+        await m.createTable(disposalLines);
+        for (final statement in _v9DisposalIndexes) {
           await customStatement(statement);
         }
       }
@@ -475,5 +515,51 @@ class AppDatabase extends _$AppDatabase {
     'CREATE UNIQUE INDEX IF NOT EXISTS idx_distribution_lines_unbatched '
         'ON distribution_lines (distribution_id, room_id, item_id) '
         'WHERE batch_id IS NULL AND deleted_at IS NULL;',
+  ];
+
+  /// The Pemusnahan indexes **exactly as schema v9 defined them**.
+  ///
+  /// Frozen as literal SQL for the reason [_v3OpnameIndexes] spells out: a migration
+  /// step must keep doing what it did the day it shipped, so this list must not be
+  /// derived from `allSchemaEntities` — that getter always describes the current
+  /// schema, and a v10 index added to one of these tables would silently change what
+  /// the `from < 9` block creates.
+  ///
+  /// Two of these are load-bearing, and they are load-bearing in *different* shapes:
+  ///
+  /// * `idx_disposals_doc_number` is **unqualified**, where every other document
+  ///   number index in this schema carries `WHERE deleted_at IS NULL`. G-A3 is why —
+  ///   *"nomor dokumen berurut dan tidak dipakai ulang"* — and a destruction record is
+  ///   exactly the document where a reissued number would let two rows answer to one
+  ///   reference. See the note on `Disposals`.
+  /// * `idx_disposal_lines_position` is the partial one that stops the same
+  ///   `(item, batch)` appearing twice on a document, which would take double the
+  ///   quantity off the shelf while every per-line check still passed.
+  ///   `deleted_at IS NULL` is what lets a line removed from a draft be added back
+  ///   afterwards. There is only one shape here rather than the batched/unbatched
+  ///   pair the other line tables need, because `disposal_lines.batch_id` is NOT NULL
+  ///   — SQLite's "every NULL is distinct" problem cannot arise.
+  static const List<String> _v9DisposalIndexes = [
+    'CREATE INDEX IF NOT EXISTS idx_disposals_source_location_status '
+        'ON disposals (source_location_id, status);',
+    'CREATE INDEX IF NOT EXISTS idx_disposals_created_by_status '
+        'ON disposals (created_by, status);',
+    'CREATE INDEX IF NOT EXISTS idx_disposals_posted_by_status '
+        'ON disposals (posted_by, status);',
+    'CREATE INDEX IF NOT EXISTS idx_disposals_created_at '
+        'ON disposals (created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_disposals_posted_at '
+        'ON disposals (posted_at);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_disposals_doc_number '
+        'ON disposals (doc_number);',
+    'CREATE INDEX IF NOT EXISTS idx_disposal_lines_disposal '
+        'ON disposal_lines (disposal_id);',
+    'CREATE INDEX IF NOT EXISTS idx_disposal_lines_item '
+        'ON disposal_lines (item_id);',
+    'CREATE INDEX IF NOT EXISTS idx_disposal_lines_batch '
+        'ON disposal_lines (batch_id);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_disposal_lines_position '
+        'ON disposal_lines (disposal_id, item_id, batch_id) '
+        'WHERE deleted_at IS NULL;',
   ];
 }

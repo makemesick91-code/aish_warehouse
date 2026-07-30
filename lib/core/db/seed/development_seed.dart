@@ -8,6 +8,11 @@ import '../../../features/delivery/domain/services/delivery_warehouse_stock_read
 import '../../../features/delivery/domain/use_cases/build_fefo_delivery_allocation_use_case.dart';
 import '../../../features/delivery/domain/use_cases/create_delivery_order_use_case.dart';
 import '../../../features/delivery/domain/use_cases/ship_delivery_order_use_case.dart';
+import '../../../features/disposal/domain/repositories/disposal_repository.dart';
+import '../../../features/disposal/domain/services/disposal_stock_reader.dart';
+import '../../../features/disposal/domain/use_cases/add_disposal_line_use_case.dart';
+import '../../../features/disposal/domain/use_cases/create_disposal_use_case.dart';
+import '../../../features/disposal/domain/use_cases/post_disposal_use_case.dart';
 import '../../../features/distribution/domain/repositories/distribution_repository.dart';
 import '../../../features/distribution/domain/services/distribution_branch_stock_reader.dart';
 import '../../../features/distribution/domain/use_cases/add_distribution_item_use_case.dart';
@@ -103,6 +108,22 @@ class _SeedRoomStock {
   final String qty;
 }
 
+/// One position the seed places in the *Gudang Cabang* (§37).
+///
+/// Always batch-tracked: what it exists for is expiry, and only a batch has a date
+/// to be past.
+class _SeedBranchStock {
+  const _SeedBranchStock({
+    required this.sku,
+    required this.batchNo,
+    required this.qty,
+  });
+
+  final String sku;
+  final String batchNo;
+  final String qty;
+}
+
 /// One Stok Opname the seed files so a Purchase Request has something to cite.
 ///
 /// [weeksAgo] is what makes the G-P1 window demonstrable on a fresh install: 0 and
@@ -131,6 +152,7 @@ class DevelopmentSeed {
     required this._deliveries,
     required this._receipts,
     required this._distributions,
+    required this._disposals,
     bool? isDevelopmentBuild,
   }) : _opnameRepository = opnames,
        _isDevelopmentBuild = isDevelopmentBuild ?? !kReleaseMode;
@@ -143,6 +165,7 @@ class DevelopmentSeed {
   final DeliveryOrderRepository _deliveries;
   final GoodReceiptRepository _receipts;
   final DistributionRepository _distributions;
+  final DisposalRepository _disposals;
   final bool _isDevelopmentBuild;
 
   static const _categoryNames = <String>[
@@ -389,6 +412,33 @@ class DevelopmentSeed {
     ),
   ];
 
+  /// Opening stock of the *Gudang Cabang*, so the Kepala Cabang's Pemusnahan screen
+  /// has something to destroy on a fresh install (§37).
+  ///
+  /// The branch store's ordinary source of stock is a posted Good Receipt, and that
+  /// path cannot produce these rows: a receipt refuses an expired batch (G-E4), and
+  /// what this milestone needs is precisely a shelf holding one. So the positions are
+  /// stated through an adjustment, for the reason [_seedRoomStock] spells out — the
+  /// one path O-7 leaves open, and one that still writes a real ledger movement.
+  ///
+  /// Three positions, and each is a different answer:
+  ///
+  /// * `KSR-EXP` expired eight days ago and **is** destroyable;
+  /// * `KSR-NEAR` has twelve days left, so it appears only in the informational
+  ///   section and can never be selected (§28);
+  /// * `KSR-SAFE` is comfortably in date and appears nowhere on the screen at all.
+  ///
+  /// Between them a fresh install shows the whole eligibility rule without anybody
+  /// having to construct it by hand.
+  static const _branchStoreStock = <_SeedBranchStock>[
+    _SeedBranchStock(sku: 'DEN-0012', batchNo: 'KSR-EXP', qty: '1.25'),
+    _SeedBranchStock(sku: 'DEN-0012', batchNo: 'KSR-NEAR', qty: '2'),
+    _SeedBranchStock(sku: 'DEN-0012', batchNo: 'KSR-SAFE', qty: '4'),
+    // A second expired product, in another category, so the category chips have
+    // something to filter between.
+    _SeedBranchStock(sku: 'DEN-0008', batchNo: 'CHX-2301', qty: '0.75'),
+  ];
+
   /// The counts the seed files, so `Buat Purchase Request` has eligible citations
   /// on a fresh install and the two-week window of G-P1 is visible.
   ///
@@ -530,6 +580,67 @@ class DevelopmentSeed {
 
     await _seedRoomStock(actorUserId: warehouseUser.id);
     await _seedOpnames();
+  }
+
+  /// Places the *Gudang Cabang* positions of [_branchStoreStock] (§37).
+  ///
+  /// Posted through [StockPostingService.postOpnameAdjustment] for the reason
+  /// [_seedRoomStock] gives: a transfer refuses an expired batch (G-E4), and an
+  /// expired position on a branch shelf is exactly what this seed is for. The
+  /// adjustment writes a real ledger movement either way, so `stock_balances` is
+  /// still never touched directly.
+  ///
+  /// Opt-in, and deliberately **not** part of [run]. A fresh install already shows
+  /// expired stock on both Pemusnahan screens — `KSR-EXP` at Warehouse Pusat and
+  /// `CHX-2301` in Ruang Dental 1, both seeded by [run] — so what this adds is the
+  /// third source kind rather than the first. Keeping it out of [run] also keeps a
+  /// promise Milestone 6 relies on: after [run] the branch store holds nothing, and
+  /// its first stock arrives through a posted Good Receipt (spec §2.5), which is what
+  /// `distribution_seed_test` asserts. Stocking it here would quietly make that
+  /// assertion about a shelf somebody else had already filled.
+  ///
+  /// Idempotent through the stable `ref_doc_id`, which is checked before posting — so
+  /// a second run adds nothing rather than doubling the shelf. Returns without doing
+  /// anything when a prerequisite is missing.
+  Future<void> seedExpiredBranchStoreStock() async {
+    _requireDevelopmentBuild();
+
+    final users = await _master.activeUsers();
+    final staff = users.where((user) => user.role == UserRole.warehouse);
+    if (staff.isEmpty) return;
+    final actorUserId = staff.first.id;
+
+    final branches = await _master.activeBranches();
+    if (branches.isEmpty) return;
+    final stores = await _master.activeBranchStoreLocations(branches.first.id);
+    if (stores.length != 1) return;
+    final store = stores.single;
+
+    for (final spec in _branchStoreStock) {
+      final refDocId = 'seed-branch-store-${spec.sku}-${spec.batchNo}';
+      final existing = await _inventory.movementsByRef(
+        refDocType: RefDocType.seed,
+        refDocId: refDocId,
+      );
+      if (existing.isNotEmpty) continue;
+
+      final item = await _findItemBySku(spec.sku);
+      if (item == null) continue;
+      final batches = await _master.batchesOfItem(item.id);
+      final match = batches.where((batch) => batch.batchNo == spec.batchNo);
+      if (match.isEmpty) continue;
+
+      await _posting.postOpnameAdjustment(
+        locationId: store.id,
+        itemId: item.id,
+        batchId: match.first.id,
+        countedQty: Quantity.parse(spec.qty),
+        actorUserId: actorUserId,
+        refDocType: RefDocType.seed,
+        refDocId: refDocId,
+        note: 'Saldo awal Gudang Cabang seed pengembangan',
+      );
+    }
   }
 
   /// Places opening stock in the three dental rooms so Stok Opname has something
@@ -1188,6 +1299,201 @@ class DevelopmentSeed {
     ).call(actorUserId: head.id, distributionId: distributionId);
 
     return distributionId;
+  }
+
+  /// Files a `draft` Pemusnahan against the *Gudang Cabang*, so a fresh install has a
+  /// form to open (§37).
+  ///
+  /// Opt-in rather than part of [run], for the reason every document seed here is:
+  /// creating paperwork on every launch would make a fresh install look busier than
+  /// it is, and a developer exercising the empty state needs one that stays empty.
+  ///
+  /// Returns `null` — never throws — when a prerequisite is missing: no branch head,
+  /// no store, or nothing expired on the shelf. A seed must never be the reason a
+  /// fresh install fails to open.
+  ///
+  /// It destroys **half** of each expired position, truncated towards zero in exact
+  /// fixed point (Q-2). Leaving the rest behind is deliberate: the *Stok Kedaluwarsa*
+  /// tab must still have rows after the demo document is posted, or the screen it is
+  /// demonstrating looks broken.
+  Future<String?> seedDraftDisposal() async {
+    _requireDevelopmentBuild();
+
+    final users = await _master.activeUsers();
+    final heads = users.where((user) => user.role == UserRole.kepalaCabang);
+    if (heads.isEmpty) return null;
+    final head = heads.first;
+    final branchId = head.branchId;
+    if (branchId == null) return null;
+
+    final previous = await _existingDisposalForBranch(branchId);
+    if (previous != null) return previous;
+
+    // The store's expired positions, which [run] deliberately leaves out — see
+    // [seedExpiredBranchStoreStock]. Idempotent, so calling it here costs nothing on
+    // a second run.
+    await seedExpiredBranchStoreStock();
+
+    final stores = await _master.activeBranchStoreLocations(branchId);
+    if (stores.length != 1) return null;
+    final store = stores.single;
+
+    final nowUtc = DateTime.now().toUtc();
+    final expired = await _disposals.expiredPositions(
+      sourceLocationId: store.id,
+      nowUtc: nowUtc,
+    );
+    if (expired.isEmpty) return null;
+
+    final disposal =
+        await CreateDisposalUseCase(
+          disposals: _disposals,
+          master: _master,
+        ).call(
+          actorUserId: head.id,
+          sourceLocationId: store.id,
+          // A real audit sentence, not a preset code (§19): what goes in the column is
+          // what a reader sees a year later.
+          reason: 'Pembersihan stok lama — seed pengembangan',
+        );
+
+    final add = AddDisposalLineUseCase(
+      disposals: _disposals,
+      master: _master,
+      stock: DisposalStockReader(_inventory),
+    );
+    for (final position in expired.take(2)) {
+      final half = position.qtyOnHand.scaledBy(numerator: 1, denominator: 2);
+      if (!half.isPositive) continue;
+      try {
+        await add.call(
+          actorUserId: head.id,
+          disposalId: disposal.id,
+          itemId: position.itemId,
+          batchId: position.batchId,
+          qty: half,
+        );
+      } on AppFailure {
+        // Anything the rules refuse — a batch that stopped qualifying between the
+        // read and the write — is simply left off the demo document.
+        continue;
+      }
+    }
+
+    final detail = await _disposals.getDetail(disposal.id);
+    if (detail == null || detail.isEmpty) return null;
+    return disposal.id;
+  }
+
+  /// Posts the seeded Pemusnahan, so a fresh install has a read-only document *and*
+  /// a `disposal` movement that arrived the way real ones do (§37).
+  ///
+  /// Goes through [PostDisposalUseCase] rather than mutating balances: every rule the
+  /// screens enforce applies to the seed too, and the reduction it produces is backed
+  /// by real ledger rows carrying the reason and the actor G-E7 demands.
+  ///
+  /// Deliberately **not** called by [run], and not by [seedDraftDisposal] either. A
+  /// fresh install should show both shapes — a draft to continue and a posted
+  /// document to read — and posting the only draft would leave the form with nothing
+  /// to open. Returns the document id, or `null` when there is nothing to post.
+  Future<String?> seedPostedDisposal() async {
+    _requireDevelopmentBuild();
+
+    final users = await _master.activeUsers();
+    final heads = users.where((user) => user.role == UserRole.kepalaCabang);
+    if (heads.isEmpty) return null;
+    final head = heads.first;
+
+    final disposalId = await seedDraftDisposal();
+    if (disposalId == null) return null;
+
+    final disposal = await _disposals.getById(disposalId);
+    if (disposal == null) return null;
+    // Already posted by an earlier run.
+    if (disposal.isPosted) return disposalId;
+
+    await PostDisposalUseCase(
+      disposals: _disposals,
+      master: _master,
+      posting: _posting,
+      stock: DisposalStockReader(_inventory),
+    ).call(actorUserId: head.id, disposalId: disposalId);
+
+    return disposalId;
+  }
+
+  /// Files a `draft` Pemusnahan against Warehouse Pusat, for the warehouse side of the
+  /// screen (§37).
+  ///
+  /// The same shape as [seedDraftDisposal] and deliberately a separate method rather
+  /// than a parameter: the two sides have different actors, different scopes and
+  /// different "already seeded" checks, and a boolean flag would hide that.
+  Future<String?> seedWarehouseDraftDisposal() async {
+    _requireDevelopmentBuild();
+
+    final users = await _master.activeUsers();
+    final staff = users.where((user) => user.role == UserRole.warehouse);
+    if (staff.isEmpty) return null;
+    final actor = staff.first;
+
+    final warehouses = await _master.activeWarehouseLocations();
+    if (warehouses.length != 1) return null;
+    final warehouse = warehouses.single;
+
+    final existing = await _disposals.listForWarehouse();
+    if (existing.isNotEmpty) return existing.first.id;
+
+    final nowUtc = DateTime.now().toUtc();
+    final expired = await _disposals.expiredPositions(
+      sourceLocationId: warehouse.id,
+      nowUtc: nowUtc,
+    );
+    if (expired.isEmpty) return null;
+
+    final disposal =
+        await CreateDisposalUseCase(
+          disposals: _disposals,
+          master: _master,
+        ).call(
+          actorUserId: actor.id,
+          sourceLocationId: warehouse.id,
+          reason: 'Kedaluwarsa — seed pengembangan',
+        );
+
+    final add = AddDisposalLineUseCase(
+      disposals: _disposals,
+      master: _master,
+      stock: DisposalStockReader(_inventory),
+    );
+    for (final position in expired.take(1)) {
+      final half = position.qtyOnHand.scaledBy(numerator: 1, denominator: 2);
+      if (!half.isPositive) continue;
+      try {
+        await add.call(
+          actorUserId: actor.id,
+          disposalId: disposal.id,
+          itemId: position.itemId,
+          batchId: position.batchId,
+          qty: half,
+        );
+      } on AppFailure {
+        continue;
+      }
+    }
+
+    final detail = await _disposals.getDetail(disposal.id);
+    if (detail == null || detail.isEmpty) return null;
+    return disposal.id;
+  }
+
+  /// The id of any Pemusnahan this branch already has, or `null`.
+  ///
+  /// Read through the branch-scoped list so it cannot report the warehouse's document
+  /// or another branch's, and status-agnostic so a *posted* one still counts as
+  /// "already seeded" — which is what makes a second run a no-op.
+  Future<String?> _existingDisposalForBranch(String branchId) async {
+    final rows = await _disposals.listForBranch(branchId: branchId);
+    return rows.isEmpty ? null : rows.first.id;
   }
 
   /// The id of any Distribusi this branch already has, or `null`.

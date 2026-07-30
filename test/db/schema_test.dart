@@ -21,7 +21,7 @@ void main() {
     // `stock_opnames` by dropping the lexical timestamp-order CHECK; v5 adds
     // Purchase Request; v6 adds Delivery Order; v7 adds Good Receipt; v8 adds
     // Distribusi.
-    expect(context.database.schemaVersion, 8);
+    expect(context.database.schemaVersion, 9);
   });
 
   test('kolom kuantitas ledger bertipe INTEGER, bukan REAL', () async {

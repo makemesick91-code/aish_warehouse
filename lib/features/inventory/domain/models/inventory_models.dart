@@ -248,6 +248,53 @@ class DistributionPostingLine {
   final String? note;
 }
 
+/// One expired position to destroy when a Pemusnahan is posted (G-E7).
+///
+/// Carries only what the ledger needs: which physical position leaves the shelf,
+/// how much, and the note the movement records. Why it was chosen, and which
+/// document it came from, are the Pemusnahan's business — the ledger records that
+/// stock left, not the paperwork behind it.
+///
+/// Two things distinguish it from every other posting line in this file:
+///
+/// * **`batchId` is non-null.** Only an expiry-tracked item has an expiry date to
+///   be past, so a disposal position is always a batch. A nullable field here would
+///   make "dispose of an item without expiry" expressible, which is a different
+///   workflow this milestone does not open.
+/// * **`note` is non-null.** G-E7 requires a note on every disposal movement, so it
+///   is a required field rather than an optional one — the type states the rule,
+///   and a caller cannot forget it.
+///
+/// There is no destination. A disposal has one leg: stock leaves the source and
+/// enters nothing, which is what makes `to_location_id IS NULL` the shape of every
+/// movement it writes.
+class DisposalPostingLine {
+  const DisposalPostingLine({
+    required this.lineId,
+    required this.itemId,
+    required this.batchId,
+    required this.qty,
+    required this.note,
+  });
+
+  /// The disposal line this movement came from, so a failure can name it.
+  final String lineId;
+
+  final String itemId;
+
+  /// The batch being destroyed. Never null — see the class note.
+  final String batchId;
+
+  /// Strictly positive. A disposal of nothing is not a line, and the ledger records
+  /// changes rather than confirmations (G-A1).
+  final Quantity qty;
+
+  /// The audit text G-E7 demands: the document's reason, plus this position's own
+  /// detail when it has one. Composed by `DisposalStockPlanBuilder` so every row of
+  /// one document is worded the same way.
+  final String note;
+}
+
 /// Outcome of one adjusted position.
 class OpnameAdjustmentResult {
   const OpnameAdjustmentResult({

@@ -150,6 +150,46 @@ abstract final class AppRoutes {
   static const String distributionEdit = 'edit';
   static const String distributionEditName = 'distributionEdit';
 
+  // --- Pemusnahan (Milestone 7) ---------------------------------------------
+
+  /// The Petugas Warehouse's Pemusnahan section, reached from *Stok Warehouse*
+  /// (spec §4.2: *"daftar kedaluwarsa & pemusnahan (`disposal`)"*).
+  ///
+  /// Unlike Distribusi, this document has **two** sides — see [disposals] — and
+  /// they are disjoint: neither list ever contains one of the other's documents.
+  static const String warehouseDisposals = '/warehouse/disposals';
+  static const String warehouseDisposalsName = 'warehouseDisposals';
+
+  /// Nested under [warehouseDisposals], so the full path is
+  /// `/warehouse/disposals/new`. Declared **before** the `:id` pattern, or the
+  /// literal segment would be matched as a document id.
+  static const String warehouseDisposalNew = 'new';
+  static const String warehouseDisposalNewName = 'warehouseDisposalNew';
+
+  static const String warehouseDisposalDetail = ':id';
+  static const String warehouseDisposalDetailName = 'warehouseDisposalDetail';
+
+  /// `/warehouse/disposals/{id}/edit` — the form, nested under the detail route so
+  /// both share the same `:id`. A distinct route rather than a mode of the detail
+  /// page, because the editor additionally requires the document to still be a
+  /// draft (G-S2) and that is a *route* precondition the guard can enforce before
+  /// anything is fetched.
+  static const String warehouseDisposalEdit = 'edit';
+  static const String warehouseDisposalEditName = 'warehouseDisposalEdit';
+
+  /// The Kepala Cabang's Pemusnahan section — their own *Gudang Cabang* and rooms.
+  static const String disposals = '/disposals';
+  static const String disposalsName = 'disposals';
+
+  static const String disposalNew = 'new';
+  static const String disposalNewName = 'disposalNew';
+
+  static const String disposalDetail = ':id';
+  static const String disposalDetailName = 'disposalDetail';
+
+  static const String disposalEdit = 'edit';
+  static const String disposalEditName = 'disposalEdit';
+
   // There is deliberately no `/akses-ditolak` route. A refused document route
   // renders `AccessDeniedPage` *in place*, keeping the URL the user typed:
   // redirecting to a dedicated path would tell them, by the address bar alone,

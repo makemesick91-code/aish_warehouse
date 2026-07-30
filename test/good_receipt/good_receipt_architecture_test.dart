@@ -656,7 +656,7 @@ void main() {
 
       expect(source, contains('_v7GoodReceiptIndexes'));
       expect(source, contains('if (from < 7)'));
-      expect(source, contains('int get schemaVersion => 8;'));
+      expect(source, contains('int get schemaVersion => 9;'));
       expect(
         source.contains('allSchemaEntities'),
         isFalse,

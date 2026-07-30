@@ -14,6 +14,7 @@ class QuantityField extends StatefulWidget {
   const QuantityField({
     super.key,
     this.controller,
+    this.focusNode,
     this.initialValue,
     required this.label,
     this.unit,
@@ -27,6 +28,14 @@ class QuantityField extends StatefulWidget {
   });
 
   final TextEditingController? controller;
+
+  /// Focus node owned by the caller.
+  ///
+  /// Supplied when something outside the field needs to *put the cursor here* — a
+  /// form that scrolls to the first invalid line and then focuses it (§31.5). When
+  /// omitted the field makes its own, exactly as before, and disposes it. Ownership
+  /// follows the same rule as [controller]: whoever created it disposes it.
+  final FocusNode? focusNode;
 
   /// Starting value, used only when [controller] is not supplied.
   final Quantity? initialValue;
@@ -62,6 +71,7 @@ class _QuantityFieldState extends State<QuantityField> {
   late final TextEditingController _controller;
   late final FocusNode _focusNode;
   bool _ownsController = false;
+  bool _ownsFocusNode = false;
 
   @override
   void initState() {
@@ -70,14 +80,16 @@ class _QuantityFieldState extends State<QuantityField> {
     _controller =
         widget.controller ??
         TextEditingController(text: widget.initialValue?.format() ?? '');
-    _focusNode = FocusNode()..addListener(_onFocusChange);
+    _ownsFocusNode = widget.focusNode == null;
+    _focusNode = (widget.focusNode ?? FocusNode())..addListener(_onFocusChange);
   }
 
   @override
   void dispose() {
-    _focusNode
-      ..removeListener(_onFocusChange)
-      ..dispose();
+    // The listener always comes off, whoever owns the node: leaving one attached to
+    // a caller-owned node would fire `_onFocusChange` against a dead State.
+    _focusNode.removeListener(_onFocusChange);
+    if (_ownsFocusNode) _focusNode.dispose();
     if (_ownsController) _controller.dispose();
     super.dispose();
   }

@@ -13825,6 +13825,1375 @@ class DistributionLinesCompanion extends UpdateCompanion<DistributionLineRow> {
   }
 }
 
+class $DisposalsTable extends Disposals
+    with TableInfo<$DisposalsTable, DisposalRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DisposalsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>($DisposalsTable.$convertersyncStatus);
+  static const VerificationMeta _docNumberMeta = const VerificationMeta(
+    'docNumber',
+  );
+  @override
+  late final GeneratedColumn<String> docNumber = GeneratedColumn<String>(
+    'doc_number',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceLocationIdMeta = const VerificationMeta(
+    'sourceLocationId',
+  );
+  @override
+  late final GeneratedColumn<String> sourceLocationId = GeneratedColumn<String>(
+    'source_location_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_locations (id)',
+    ),
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<DisposalStatus, String> status =
+      GeneratedColumn<String>(
+        'status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => DisposalStatus.draft.dbValue,
+      ).withConverter<DisposalStatus>($DisposalsTable.$converterstatus);
+  static const VerificationMeta _reasonMeta = const VerificationMeta('reason');
+  @override
+  late final GeneratedColumn<String> reason = GeneratedColumn<String>(
+    'reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _postedAtMeta = const VerificationMeta(
+    'postedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> postedAt = GeneratedColumn<DateTime>(
+    'posted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _postedByMeta = const VerificationMeta(
+    'postedBy',
+  );
+  @override
+  late final GeneratedColumn<String> postedBy = GeneratedColumn<String>(
+    'posted_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    docNumber,
+    sourceLocationId,
+    createdBy,
+    status,
+    reason,
+    postedAt,
+    postedBy,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'disposals';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DisposalRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('doc_number')) {
+      context.handle(
+        _docNumberMeta,
+        docNumber.isAcceptableOrUnknown(data['doc_number']!, _docNumberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_docNumberMeta);
+    }
+    if (data.containsKey('source_location_id')) {
+      context.handle(
+        _sourceLocationIdMeta,
+        sourceLocationId.isAcceptableOrUnknown(
+          data['source_location_id']!,
+          _sourceLocationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceLocationIdMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdByMeta);
+    }
+    if (data.containsKey('reason')) {
+      context.handle(
+        _reasonMeta,
+        reason.isAcceptableOrUnknown(data['reason']!, _reasonMeta),
+      );
+    }
+    if (data.containsKey('posted_at')) {
+      context.handle(
+        _postedAtMeta,
+        postedAt.isAcceptableOrUnknown(data['posted_at']!, _postedAtMeta),
+      );
+    }
+    if (data.containsKey('posted_by')) {
+      context.handle(
+        _postedByMeta,
+        postedBy.isAcceptableOrUnknown(data['posted_by']!, _postedByMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DisposalRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DisposalRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $DisposalsTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      docNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}doc_number'],
+      )!,
+      sourceLocationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_location_id'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      )!,
+      status: $DisposalsTable.$converterstatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}status'],
+        )!,
+      ),
+      reason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reason'],
+      ),
+      postedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}posted_at'],
+      ),
+      postedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}posted_by'],
+      ),
+    );
+  }
+
+  @override
+  $DisposalsTable createAlias(String alias) {
+    return $DisposalsTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+  static TypeConverter<DisposalStatus, String> $converterstatus =
+      const DisposalStatusConverter();
+}
+
+class DisposalRow extends DataClass implements Insertable<DisposalRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+
+  /// Temporary local number `TMP-DSP-{uuid}` until a sync backend assigns the
+  /// final `DSP-{lokasi}-{yyyyMMdd}-{seq}` (G-Y4). Minting a server-shaped number
+  /// offline would collide across devices — every branch disposes on its own.
+  final String docNumber;
+
+  /// The one location the goods physically leave.
+  ///
+  /// Warehouse Pusat for a `warehouse` actor; the acting branch head's own
+  /// *Gudang Cabang* or one of their rooms otherwise. Which of those an actor may
+  /// name is a cross-table question (`users.branch_id` against
+  /// `stock_locations.branch_id`) that SQLite cannot express as a foreign key, so
+  /// `DisposalLocationPolicy` enforces it and the posting transaction
+  /// revalidates it.
+  final String sourceLocationId;
+
+  /// Who raised the document (G-A3).
+  final String createdBy;
+  final DisposalStatus status;
+
+  /// G-E7's mandatory note, at document level.
+  ///
+  /// Nullable while the document is a draft — the form opens before the reason is
+  /// typed — and mandatory the moment it posts, which is what the status CHECK
+  /// below states. The domain is stricter than the CHECK can be: `String.trim()`
+  /// in Dart removes tabs and newlines, and SQLite's `trim()` removes spaces
+  /// only, so a reason of `"\n\n"` passes the database and is refused by
+  /// `DisposalReasonPolicy`. The CHECK is the floor, not the authority.
+  final String? reason;
+
+  /// UTC instant the disposal was posted and the balance fell (T-1).
+  final DateTime? postedAt;
+
+  /// Who posted it (G-E7's *pelaku*). Null exactly while the document is a draft.
+  final String? postedBy;
+  const DisposalRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.docNumber,
+    required this.sourceLocationId,
+    required this.createdBy,
+    required this.status,
+    this.reason,
+    this.postedAt,
+    this.postedBy,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $DisposalsTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    map['doc_number'] = Variable<String>(docNumber);
+    map['source_location_id'] = Variable<String>(sourceLocationId);
+    map['created_by'] = Variable<String>(createdBy);
+    {
+      map['status'] = Variable<String>(
+        $DisposalsTable.$converterstatus.toSql(status),
+      );
+    }
+    if (!nullToAbsent || reason != null) {
+      map['reason'] = Variable<String>(reason);
+    }
+    if (!nullToAbsent || postedAt != null) {
+      map['posted_at'] = Variable<DateTime>(postedAt);
+    }
+    if (!nullToAbsent || postedBy != null) {
+      map['posted_by'] = Variable<String>(postedBy);
+    }
+    return map;
+  }
+
+  DisposalsCompanion toCompanion(bool nullToAbsent) {
+    return DisposalsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      docNumber: Value(docNumber),
+      sourceLocationId: Value(sourceLocationId),
+      createdBy: Value(createdBy),
+      status: Value(status),
+      reason: reason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reason),
+      postedAt: postedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(postedAt),
+      postedBy: postedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(postedBy),
+    );
+  }
+
+  factory DisposalRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DisposalRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      docNumber: serializer.fromJson<String>(json['docNumber']),
+      sourceLocationId: serializer.fromJson<String>(json['sourceLocationId']),
+      createdBy: serializer.fromJson<String>(json['createdBy']),
+      status: serializer.fromJson<DisposalStatus>(json['status']),
+      reason: serializer.fromJson<String?>(json['reason']),
+      postedAt: serializer.fromJson<DateTime?>(json['postedAt']),
+      postedBy: serializer.fromJson<String?>(json['postedBy']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'docNumber': serializer.toJson<String>(docNumber),
+      'sourceLocationId': serializer.toJson<String>(sourceLocationId),
+      'createdBy': serializer.toJson<String>(createdBy),
+      'status': serializer.toJson<DisposalStatus>(status),
+      'reason': serializer.toJson<String?>(reason),
+      'postedAt': serializer.toJson<DateTime?>(postedAt),
+      'postedBy': serializer.toJson<String?>(postedBy),
+    };
+  }
+
+  DisposalRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    String? docNumber,
+    String? sourceLocationId,
+    String? createdBy,
+    DisposalStatus? status,
+    Value<String?> reason = const Value.absent(),
+    Value<DateTime?> postedAt = const Value.absent(),
+    Value<String?> postedBy = const Value.absent(),
+  }) => DisposalRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    docNumber: docNumber ?? this.docNumber,
+    sourceLocationId: sourceLocationId ?? this.sourceLocationId,
+    createdBy: createdBy ?? this.createdBy,
+    status: status ?? this.status,
+    reason: reason.present ? reason.value : this.reason,
+    postedAt: postedAt.present ? postedAt.value : this.postedAt,
+    postedBy: postedBy.present ? postedBy.value : this.postedBy,
+  );
+  DisposalRow copyWithCompanion(DisposalsCompanion data) {
+    return DisposalRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      docNumber: data.docNumber.present ? data.docNumber.value : this.docNumber,
+      sourceLocationId: data.sourceLocationId.present
+          ? data.sourceLocationId.value
+          : this.sourceLocationId,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      status: data.status.present ? data.status.value : this.status,
+      reason: data.reason.present ? data.reason.value : this.reason,
+      postedAt: data.postedAt.present ? data.postedAt.value : this.postedAt,
+      postedBy: data.postedBy.present ? data.postedBy.value : this.postedBy,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DisposalRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('docNumber: $docNumber, ')
+          ..write('sourceLocationId: $sourceLocationId, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('status: $status, ')
+          ..write('reason: $reason, ')
+          ..write('postedAt: $postedAt, ')
+          ..write('postedBy: $postedBy')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    docNumber,
+    sourceLocationId,
+    createdBy,
+    status,
+    reason,
+    postedAt,
+    postedBy,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DisposalRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.docNumber == this.docNumber &&
+          other.sourceLocationId == this.sourceLocationId &&
+          other.createdBy == this.createdBy &&
+          other.status == this.status &&
+          other.reason == this.reason &&
+          other.postedAt == this.postedAt &&
+          other.postedBy == this.postedBy);
+}
+
+class DisposalsCompanion extends UpdateCompanion<DisposalRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<String> docNumber;
+  final Value<String> sourceLocationId;
+  final Value<String> createdBy;
+  final Value<DisposalStatus> status;
+  final Value<String?> reason;
+  final Value<DateTime?> postedAt;
+  final Value<String?> postedBy;
+  final Value<int> rowid;
+  const DisposalsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.docNumber = const Value.absent(),
+    this.sourceLocationId = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.status = const Value.absent(),
+    this.reason = const Value.absent(),
+    this.postedAt = const Value.absent(),
+    this.postedBy = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DisposalsCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String docNumber,
+    required String sourceLocationId,
+    required String createdBy,
+    this.status = const Value.absent(),
+    this.reason = const Value.absent(),
+    this.postedAt = const Value.absent(),
+    this.postedBy = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : docNumber = Value(docNumber),
+       sourceLocationId = Value(sourceLocationId),
+       createdBy = Value(createdBy);
+  static Insertable<DisposalRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? docNumber,
+    Expression<String>? sourceLocationId,
+    Expression<String>? createdBy,
+    Expression<String>? status,
+    Expression<String>? reason,
+    Expression<DateTime>? postedAt,
+    Expression<String>? postedBy,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (docNumber != null) 'doc_number': docNumber,
+      if (sourceLocationId != null) 'source_location_id': sourceLocationId,
+      if (createdBy != null) 'created_by': createdBy,
+      if (status != null) 'status': status,
+      if (reason != null) 'reason': reason,
+      if (postedAt != null) 'posted_at': postedAt,
+      if (postedBy != null) 'posted_by': postedBy,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DisposalsCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<String>? docNumber,
+    Value<String>? sourceLocationId,
+    Value<String>? createdBy,
+    Value<DisposalStatus>? status,
+    Value<String?>? reason,
+    Value<DateTime?>? postedAt,
+    Value<String?>? postedBy,
+    Value<int>? rowid,
+  }) {
+    return DisposalsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      docNumber: docNumber ?? this.docNumber,
+      sourceLocationId: sourceLocationId ?? this.sourceLocationId,
+      createdBy: createdBy ?? this.createdBy,
+      status: status ?? this.status,
+      reason: reason ?? this.reason,
+      postedAt: postedAt ?? this.postedAt,
+      postedBy: postedBy ?? this.postedBy,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $DisposalsTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (docNumber.present) {
+      map['doc_number'] = Variable<String>(docNumber.value);
+    }
+    if (sourceLocationId.present) {
+      map['source_location_id'] = Variable<String>(sourceLocationId.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(
+        $DisposalsTable.$converterstatus.toSql(status.value),
+      );
+    }
+    if (reason.present) {
+      map['reason'] = Variable<String>(reason.value);
+    }
+    if (postedAt.present) {
+      map['posted_at'] = Variable<DateTime>(postedAt.value);
+    }
+    if (postedBy.present) {
+      map['posted_by'] = Variable<String>(postedBy.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DisposalsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('docNumber: $docNumber, ')
+          ..write('sourceLocationId: $sourceLocationId, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('status: $status, ')
+          ..write('reason: $reason, ')
+          ..write('postedAt: $postedAt, ')
+          ..write('postedBy: $postedBy, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DisposalLinesTable extends DisposalLines
+    with TableInfo<$DisposalLinesTable, DisposalLineRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DisposalLinesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>($DisposalLinesTable.$convertersyncStatus);
+  static const VerificationMeta _disposalIdMeta = const VerificationMeta(
+    'disposalId',
+  );
+  @override
+  late final GeneratedColumn<String> disposalId = GeneratedColumn<String>(
+    'disposal_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES disposals (id)',
+    ),
+  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+    'item_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES items (id)',
+    ),
+  );
+  static const VerificationMeta _batchIdMeta = const VerificationMeta(
+    'batchId',
+  );
+  @override
+  late final GeneratedColumn<String> batchId = GeneratedColumn<String>(
+    'batch_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES item_batches (id)',
+    ),
+  );
+  static const VerificationMeta _qtyMeta = const VerificationMeta('qty');
+  @override
+  late final GeneratedColumn<int> qty = GeneratedColumn<int>(
+    'qty',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    disposalId,
+    itemId,
+    batchId,
+    qty,
+    note,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'disposal_lines';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DisposalLineRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('disposal_id')) {
+      context.handle(
+        _disposalIdMeta,
+        disposalId.isAcceptableOrUnknown(data['disposal_id']!, _disposalIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_disposalIdMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('batch_id')) {
+      context.handle(
+        _batchIdMeta,
+        batchId.isAcceptableOrUnknown(data['batch_id']!, _batchIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_batchIdMeta);
+    }
+    if (data.containsKey('qty')) {
+      context.handle(
+        _qtyMeta,
+        qty.isAcceptableOrUnknown(data['qty']!, _qtyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_qtyMeta);
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DisposalLineRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DisposalLineRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $DisposalLinesTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      disposalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}disposal_id'],
+      )!,
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}item_id'],
+      )!,
+      batchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}batch_id'],
+      )!,
+      qty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}qty'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+    );
+  }
+
+  @override
+  $DisposalLinesTable createAlias(String alias) {
+    return $DisposalLinesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+}
+
+class DisposalLineRow extends DataClass implements Insertable<DisposalLineRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+  final String disposalId;
+  final String itemId;
+
+  /// The batch being destroyed. Never NULL — see the class note.
+  final String batchId;
+
+  /// Destroyed quantity in **milli-units** (Q-3). Strictly positive: a disposal
+  /// of nothing is not a line, and the ledger records changes rather than
+  /// confirmations (G-A1).
+  final int qty;
+
+  /// Optional per-line detail, e.g. *"kemasan bocor"*. Never a substitute for the
+  /// header's `reason`, which G-E7 makes mandatory; this only adds specificity to
+  /// one position.
+  final String? note;
+  const DisposalLineRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.disposalId,
+    required this.itemId,
+    required this.batchId,
+    required this.qty,
+    this.note,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $DisposalLinesTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    map['disposal_id'] = Variable<String>(disposalId);
+    map['item_id'] = Variable<String>(itemId);
+    map['batch_id'] = Variable<String>(batchId);
+    map['qty'] = Variable<int>(qty);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    return map;
+  }
+
+  DisposalLinesCompanion toCompanion(bool nullToAbsent) {
+    return DisposalLinesCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      disposalId: Value(disposalId),
+      itemId: Value(itemId),
+      batchId: Value(batchId),
+      qty: Value(qty),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+    );
+  }
+
+  factory DisposalLineRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DisposalLineRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      disposalId: serializer.fromJson<String>(json['disposalId']),
+      itemId: serializer.fromJson<String>(json['itemId']),
+      batchId: serializer.fromJson<String>(json['batchId']),
+      qty: serializer.fromJson<int>(json['qty']),
+      note: serializer.fromJson<String?>(json['note']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'disposalId': serializer.toJson<String>(disposalId),
+      'itemId': serializer.toJson<String>(itemId),
+      'batchId': serializer.toJson<String>(batchId),
+      'qty': serializer.toJson<int>(qty),
+      'note': serializer.toJson<String?>(note),
+    };
+  }
+
+  DisposalLineRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    String? disposalId,
+    String? itemId,
+    String? batchId,
+    int? qty,
+    Value<String?> note = const Value.absent(),
+  }) => DisposalLineRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    disposalId: disposalId ?? this.disposalId,
+    itemId: itemId ?? this.itemId,
+    batchId: batchId ?? this.batchId,
+    qty: qty ?? this.qty,
+    note: note.present ? note.value : this.note,
+  );
+  DisposalLineRow copyWithCompanion(DisposalLinesCompanion data) {
+    return DisposalLineRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      disposalId: data.disposalId.present
+          ? data.disposalId.value
+          : this.disposalId,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      batchId: data.batchId.present ? data.batchId.value : this.batchId,
+      qty: data.qty.present ? data.qty.value : this.qty,
+      note: data.note.present ? data.note.value : this.note,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DisposalLineRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('disposalId: $disposalId, ')
+          ..write('itemId: $itemId, ')
+          ..write('batchId: $batchId, ')
+          ..write('qty: $qty, ')
+          ..write('note: $note')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    disposalId,
+    itemId,
+    batchId,
+    qty,
+    note,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DisposalLineRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.disposalId == this.disposalId &&
+          other.itemId == this.itemId &&
+          other.batchId == this.batchId &&
+          other.qty == this.qty &&
+          other.note == this.note);
+}
+
+class DisposalLinesCompanion extends UpdateCompanion<DisposalLineRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<String> disposalId;
+  final Value<String> itemId;
+  final Value<String> batchId;
+  final Value<int> qty;
+  final Value<String?> note;
+  final Value<int> rowid;
+  const DisposalLinesCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.disposalId = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.batchId = const Value.absent(),
+    this.qty = const Value.absent(),
+    this.note = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DisposalLinesCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String disposalId,
+    required String itemId,
+    required String batchId,
+    required int qty,
+    this.note = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : disposalId = Value(disposalId),
+       itemId = Value(itemId),
+       batchId = Value(batchId),
+       qty = Value(qty);
+  static Insertable<DisposalLineRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? disposalId,
+    Expression<String>? itemId,
+    Expression<String>? batchId,
+    Expression<int>? qty,
+    Expression<String>? note,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (disposalId != null) 'disposal_id': disposalId,
+      if (itemId != null) 'item_id': itemId,
+      if (batchId != null) 'batch_id': batchId,
+      if (qty != null) 'qty': qty,
+      if (note != null) 'note': note,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DisposalLinesCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<String>? disposalId,
+    Value<String>? itemId,
+    Value<String>? batchId,
+    Value<int>? qty,
+    Value<String?>? note,
+    Value<int>? rowid,
+  }) {
+    return DisposalLinesCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      disposalId: disposalId ?? this.disposalId,
+      itemId: itemId ?? this.itemId,
+      batchId: batchId ?? this.batchId,
+      qty: qty ?? this.qty,
+      note: note ?? this.note,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $DisposalLinesTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (disposalId.present) {
+      map['disposal_id'] = Variable<String>(disposalId.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (batchId.present) {
+      map['batch_id'] = Variable<String>(batchId.value);
+    }
+    if (qty.present) {
+      map['qty'] = Variable<int>(qty.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DisposalLinesCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('disposalId: $disposalId, ')
+          ..write('itemId: $itemId, ')
+          ..write('batchId: $batchId, ')
+          ..write('qty: $qty, ')
+          ..write('note: $note, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   late final $BranchesTable branches = $BranchesTable(this);
@@ -13857,6 +15226,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $DistributionsTable distributions = $DistributionsTable(this);
   late final $DistributionLinesTable distributionLines =
       $DistributionLinesTable(this);
+  late final $DisposalsTable disposals = $DisposalsTable(this);
+  late final $DisposalLinesTable disposalLines = $DisposalLinesTable(this);
   late final Index idxStockBalancesBatched = Index(
     'idx_stock_balances_batched',
     'CREATE UNIQUE INDEX idx_stock_balances_batched ON stock_balances (location_id, item_id, batch_id) WHERE batch_id IS NOT NULL',
@@ -14085,6 +15456,46 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_distribution_lines_unbatched',
     'CREATE UNIQUE INDEX idx_distribution_lines_unbatched ON distribution_lines (distribution_id, room_id, item_id) WHERE batch_id IS NULL AND deleted_at IS NULL',
   );
+  late final Index idxDisposalsSourceLocationStatus = Index(
+    'idx_disposals_source_location_status',
+    'CREATE INDEX idx_disposals_source_location_status ON disposals (source_location_id, status)',
+  );
+  late final Index idxDisposalsCreatedByStatus = Index(
+    'idx_disposals_created_by_status',
+    'CREATE INDEX idx_disposals_created_by_status ON disposals (created_by, status)',
+  );
+  late final Index idxDisposalsPostedByStatus = Index(
+    'idx_disposals_posted_by_status',
+    'CREATE INDEX idx_disposals_posted_by_status ON disposals (posted_by, status)',
+  );
+  late final Index idxDisposalsCreatedAt = Index(
+    'idx_disposals_created_at',
+    'CREATE INDEX idx_disposals_created_at ON disposals (created_at)',
+  );
+  late final Index idxDisposalsPostedAt = Index(
+    'idx_disposals_posted_at',
+    'CREATE INDEX idx_disposals_posted_at ON disposals (posted_at)',
+  );
+  late final Index idxDisposalsDocNumber = Index(
+    'idx_disposals_doc_number',
+    'CREATE UNIQUE INDEX idx_disposals_doc_number ON disposals (doc_number)',
+  );
+  late final Index idxDisposalLinesDisposal = Index(
+    'idx_disposal_lines_disposal',
+    'CREATE INDEX idx_disposal_lines_disposal ON disposal_lines (disposal_id)',
+  );
+  late final Index idxDisposalLinesItem = Index(
+    'idx_disposal_lines_item',
+    'CREATE INDEX idx_disposal_lines_item ON disposal_lines (item_id)',
+  );
+  late final Index idxDisposalLinesBatch = Index(
+    'idx_disposal_lines_batch',
+    'CREATE INDEX idx_disposal_lines_batch ON disposal_lines (batch_id)',
+  );
+  late final Index idxDisposalLinesPosition = Index(
+    'idx_disposal_lines_position',
+    'CREATE UNIQUE INDEX idx_disposal_lines_position ON disposal_lines (disposal_id, item_id, batch_id) WHERE deleted_at IS NULL',
+  );
   late final MasterDataDao masterDataDao = MasterDataDao(this as AppDatabase);
   late final InventoryDao inventoryDao = InventoryDao(this as AppDatabase);
   late final OpnameDao opnameDao = OpnameDao(this as AppDatabase);
@@ -14100,6 +15511,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final DistributionDao distributionDao = DistributionDao(
     this as AppDatabase,
   );
+  late final DisposalDao disposalDao = DisposalDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -14125,6 +15537,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     goodReceiptLines,
     distributions,
     distributionLines,
+    disposals,
+    disposalLines,
     idxStockBalancesBatched,
     idxStockBalancesUnbatched,
     idxStockMovementsItem,
@@ -14182,6 +15596,16 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxDistributionLinesBatch,
     idxDistributionLinesBatched,
     idxDistributionLinesUnbatched,
+    idxDisposalsSourceLocationStatus,
+    idxDisposalsCreatedByStatus,
+    idxDisposalsPostedByStatus,
+    idxDisposalsCreatedAt,
+    idxDisposalsPostedAt,
+    idxDisposalsDocNumber,
+    idxDisposalLinesDisposal,
+    idxDisposalLinesItem,
+    idxDisposalLinesBatch,
+    idxDisposalLinesPosition,
   ];
   @override
   DriftDatabaseOptions get options =>

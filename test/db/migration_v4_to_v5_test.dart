@@ -79,6 +79,10 @@ void main() {
 
   const distributionTables = <String>['distributions', 'distribution_lines'];
 
+  /// Schema v9 own tables, named here so the exhaustive assertions below stay
+  /// exhaustive rather than being loosened to `containsAll` every milestone.
+  const disposalTables = <String>['disposals', 'disposal_lines'];
+
   const purchaseRequestIndexes = <String>[
     'idx_purchase_requests_branch_status',
     'idx_purchase_requests_requested_by_status',
@@ -282,7 +286,7 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 8);
+      expect(row.read<int>('user_version'), 9);
 
       await database.close();
     });
@@ -301,6 +305,7 @@ void main() {
         ...deliveryOrderTables,
         ...goodReceiptTables,
         ...distributionTables,
+        ...disposalTables,
       });
 
       await database.close();
@@ -534,7 +539,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 8);
+      expect(version.read<int>('user_version'), 9);
 
       final tables = await objectNames(second, 'table');
       expect(tables, containsAll(purchaseRequestTables));
@@ -607,7 +612,7 @@ void main() {
       final version = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 8);
+      expect(version.read<int>('user_version'), 9);
 
       // `10` whole units became `10000` milli-units — scaled once, not twice. A
       // second application of the `from < 2` block would leave `10000000`.
@@ -659,7 +664,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 8);
+        expect(version.read<int>('user_version'), 9);
 
         // v4's rebuild must still have happened on the way through.
         final row = await database

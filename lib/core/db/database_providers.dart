@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app_database.dart';
 import 'daos/delivery_order_dao.dart';
+import 'daos/disposal_dao.dart';
 import 'daos/distribution_dao.dart';
 import 'daos/good_receipt_dao.dart';
 import 'daos/inventory_dao.dart';
@@ -46,4 +47,8 @@ final goodReceiptDaoProvider = Provider<GoodReceiptDao>(
 
 final distributionDaoProvider = Provider<DistributionDao>(
   (ref) => ref.watch(appDatabaseProvider).distributionDao,
+);
+
+final disposalDaoProvider = Provider<DisposalDao>(
+  (ref) => ref.watch(appDatabaseProvider).disposalDao,
 );

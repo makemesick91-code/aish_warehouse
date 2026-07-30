@@ -806,8 +806,18 @@ class StockPostingService {
   static String _balanceKey(String itemId, String? batchId) =>
       '$itemId|${batchId ?? ''}';
 
-  /// Removes expired or damaged stock from the system (G-E7). A reason is
+  /// Removes stock from the system with no destination (G-E7). A reason is
   /// mandatory because disposal is irreversible in the physical world.
+  ///
+  /// Opens its own transaction, which is what distinguishes it from
+  /// [postDisposalLinesInTransaction]: this is the single-shot entry point for a
+  /// caller with no document to commit alongside — the development seed, and any
+  /// future workflow that removes one position at a time. A Pemusnahan document
+  /// must **not** loop over it, because each call would commit on its own and a
+  /// failure on the last position would leave the earlier ones' stock already gone.
+  ///
+  /// Both paths write the ledger row through [_postDisposalLine], so the movement a
+  /// document produces and the movement a one-off produces are byte-identical.
   Future<InventoryMovement> postDisposal({
     required String locationId,
     required String itemId,
@@ -830,7 +840,9 @@ class StockPostingService {
       await _validateBatch(item: item, batchId: batchId);
       await _requireLocation(locationId);
       // Deliberately no expiry check: disposal is exactly how expired stock
-      // leaves the system.
+      // leaves the system. The opposite rule — that a batch which has *not*
+      // expired may not be destroyed — belongs to the Pemusnahan document, which
+      // knows the operational date and its own eligibility rules.
 
       await _assertSufficientStock(
         locationId: locationId,
@@ -839,29 +851,195 @@ class StockPostingService {
         qty: qty,
       );
 
-      final movement = await _append(
-        MovementDraft(
-          id: _newId(),
-          itemId: itemId,
-          batchId: batchId,
-          fromLocationId: locationId,
-          qty: qty,
-          movementType: StockMovementType.disposal,
-          actorUserId: actorUserId,
-          refDocType: refDocType,
-          refDocId: refDocId,
-          note: note,
-        ),
-      );
-
-      await _decrease(
+      return _postDisposalLine(
         locationId: locationId,
         itemId: itemId,
         batchId: batchId,
         qty: qty,
+        actorUserId: actorUserId,
+        note: note,
+        refDocType: refDocType,
+        refDocId: refDocId,
       );
-      return movement;
     });
+  }
+
+  /// Posts every position of a Pemusnahan as **one** unit of work (G-E7, §21).
+  ///
+  /// This method opens no transaction of its own: the caller — the post use case —
+  /// already owns one, and that is precisely the point. Writing the movements,
+  /// decreasing the source balances, flipping the document to `posted` and stamping
+  /// its actor all have to commit or roll back together, so a failure on the last
+  /// position cannot leave the first one's stock already destroyed. Calling
+  /// [postDisposal] per line would make that impossible — it opens a transaction
+  /// each time — which is why the loop below does not.
+  ///
+  /// [postDisposal] is deliberately left in place beside this. It is the single-shot
+  /// entry point the seed and any future ad-hoc removal use, and it owns its own
+  /// transaction because it has no document to commit alongside. The two share
+  /// [_postDisposalLine] so the ledger row they write is identical.
+  ///
+  /// ### Why `to_location_id` is NULL
+  ///
+  /// The goods are destroyed. There is no location to credit, and inventing one — a
+  /// quarantine bin, a write-off account — would put a balance somewhere nobody can
+  /// count. `stock_movements` allows exactly this: its CHECK requires *one* of the
+  /// two locations, not both. A disposal is therefore the mirror of an
+  /// `inbound_warehouse`: one leg, and nothing on the other side.
+  ///
+  /// ### Why there is no expiry check here
+  ///
+  /// [postTransfer], [postInboundWarehouse] and the shipment / receipt / distribution
+  /// paths all refuse an expired batch outright (G-E4). This one must not: disposal is
+  /// exactly how expired stock leaves the system, so refusing it here would make G-E7
+  /// unimplementable. The *opposite* rule — that a batch which has **not** expired may
+  /// not be destroyed — is the Pemusnahan's own (`DisposalExpiryPolicy`), because it
+  /// depends on the operational date and on the document's eligibility rules rather
+  /// than on anything the ledger knows. This method is the floor beneath that, not a
+  /// replacement for it, and the note requirement below is the part of G-E7 the ledger
+  /// *can* enforce alone.
+  ///
+  /// Every position is validated before **any** of them is written: a non-empty note,
+  /// a positive quantity, item and batch consistency (G-E1/G-E2), and sufficiency
+  /// against the **aggregate** each position draws. Only then does the posting loop
+  /// start, and each balance is re-read as it goes. The closing assertion re-reads
+  /// every touched balance and refuses to let the transaction commit if any of them
+  /// came out negative — the invariant G-A2 states, verified rather than assumed,
+  /// because `assert` would be compiled out of a release build and this is exactly
+  /// the check that must hold in production.
+  Future<List<InventoryMovement>> postDisposalLinesInTransaction({
+    required String fromLocationId,
+    required List<DisposalPostingLine> lines,
+    required String actorUserId,
+    required String disposalId,
+  }) async {
+    if (lines.isEmpty) {
+      throw const ValidationFailure(
+        'Pemusnahan tanpa baris tidak dapat diposting.',
+      );
+    }
+
+    await _requireLocation(fromLocationId);
+
+    // --- validate the whole document first -----------------------------------
+    for (final line in lines) {
+      _requirePositiveQty(line.qty);
+      if (line.note.trim().isEmpty) {
+        throw const ValidationFailure(
+          'Pemusnahan barang wajib disertai catatan alasan.',
+        );
+      }
+      final item = await _requireItem(line.itemId);
+      // G-E1/G-E2: the batch must exist and belong to the item. An item without
+      // expiry cannot reach here at all — `_validateBatch` refuses a batch on one —
+      // which is the ledger's half of "only expired stock is destroyed".
+      await _validateBatch(item: item, batchId: line.batchId);
+    }
+
+    // Sufficiency is checked against the **total** each position draws, not per
+    // line: two lines of 3 against a balance of 5 must fail, and checking them one
+    // at a time would let both pass.
+    final requestedByKey = <String, Quantity>{};
+    for (final line in lines) {
+      final key = _balanceKey(line.itemId, line.batchId);
+      requestedByKey[key] = (requestedByKey[key] ?? Quantity.zero()) + line.qty;
+    }
+    for (final line in lines) {
+      final key = _balanceKey(line.itemId, line.batchId);
+      final wanted = requestedByKey[key];
+      if (wanted == null) continue;
+      await _assertSufficientStock(
+        locationId: fromLocationId,
+        itemId: line.itemId,
+        batchId: line.batchId,
+        qty: wanted,
+      );
+      // Checked once per distinct position.
+      requestedByKey.remove(key);
+    }
+
+    // --- post ----------------------------------------------------------------
+    final movements = <InventoryMovement>[];
+    final touched = <String, ({String itemId, String batchId})>{};
+    for (final line in lines) {
+      movements.add(
+        await _postDisposalLine(
+          locationId: fromLocationId,
+          itemId: line.itemId,
+          batchId: line.batchId,
+          qty: line.qty,
+          actorUserId: actorUserId,
+          note: line.note,
+          refDocType: RefDocType.disposal,
+          refDocId: disposalId,
+        ),
+      );
+      touched[_balanceKey(line.itemId, line.batchId)] = (
+        itemId: line.itemId,
+        batchId: line.batchId,
+      );
+    }
+
+    // Post-condition of G-A2, verified rather than assumed.
+    for (final position in touched.values) {
+      final remaining = await _inventory.balanceQty(
+        locationId: fromLocationId,
+        itemId: position.itemId,
+        batchId: position.batchId,
+      );
+      if (remaining.isNegative) {
+        throw InsufficientStockFailure(
+          'Saldo lokasi menjadi negatif setelah pemusnahan '
+          '(${remaining.format()}). Pemusnahan dibatalkan.',
+          itemId: position.itemId,
+          locationId: fromLocationId,
+          batchId: position.batchId,
+          available: Quantity.zero(),
+          requested: -remaining,
+        );
+      }
+    }
+
+    return movements;
+  }
+
+  /// The transaction-free core of one disposal movement. Every caller either wraps
+  /// it in a transaction ([postDisposal]) or already runs inside one
+  /// ([postDisposalLinesInTransaction]).
+  Future<InventoryMovement> _postDisposalLine({
+    required String locationId,
+    required String itemId,
+    String? batchId,
+    required Quantity qty,
+    required String actorUserId,
+    required String note,
+    String? refDocType,
+    String? refDocId,
+  }) async {
+    final movement = await _append(
+      MovementDraft(
+        id: _newId(),
+        itemId: itemId,
+        batchId: batchId,
+        fromLocationId: locationId,
+        // Destroyed: there is nothing on the other side (G-E7).
+        toLocationId: null,
+        qty: qty,
+        movementType: StockMovementType.disposal,
+        actorUserId: actorUserId,
+        refDocType: refDocType,
+        refDocId: refDocId,
+        note: note,
+      ),
+    );
+
+    await _decrease(
+      locationId: locationId,
+      itemId: itemId,
+      batchId: batchId,
+      qty: qty,
+    );
+    return movement;
   }
 
   /// Corrects a posted movement by appending its mirror image (G-A1). The

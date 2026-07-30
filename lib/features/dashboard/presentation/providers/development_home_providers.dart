@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/db/database_providers.dart';
 import '../../../../core/db/seed/development_seed.dart';
 import '../../../delivery/presentation/providers/delivery_providers.dart';
+import '../../../disposal/presentation/providers/disposal_providers.dart';
 import '../../../distribution/presentation/providers/distribution_providers.dart';
 import '../../../good_receipt/presentation/providers/good_receipt_providers.dart';
 import '../../../inventory/domain/models/inventory_models.dart';
@@ -23,6 +24,7 @@ final developmentSeedProvider = Provider<DevelopmentSeed>(
     deliveries: ref.watch(deliveryOrderRepositoryProvider),
     receipts: ref.watch(goodReceiptRepositoryProvider),
     distributions: ref.watch(distributionRepositoryProvider),
+    disposals: ref.watch(disposalRepositoryProvider),
   ),
 );
 

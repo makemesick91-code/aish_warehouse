@@ -13,6 +13,7 @@ import '../../../inventory/presentation/widgets/expiry_badge.dart';
 import '../../../master/domain/models/master_models.dart';
 import '../../../master/presentation/providers/master_providers.dart';
 import '../../../good_receipt/presentation/widgets/good_receipt_dashboard_cards.dart';
+import '../../../disposal/presentation/widgets/disposal_dashboard_cards.dart';
 import '../../../distribution/presentation/widgets/distribution_dashboard_cards.dart';
 import '../providers/development_home_providers.dart';
 
@@ -345,6 +346,40 @@ class _SessionCard extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.sm),
               const DistributionDashboardCards(),
+            ],
+            // Pemusnahan. Two entry points for two disjoint scopes (§33): the
+            // warehouse destroys what expired at Warehouse Pusat, the branch head
+            // what expired in their own store and rooms. Neither predicate is a
+            // rewording of the other's — `canDisposeWarehouseStock` deliberately
+            // asks for no branch, because the central warehouse has none.
+            if (session.value?.canDisposeBranchStock ?? false) ...[
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('homeBranchDisposals'),
+                  onPressed: () => context.pushNamed(AppRoutes.disposalsName),
+                  icon: const Icon(Icons.delete_forever_outlined),
+                  label: const Text('Pemusnahan'),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              const BranchDisposalCard(),
+            ],
+            if (session.value?.canDisposeWarehouseStock ?? false) ...[
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('homeWarehouseDisposals'),
+                  onPressed: () =>
+                      context.pushNamed(AppRoutes.warehouseDisposalsName),
+                  icon: const Icon(Icons.delete_forever_outlined),
+                  label: const Text('Pemusnahan Stok'),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              const WarehouseDisposalCard(),
             ],
             // Good Receipt's warehouse side is read-only: the posted receipts and
             // the selisih/retur queue (§33). No create, decide or post route

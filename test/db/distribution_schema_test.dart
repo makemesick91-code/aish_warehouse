@@ -6,7 +6,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/test_context.dart';
 
-/// Schema v8 as a **fresh** database gets it (§36).
+/// The Distribusi half of the schema as a **fresh** database gets it (§36).
+///
+/// The version assertion tracks the *current* schema rather than v8: a fresh
+/// database is always created at `schemaVersion`, so pinning it to 8 would fail
+/// the moment a later milestone lands. What stays pinned to Milestone 6 is
+/// everything below it — the two tables, their constraints and their indexes.
 ///
 /// Everything here is asserted against the objects SQLite actually holds rather than
 /// against the Dart declarations that produced them, because the two can disagree in
@@ -71,12 +76,12 @@ void main() {
   }
 
   group('struktur tabel', () {
-    test('schemaVersion adalah 8', () async {
+    test('schemaVersion adalah 9', () async {
       final row = await context.database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 8);
-      expect(context.database.schemaVersion, 8);
+      expect(row.read<int>('user_version'), 9);
+      expect(context.database.schemaVersion, 9);
     });
 
     test('dua tabel Distribusi tersedia', () async {

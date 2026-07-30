@@ -99,6 +99,8 @@ void main() {
         'good_receipt_lines',
         'distributions',
         'distribution_lines',
+        'disposals',
+        'disposal_lines',
       });
     });
 

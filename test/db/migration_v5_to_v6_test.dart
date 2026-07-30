@@ -73,6 +73,10 @@ void main() {
 
   const distributionTables = <String>['distributions', 'distribution_lines'];
 
+  /// Schema v9 own tables, named here so the exhaustive assertions below stay
+  /// exhaustive rather than being loosened to `containsAll` every milestone.
+  const disposalTables = <String>['disposals', 'disposal_lines'];
+
   const deliveryIndexes = <String>[
     'idx_delivery_orders_pr_status',
     'idx_delivery_orders_status_created',
@@ -303,7 +307,7 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 8);
+      expect(row.read<int>('user_version'), 9);
 
       await database.close();
     });
@@ -324,6 +328,7 @@ void main() {
           ...deliveryTables,
           ...goodReceiptTables,
           ...distributionTables,
+          ...disposalTables,
         });
 
         await database.close();
@@ -758,7 +763,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 8);
+      expect(version.read<int>('user_version'), 9);
 
       final tables = await objectNames(second, 'table');
       expect(tables, containsAll(deliveryTables));
@@ -845,7 +850,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 8);
+        expect(version.read<int>('user_version'), 9);
 
         final tables = await objectNames(database, 'table');
         expect(tables, containsAll(deliveryTables));
