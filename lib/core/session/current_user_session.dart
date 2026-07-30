@@ -80,6 +80,28 @@ class CurrentUserSession {
   /// being powerful is not a reason to hand it somebody else's job (G-R4).
   bool get canDisposeBranchStock => isKepalaCabang && branchId != null;
 
+  /// The Perawat records what was used in a room (schema v10, §14).
+  ///
+  /// Branch-scoped, and the branch is part of the predicate rather than an
+  /// afterthought: *"ruangan di cabangnya sendiri"* is meaningless without one, and
+  /// this affordance must not appear for an account that has none.
+  ///
+  /// Kepala Cabang, Warehouse and Super Admin all answer `false`, and the branch head's
+  /// `false` is the one worth stating. Spec §3.1 gives them branch-level acts — review,
+  /// request, receive, distribute — and recording what physically came out of a packet
+  /// in a treatment room is not one of them: the person who opened it is the only one
+  /// who knows how much. What they get instead is [canReadConsumptionHistory].
+  bool get canRecordConsumption => isPerawat && branchId != null;
+
+  /// The Kepala Cabang reads their branch's **posted** consumption history (§14/§31).
+  ///
+  /// Read-only, and deliberately a separate predicate from
+  /// [canRecordConsumption] rather than a widening of it: the two describe different
+  /// acts on different documents, and one predicate covering both would be the quiet
+  /// grant G-R4 is about. A nurse's unposted draft is outside this too — it is their
+  /// account of a shift until they post it.
+  bool get canReadConsumptionHistory => isKepalaCabang && branchId != null;
+
   String get roleLabel => user.role.label;
 
   @override

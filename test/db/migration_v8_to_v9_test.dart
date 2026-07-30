@@ -86,6 +86,11 @@ void main() {
 
   const disposalTables = <String>['disposals', 'disposal_lines'];
 
+  /// The tables versions **after** this migration add. Named here rather than
+  /// omitted so the exhaustive table assertion below stays exhaustive: a v11 that
+  /// added a table would fail this test until somebody accounted for it.
+  const consumptionTables = <String>['consumptions', 'consumption_lines'];
+
   const disposalIndexes = <String>[
     'idx_disposals_source_location_status',
     'idx_disposals_created_by_status',
@@ -333,7 +338,7 @@ void main() {
     // Drop the Pemusnahan objects, leaving exactly a v8 database. Indexes go with
     // their tables in SQLite, so only the tables have to be named.
     await database.customStatement('PRAGMA foreign_keys = OFF;');
-    for (final table in disposalTables) {
+    for (final table in [...consumptionTables, ...disposalTables]) {
       await database.customStatement('DROP TABLE IF EXISTS $table;');
     }
     await database.customStatement('PRAGMA foreign_keys = ON;');
@@ -381,7 +386,7 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 9);
+      expect(row.read<int>('user_version'), 10);
 
       await database.close();
     });
@@ -393,7 +398,7 @@ void main() {
       final tables = await objectNames(database, 'table');
       expect(tables, containsAll(disposalTables));
       // Exhaustive: v9 adds two tables, no more.
-      expect(tables, {...v8Tables, ...disposalTables});
+      expect(tables, {...v8Tables, ...disposalTables, ...consumptionTables});
 
       await database.close();
     });
@@ -582,7 +587,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 9);
+      expect(version.read<int>('user_version'), 10);
       expect(await objectNames(second, 'table'), containsAll(disposalTables));
       await second.close();
     });
@@ -627,6 +632,7 @@ void main() {
       await database.customStatement('PRAGMA foreign_keys = OFF;');
 
       const byVersion = <int, List<String>>{
+        10: consumptionTables,
         9: disposalTables,
         8: ['distributions', 'distribution_lines'],
         7: ['good_receipts', 'good_receipt_lines'],
@@ -665,7 +671,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 9);
+        expect(version.read<int>('user_version'), 10);
 
         final tables = await objectNames(database, 'table');
         expect(tables, containsAll(disposalTables));
@@ -754,6 +760,8 @@ void main() {
       );
       await prepare.customStatement('PRAGMA foreign_keys = OFF;');
       for (final table in const [
+        'consumptions',
+        'consumption_lines',
         'disposals',
         'disposal_lines',
         'distributions',

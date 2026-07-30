@@ -5,11 +5,13 @@ import 'package:go_router/go_router.dart';
 import '../core/enums/app_enums.dart';
 import '../core/session/current_user_session.dart';
 import '../features/delivery/domain/services/delivery_order_access_policy.dart';
+import '../features/consumption/domain/services/consumption_access_policy.dart';
 import '../features/disposal/domain/services/disposal_access_policy.dart';
 import '../features/distribution/domain/services/distribution_access_policy.dart';
 import '../features/good_receipt/domain/services/good_receipt_access_policy.dart';
 import '../features/opname/domain/services/opname_access_policy.dart';
 import '../features/purchase_request/domain/services/purchase_request_access_policy.dart';
+import 'guards/consumption_route_guard.dart';
 import 'guards/delivery_order_route_guard.dart';
 import 'guards/disposal_route_guard.dart';
 import 'guards/distribution_route_guard.dart';
@@ -18,6 +20,10 @@ import 'guards/opname_route_guard.dart';
 import 'guards/purchase_request_route_guard.dart';
 import 'routes.dart';
 import '../features/dashboard/presentation/pages/development_home_page.dart';
+import '../features/consumption/presentation/pages/branch_consumption_list_page.dart';
+import '../features/consumption/presentation/pages/consumption_detail_page.dart';
+import '../features/consumption/presentation/pages/consumption_form_page.dart';
+import '../features/consumption/presentation/pages/consumption_list_page.dart';
 import '../features/delivery/presentation/pages/branch_delivery_list_page.dart';
 import '../features/delivery/presentation/pages/delivery_order_create_page.dart';
 import '../features/delivery/presentation/pages/delivery_order_detail_page.dart';
@@ -212,6 +218,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
       if (location.startsWith(AppRoutes.disposals)) {
         return disposalSectionFor(DisposalRouteKind.branchList).isGranted
+            ? null
+            : AppRoutes.home;
+      }
+
+      // Pemakaian. Two sections again, and this time they are *different roles* on
+      // *different paths* rather than two scopes of one: `/consumptions` is the Perawat's
+      // own work and `/branch-consumptions` is the Kepala Cabang's read-only history. The
+      // branch prefix is tested first because it is a separate top-level path, not a
+      // nested one — a shared prefix is exactly the kind of thing an IDOR hides in, which
+      // is why §25 keeps the two apart. Whether a *document* may be opened — and, on the
+      // editor, whether it is still a draft and still the acting nurse's — is the guard's
+      // question, because only the database knows who created it.
+      ConsumptionAccess consumptionSectionFor(ConsumptionRouteKind kind) =>
+          ConsumptionAccessPolicy.forSection(user: session.user, kind: kind);
+
+      if (location.startsWith(AppRoutes.branchConsumptions)) {
+        return consumptionSectionFor(ConsumptionRouteKind.branchList).isGranted
+            ? null
+            : AppRoutes.home;
+      }
+      if (location.startsWith(AppRoutes.consumptions)) {
+        return consumptionSectionFor(ConsumptionRouteKind.nurseList).isGranted
             ? null
             : AppRoutes.home;
       }
@@ -656,9 +684,91 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      GoRoute(
+        path: AppRoutes.consumptions,
+        name: AppRoutes.consumptionsName,
+        builder: (context, state) => const ConsumptionSectionGuard(
+          kind: ConsumptionRouteKind.nurseList,
+          builder: _consumptionList,
+        ),
+        routes: [
+          // Listed first: the literal `new` segment must win over the `:id` pattern, or
+          // `/consumptions/new` would be read as a document id.
+          GoRoute(
+            path: AppRoutes.consumptionNew,
+            name: AppRoutes.consumptionNewName,
+            builder: (context, state) => const ConsumptionSectionGuard(
+              kind: ConsumptionRouteKind.nurseCreate,
+              builder: _consumptionList,
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.consumptionDetail,
+            name: AppRoutes.consumptionDetailName,
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return ConsumptionRouteGuard(
+                kind: ConsumptionRouteKind.nurseDocument,
+                consumptionId: id,
+                builder: (_) => ConsumptionDetailPage(consumptionId: id),
+              );
+            },
+            routes: [
+              GoRoute(
+                path: AppRoutes.consumptionEdit,
+                name: AppRoutes.consumptionEditName,
+                builder: (context, state) {
+                  final id = state.pathParameters['id']!;
+                  // A distinct kind, not the same one as the detail route: the editor
+                  // additionally requires the document to still be a draft (G-S2), and
+                  // the policy is where that is decided.
+                  return ConsumptionRouteGuard(
+                    kind: ConsumptionRouteKind.nurseDraft,
+                    consumptionId: id,
+                    builder: (_) => ConsumptionFormPage(consumptionId: id),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+      GoRoute(
+        path: AppRoutes.branchConsumptions,
+        name: AppRoutes.branchConsumptionsName,
+        builder: (context, state) => const ConsumptionSectionGuard(
+          kind: ConsumptionRouteKind.branchList,
+          builder: _branchConsumptionList,
+        ),
+        routes: [
+          GoRoute(
+            path: AppRoutes.branchConsumptionDetail,
+            name: AppRoutes.branchConsumptionDetailName,
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return ConsumptionRouteGuard(
+                kind: ConsumptionRouteKind.branchDocument,
+                consumptionId: id,
+                builder: (_) => ConsumptionDetailPage(consumptionId: id),
+              );
+            },
+          ),
+        ],
+      ),
     ],
   );
 });
+
+/// `/consumptions` and `/consumptions/new` both land here.
+///
+/// The list *is* the create surface: its `Catat Pemakaian` button creates the draft and
+/// pushes straight into the editor, because a document has to exist before positions can
+/// be validated against it. The `new` route exists so a deep link has somewhere to go, and
+/// so the section guard has a `nurseCreate` kind to refuse.
+Widget _consumptionList(BuildContext context) => const ConsumptionListPage();
+
+Widget _branchConsumptionList(BuildContext context) =>
+    const BranchConsumptionListPage();
 
 // Top-level builders so the section guards above can stay `const`.
 Widget _purchaseRequestList(BuildContext context) =>

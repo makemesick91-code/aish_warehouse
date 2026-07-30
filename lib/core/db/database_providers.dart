@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app_database.dart';
+import 'daos/consumption_dao.dart';
 import 'daos/delivery_order_dao.dart';
 import 'daos/disposal_dao.dart';
 import 'daos/distribution_dao.dart';
@@ -51,4 +52,8 @@ final distributionDaoProvider = Provider<DistributionDao>(
 
 final disposalDaoProvider = Provider<DisposalDao>(
   (ref) => ref.watch(appDatabaseProvider).disposalDao,
+);
+
+final consumptionDaoProvider = Provider<ConsumptionDao>(
+  (ref) => ref.watch(appDatabaseProvider).consumptionDao,
 );

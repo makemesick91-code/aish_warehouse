@@ -178,8 +178,20 @@ void main() {
       expect(gloves.qtyOnHand, Quantity.parse('4.5'));
       expect(gloves.qtyOnHand.format(), '4.5');
 
-      final anaesthetic = balances.firstWhere((b) => b.sku == 'DEN-0007');
-      expect(anaesthetic.qtyOnHand, Quantity.parse('12.5'));
+      // R1 holds the anaesthetic across **two** batches since Milestone 8 seeded a
+      // near-expiry one beside the valid one (§36), so the assertion names the batch
+      // rather than taking whichever row came back first — `firstWhere` on the SKU alone
+      // would pass or fail on query order.
+      final anaesthetic = balances.where((b) => b.sku == 'DEN-0007');
+      expect(anaesthetic, hasLength(2));
+      expect(
+        anaesthetic.firstWhere((b) => b.batchNo == 'LID-2407').qtyOnHand,
+        Quantity.parse('12.5'),
+      );
+      expect(
+        anaesthetic.firstWhere((b) => b.batchNo == 'LID-2403').qtyOnHand,
+        Quantity.parse('4.5'),
+      );
     });
 
     test('terdapat batch kedaluwarsa yang tetap dapat dihitung', () async {

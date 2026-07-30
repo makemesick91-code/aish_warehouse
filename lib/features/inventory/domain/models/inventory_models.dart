@@ -295,6 +295,59 @@ class DisposalPostingLine {
   final String note;
 }
 
+/// One consumed position to post when a Pemakaian is posted (§19).
+///
+/// Carries only what the ledger needs: which physical position leaves the room, how
+/// much, and the note the movement records. Which document it came from and what the
+/// goods were used for are the Pemakaian's business — the ledger records that stock
+/// left, not the clinical work behind it.
+///
+/// Three things distinguish it from [DisposalPostingLine], and each mirrors a
+/// decision on `consumption_lines`:
+///
+/// * **`batchId` is nullable.** A disposal position is always a batch, because only an
+///   expiry-tracked item can be expired. A consumption is ordinary usage, so gauze
+///   without an expiry date is consumed exactly as an anaesthetic with one is (G-E2).
+/// * **`note` is nullable.** G-E7 requires a note on every disposal movement; nothing
+///   in the specification asks a nurse to justify ordinary consumption, so a movement
+///   with no note is compliant and the type says so.
+/// * **Nothing about expiry.** A disposal exists *because* the batch expired; a
+///   consumption is refused if it has (§17), and that check is the document's, applied
+///   before this type is ever constructed.
+///
+/// There is no destination. A consumption has one leg: stock leaves the room and
+/// enters nothing, which is what makes `to_location_id IS NULL` the shape of every
+/// movement it writes (§2.2: *"NULL jika barang keluar sistem (pemakaian/buang)"*).
+class ConsumptionPostingLine {
+  const ConsumptionPostingLine({
+    required this.lineId,
+    required this.itemId,
+    this.batchId,
+    required this.qty,
+    this.note,
+  });
+
+  /// The consumption line this movement came from, so a failure can name it.
+  final String lineId;
+
+  final String itemId;
+
+  /// The batch used, or `null` for an item without expiry.
+  final String? batchId;
+
+  /// Strictly positive. A consumption of nothing is not a line, and the ledger records
+  /// changes rather than confirmations (G-A1).
+  final Quantity qty;
+
+  /// The deterministic movement note — the document's note plus this position's own
+  /// detail, composed by `ConsumptionStockPlanBuilder` so every row of one document is
+  /// worded the same way. `null` when neither carries text, which is legitimate.
+  ///
+  /// Never patient information: the plan builder composes it from the two note columns
+  /// only, and neither may hold any.
+  final String? note;
+}
+
 /// Outcome of one adjusted position.
 class OpnameAdjustmentResult {
   const OpnameAdjustmentResult({

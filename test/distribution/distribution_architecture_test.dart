@@ -489,7 +489,7 @@ void main() {
 
       expect(code, contains('_v8DistributionIndexes'));
       expect(code, contains('if (from < 8)'));
-      expect(code, contains('int get schemaVersion => 9;'));
+      expect(code, contains('int get schemaVersion => 10;'));
       expect(
         code.contains('allSchemaEntities'),
         isFalse,

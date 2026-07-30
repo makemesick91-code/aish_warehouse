@@ -1805,3 +1805,347 @@ final class InvalidDisposalTimestampFailure extends AppFailure {
   final DateTime createdAtUtc;
   final DateTime postedAtUtc;
 }
+
+// --- Pemakaian / Consumption (Milestone 8) ----------------------------------
+
+/// The consumption document does not exist, or has been soft deleted.
+final class ConsumptionNotFoundFailure extends AppFailure {
+  const ConsumptionNotFoundFailure(
+    super.message, {
+    required this.consumptionId,
+  });
+
+  final String consumptionId;
+}
+
+/// The requested transition is not one the state machine lists (G-S1).
+final class InvalidConsumptionStateFailure extends AppFailure {
+  const InvalidConsumptionStateFailure(
+    super.message, {
+    required this.consumptionId,
+    required this.currentStatus,
+    this.attemptedStatus,
+  });
+
+  final String consumptionId;
+  final ConsumptionStatus currentStatus;
+
+  /// `null` when the caller only asserted a status rather than a transition.
+  final ConsumptionStatus? attemptedStatus;
+}
+
+/// The document is already `posted`, and `posted` is final (G-S2).
+///
+/// Separate from [InvalidConsumptionStateFailure] so the message can say *when* it
+/// was posted — the fact that makes "you cannot change this" understandable rather
+/// than merely true.
+final class ConsumptionAlreadyPostedFailure extends AppFailure {
+  const ConsumptionAlreadyPostedFailure(
+    super.message, {
+    required this.consumptionId,
+    this.postedAt,
+  });
+
+  final String consumptionId;
+
+  /// UTC instant (T-1).
+  final DateTime? postedAt;
+}
+
+/// A consumption with no lines cannot be posted: nothing was used.
+final class ConsumptionLineRequiredFailure extends AppFailure {
+  const ConsumptionLineRequiredFailure(
+    super.message, {
+    required this.consumptionId,
+  });
+
+  final String consumptionId;
+}
+
+/// The line is not on this consumption, or does not exist. Both answer the same way,
+/// so the id cannot be probed.
+final class ConsumptionLineNotFoundFailure extends AppFailure {
+  const ConsumptionLineNotFoundFailure(super.message, {required this.lineId});
+
+  final String lineId;
+}
+
+/// The acting nurse is not the one who created this draft (§14).
+///
+/// The core ownership refusal of this milestone, and the one that has no analogue on
+/// any earlier document: a Purchase Request belongs to a *branch*, but a Pemakaian
+/// draft belongs to the person who recorded it, because the quantities on it are
+/// their memory of a shift nobody else witnessed. The message deliberately does not
+/// say whose draft it is.
+final class ConsumptionNotOwnedFailure extends AppFailure {
+  const ConsumptionNotOwnedFailure(
+    super.message, {
+    required this.consumptionId,
+    required this.actorUserId,
+  });
+
+  final String consumptionId;
+  final String actorUserId;
+}
+
+/// The document belongs to another branch — the core scope refusal (G-R2).
+final class ConsumptionBranchMismatchFailure extends AppFailure {
+  const ConsumptionBranchMismatchFailure(
+    super.message, {
+    required this.actorUserId,
+    this.actorBranchId,
+    required this.documentBranchId,
+  });
+
+  final String actorUserId;
+  final String? actorBranchId;
+  final String documentBranchId;
+}
+
+/// `rooms.branch_id` is not the document's branch (§15).
+///
+/// Distinct from [ConsumptionBranchMismatchFailure] because the broken relationship
+/// is a different one: the document's branch may be the actor's while the room it
+/// names belongs to somebody else. SQLite cannot express
+/// `rooms.branch_id = consumptions.branch_id`, so this is where the rule is actually
+/// enforced.
+final class ConsumptionRoomBranchMismatchFailure extends AppFailure {
+  const ConsumptionRoomBranchMismatchFailure(
+    super.message, {
+    required this.roomId,
+    required this.documentBranchId,
+  });
+
+  final String roomId;
+  final String documentBranchId;
+}
+
+/// The room exists but is deactivated or archived (§15).
+///
+/// Refused for a new document *and* at posting: goods must not be recorded as used
+/// out of a room the clinic is no longer operating. A **posted** document whose room
+/// was retired afterwards stays fully readable (§33).
+final class ConsumptionRoomInactiveFailure extends AppFailure {
+  const ConsumptionRoomInactiveFailure(super.message, {required this.roomId});
+
+  final String roomId;
+}
+
+/// No `room` stock location resolves for the document's room (§15).
+final class ConsumptionRoomLocationNotFoundFailure extends AppFailure {
+  const ConsumptionRoomLocationNotFoundFailure(
+    super.message, {
+    required this.roomId,
+  });
+
+  final String roomId;
+}
+
+/// More than one `room` stock location resolves for the document's room.
+///
+/// Kept apart from [ConsumptionRoomLocationNotFoundFailure] rather than resolved:
+/// which location the goods left is a business fact, and picking the first would
+/// silently reduce a balance nobody chose.
+final class ConsumptionRoomLocationAmbiguousFailure extends AppFailure {
+  const ConsumptionRoomLocationAmbiguousFailure(
+    super.message, {
+    required this.roomId,
+    required this.locationIds,
+  });
+
+  final String roomId;
+  final List<String> locationIds;
+}
+
+/// The room holds nothing of this item at all (§16).
+///
+/// Distinct from [InsufficientRoomStockFailure] because the answer is different:
+/// there is nothing to reduce a quantity *to*, and the picker should not have offered
+/// it.
+final class ConsumptionItemHasNoStockFailure extends AppFailure {
+  const ConsumptionItemHasNoStockFailure(
+    super.message, {
+    required this.itemId,
+    required this.locationId,
+  });
+
+  final String itemId;
+  final String locationId;
+}
+
+/// The item is batch-tracked but no batch was supplied (G-E2).
+final class ConsumptionBatchRequiredFailure extends AppFailure {
+  const ConsumptionBatchRequiredFailure(super.message, {required this.itemId});
+
+  final String itemId;
+}
+
+/// The item is not batch-tracked but a batch was supplied (G-E2).
+final class ConsumptionBatchNotAllowedFailure extends AppFailure {
+  const ConsumptionBatchNotAllowedFailure(
+    super.message, {
+    required this.itemId,
+    required this.batchId,
+  });
+
+  final String itemId;
+  final String batchId;
+}
+
+/// The batch does not belong to the item, or the two disagree in some other way.
+final class InvalidConsumptionBatchFailure extends AppFailure {
+  const InvalidConsumptionBatchFailure(
+    super.message, {
+    required this.itemId,
+    required this.batchId,
+  });
+
+  final String itemId;
+  final String batchId;
+}
+
+/// The batch has expired, and expired stock may not be consumed (G-E7/§17).
+///
+/// No note, no confirmation and no preset reason can pass this. A batch is usable for
+/// the whole of its expiry day and is blocked from the next operational day onwards
+/// (T-10); from then it leaves only through a Pemusnahan.
+final class ExpiredBatchForConsumptionFailure extends AppFailure {
+  const ExpiredBatchForConsumptionFailure(
+    super.message, {
+    required this.batchId,
+    required this.batchNo,
+    required this.expiryDate,
+    this.lineId,
+  });
+
+  final String batchId;
+  final String batchNo;
+
+  /// Civil date — never timezone converted (T-8).
+  final DateTime expiryDate;
+
+  final String? lineId;
+}
+
+/// A consumed quantity is zero, negative, or otherwise not a legal quantity.
+final class InvalidConsumptionQuantityFailure extends AppFailure {
+  const InvalidConsumptionQuantityFailure(
+    super.message, {
+    this.lineId,
+    required this.qty,
+  });
+
+  /// `null` while the line does not exist yet — an add that was asked for zero.
+  final String? lineId;
+  final Quantity qty;
+}
+
+/// The room does not hold enough of one position (§18).
+final class InsufficientRoomStockFailure extends AppFailure {
+  const InsufficientRoomStockFailure(
+    super.message, {
+    required this.itemId,
+    required this.locationId,
+    this.batchId,
+    required this.available,
+    required this.requested,
+  });
+
+  final String itemId;
+  final String locationId;
+  final String? batchId;
+
+  /// What the room holds for this exact position.
+  final Quantity available;
+
+  /// What the document asks of it.
+  final Quantity requested;
+}
+
+/// The same `(item, batch)` position already exists on this document.
+///
+/// The domain half of the two partial unique indexes: the database refuses it too,
+/// but as a driver error, and a user needs a sentence.
+final class DuplicateConsumptionLineFailure extends AppFailure {
+  const DuplicateConsumptionLineFailure(
+    super.message, {
+    required this.consumptionId,
+    required this.itemId,
+    this.batchId,
+  });
+
+  final String consumptionId;
+  final String itemId;
+  final String? batchId;
+}
+
+/// The document's own lines and what the joined read produced no longer agree: a line
+/// is missing from one side, or one is present that the other cannot account for
+/// (§22).
+final class ConsumptionLineIntegrityFailure extends AppFailure {
+  const ConsumptionLineIntegrityFailure(
+    super.message, {
+    required this.consumptionId,
+    this.missingLineIds = const <String>[],
+    this.extraLineIds = const <String>[],
+  });
+
+  final String consumptionId;
+
+  /// Lines the plain select found and the joined read dropped — posting on that basis
+  /// would consume less stock than the document says.
+  final List<String> missingLineIds;
+
+  /// Lines the joined read produced that no live row accounts for.
+  final List<String> extraLineIds;
+}
+
+/// A master row a consumption depends on is physically gone.
+///
+/// The same distinction [HistoricalReferenceMissingFailure] draws for Stok Opname: a
+/// deactivated or soft-deleted row is still there and a document may still be posted
+/// against it, but a row that cannot be found at all means the reference is broken.
+/// Nothing may be invented, substituted or guessed to paper over it (§33).
+final class HistoricalConsumptionReferenceMissingFailure extends AppFailure {
+  const HistoricalConsumptionReferenceMissingFailure(
+    super.message, {
+    required this.entity,
+    required this.id,
+    required this.consumptionId,
+  });
+
+  /// The table whose row is missing: `items`, `item_batches`, `rooms`,
+  /// `stock_locations`…
+  final String entity;
+
+  /// The id the document still points at.
+  final String id;
+
+  final String consumptionId;
+}
+
+/// A guarded write affected no rows: somebody else changed the consumption between
+/// reading it and writing it. The caller must reload rather than retry blindly.
+final class ConcurrentConsumptionUpdateFailure extends AppFailure {
+  const ConcurrentConsumptionUpdateFailure(
+    super.message, {
+    required this.consumptionId,
+  });
+
+  final String consumptionId;
+}
+
+/// `posted_at` would land before `created_at` — a device clock behind the document it
+/// is stamping (§35).
+final class InvalidConsumptionTimestampFailure extends AppFailure {
+  const InvalidConsumptionTimestampFailure(
+    super.message, {
+    required this.consumptionId,
+    required this.createdAtUtc,
+    required this.postedAtUtc,
+  });
+
+  final String consumptionId;
+  final DateTime createdAtUtc;
+  final DateTime postedAtUtc;
+}

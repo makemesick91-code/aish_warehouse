@@ -545,6 +545,86 @@ enum DisposalStatus {
   );
 }
 
+/// Lifecycle of a Pemakaian / Consumption (schema v10, §7).
+///
+/// ```
+/// draft ──▶ posted   (final)
+/// ```
+///
+/// There is no third value and there never will be one on this document: a
+/// consumption is not submitted for approval, not cancelled, not un-posted and not
+/// reopened. A mistake in a posted consumption is corrected by a reversal movement
+/// against the ledger, never by editing the document — the same rule `reviewed`,
+/// `received`, the Good Receipt's `posted`, the Distribusi's `posted` and the
+/// Pemusnahan's `posted` follow (G-S1/G-S2).
+///
+/// ### Why there is no `submitted` / `approved` / `rejected`
+///
+/// **This is an extension decision, not a rule the specification states.** §2.3
+/// lists no Consumption table and §3.2 gives it no state machine; what the
+/// specification does state is that `stock_movements.movement_type` has a
+/// `consumption` value and that `to_location_id` is *"NULL jika barang keluar
+/// sistem (pemakaian/buang)"* (§2.2). Milestone 8 therefore wraps that movement in
+/// the smallest auditable document that can carry the room, the actor and the
+/// timestamps, and stops there.
+///
+/// Inventing an approval stage would be inventing a rule. G-R4 — *"tidak ada satu
+/// peran pun yang bisa membuat sekaligus menyetujui dokumen yang sama"* — forbids
+/// one person doing both halves of a *two-half* workflow, which is a reason not to
+/// invent a second half here rather than a licence to. Posting is not approving: it
+/// is the moment the goods physically leave the room, performed by the nurse who
+/// used them. The UI wording follows: *Posting Pemakaian*, never *Setujui*.
+enum ConsumptionStatus {
+  draft('draft'),
+  posted('posted');
+
+  const ConsumptionStatus(this.dbValue);
+
+  final String dbValue;
+
+  bool get isDraft => this == draft;
+
+  bool get isPosted => this == posted;
+
+  /// Only a draft may have its lines, quantities or note changed (G-S2). A posted
+  /// consumption is read-only permanently.
+  bool get isEditable => this == draft;
+
+  /// Read-only permanently (G-S2).
+  bool get isFinal => this == posted;
+
+  /// Whether the nurse may still post this consumption to the ledger.
+  ///
+  /// Says nothing about whether the document has any lines — that is a fact about
+  /// the *lines*, which this enum cannot see. `ConsumptionDetail.canPost` asks both
+  /// halves.
+  bool get canPost => this == draft;
+
+  /// The single source of truth for allowed transitions on one status.
+  /// Everything else — `posted → draft`, `posted → posted`, re-entering `draft` —
+  /// is refused.
+  bool canTransitionTo(ConsumptionStatus next) => switch (this) {
+    draft => next == posted,
+    posted => false,
+  };
+
+  /// Indonesian label for chips and document timelines.
+  ///
+  /// Deliberately *not* approval wording: there is no "Menunggu Persetujuan" and no
+  /// "Disetujui" anywhere in this workflow, because there is no approval stage to
+  /// describe. The action label the form shows is *Posting Pemakaian*.
+  String get label => switch (this) {
+    draft => 'Draft',
+    posted => 'Sudah Diposting',
+  };
+
+  static ConsumptionStatus fromDbValue(String value) => values.firstWhere(
+    (status) => status.dbValue == value,
+    orElse: () =>
+        throw ArgumentError.value(value, 'value', 'Unknown ConsumptionStatus'),
+  );
+}
+
 /// Which locations a Pemusnahan query is allowed to reach (§14/§26).
 ///
 /// The one enum in this library that is **not** persisted anywhere, and it carries
@@ -568,6 +648,37 @@ enum DisposalLocationScope {
   branch,
 }
 
+/// Which Pemakaian documents a query is allowed to reach (§14/§23).
+///
+/// The second enum in this library that is **not** persisted anywhere, and it carries
+/// no `dbValue` for exactly that reason: it is a *query scope*, resolved into a
+/// predicate on `consumptions` by `ConsumptionDao`, and stored nowhere. It lives here
+/// rather than beside either of them for the reason [DisposalLocationScope] spells
+/// out: both the DAO and the domain access policy have to name it, and
+/// `lib/core/db/daos` may not import a feature while a feature policy may not import
+/// drift — so a shared vocabulary needs a home neither side owns.
+///
+/// A closed set of two rather than a free predicate: the scope a screen may ask for is
+/// a property of the *role*, not of the request. There is deliberately no value
+/// meaning "every consumption" — no screen in this milestone is allowed one, and the
+/// unscoped reads the use cases perform pass no scope at all.
+enum ConsumptionQueryScope {
+  /// Documents one user created — the Perawat's own drafts *and* their own posted
+  /// history. Needs a user id; a scope asked for without one matches nothing.
+  ///
+  /// The first *ownership* scope in the application. Every earlier document is scoped
+  /// by place; a Pemakaian draft is one nurse's account of a shift, so a second nurse
+  /// editing it would be rewriting a record of work they did not do.
+  ownDocuments,
+
+  /// Every **posted** document of one branch — the Kepala Cabang's read-only history.
+  /// Needs a branch id, and the `posted` half is baked into the DAO's predicate rather
+  /// than left to the caller's status set: a branch head must never see a nurse's
+  /// unfinished draft, and a rule that depended on a parameter being passed correctly
+  /// would be one call site away from leaking one.
+  branchPosted,
+}
+
 /// Document types referenced by ledger entries (`ref_doc_type`).
 abstract final class RefDocType {
   static const stockOpname = 'SO';
@@ -582,6 +693,16 @@ abstract final class RefDocType {
   /// two document types shared would make the stock card unable to say which
   /// document a movement came from, and `movementsByRef` would return both.
   static const disposal = 'DSP';
+
+  /// Pemakaian barang di ruangan (schema v10, §10).
+  ///
+  /// Deliberately not `DIST`, `DSP` or `SO`. Every one of those already names a
+  /// document type, and a `ref_doc_type` two types shared would make the stock card
+  /// unable to say which document a movement came from — `movementsByRef` would
+  /// return both. §2.2 lists only `PR / DO / GR / DIST / SO`, so this value, like
+  /// `DSP`, is an extension this milestone documents rather than a rule the
+  /// specification states.
+  static const consumption = 'CONS';
 
   /// Only used by the development seed so opening balances stay idempotent.
   static const seed = 'SEED';

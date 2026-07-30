@@ -8,6 +8,12 @@ import '../../../features/delivery/domain/services/delivery_warehouse_stock_read
 import '../../../features/delivery/domain/use_cases/build_fefo_delivery_allocation_use_case.dart';
 import '../../../features/delivery/domain/use_cases/create_delivery_order_use_case.dart';
 import '../../../features/delivery/domain/use_cases/ship_delivery_order_use_case.dart';
+import '../../../features/consumption/domain/models/consumption_models.dart';
+import '../../../features/consumption/domain/repositories/consumption_repository.dart';
+import '../../../features/consumption/domain/services/consumption_stock_reader.dart';
+import '../../../features/consumption/domain/use_cases/add_consumption_line_use_case.dart';
+import '../../../features/consumption/domain/use_cases/create_consumption_use_case.dart';
+import '../../../features/consumption/domain/use_cases/post_consumption_use_case.dart';
 import '../../../features/disposal/domain/repositories/disposal_repository.dart';
 import '../../../features/disposal/domain/services/disposal_stock_reader.dart';
 import '../../../features/disposal/domain/use_cases/add_disposal_line_use_case.dart';
@@ -153,6 +159,7 @@ class DevelopmentSeed {
     required this._receipts,
     required this._distributions,
     required this._disposals,
+    required this._consumptions,
     bool? isDevelopmentBuild,
   }) : _opnameRepository = opnames,
        _isDevelopmentBuild = isDevelopmentBuild ?? !kReleaseMode;
@@ -166,6 +173,7 @@ class DevelopmentSeed {
   final GoodReceiptRepository _receipts;
   final DistributionRepository _distributions;
   final DisposalRepository _disposals;
+  final ConsumptionRepository _consumptions;
   final bool _isDevelopmentBuild;
 
   static const _categoryNames = <String>[
@@ -383,6 +391,19 @@ class DevelopmentSeed {
       sku: 'DEN-0008',
       batchNo: 'CHX-2301',
       qty: '0.5',
+    ),
+    // Milestone 8: a **near-expiry** batch on a room shelf, ten days out against
+    // `expiry_alert_days = 30`. Between it, `LID-2407` above (120 days) and
+    // `CHX-2301` (expired twelve days ago) one room demonstrates the whole
+    // consumption eligibility rule at a glance (§36): the valid batch is offered
+    // plainly, the near-expiry one is offered with an orange badge and is the one a
+    // nurse should reach for, and the expired one is not offered at all because it
+    // leaves only through a Pemusnahan (G-E7).
+    _SeedRoomStock(
+      roomCode: 'R1',
+      sku: 'DEN-0007',
+      batchNo: 'LID-2403',
+      qty: '4.5',
     ),
     // Ruang Dental 2 — below par on two items, one of them across two batches.
     _SeedRoomStock(roomCode: 'R2', sku: 'DEN-0004', qty: '3'),
@@ -1484,6 +1505,155 @@ class DevelopmentSeed {
     final detail = await _disposals.getDetail(disposal.id);
     if (detail == null || detail.isEmpty) return null;
     return disposal.id;
+  }
+
+  /// Files a `draft` Pemakaian against the first dental room, so a fresh install has a
+  /// form to open (§36).
+  ///
+  /// Opt-in rather than part of [run], for the reason every document seed here is:
+  /// creating paperwork on every launch would make a fresh install look busier than it
+  /// is, and a developer exercising the empty state needs one that stays empty.
+  ///
+  /// Returns `null` — never throws — when a prerequisite is missing: no nurse, no room,
+  /// no room location, or nothing consumable on the shelf. A seed must never be the
+  /// reason a fresh install fails to open.
+  ///
+  /// It consumes **half** of each position it touches, truncated towards zero in exact
+  /// fixed point (Q-2). Leaving the rest behind is deliberate: the room-stock screen and
+  /// the candidate picker must still have rows after the demo document is posted, or the
+  /// screens they are demonstrating look broken.
+  ///
+  /// The positions come from [ConsumptionRepository.roomPositions], which applies
+  /// `ConsumptionExpiryPolicy` — so the expired `CHX-2301` bottle the seed puts in R1 is
+  /// **absent** here rather than filtered out afterwards. That is the point of seeding
+  /// it: a developer can see that the one position they cannot consume is the one the
+  /// Pemusnahan screen offers.
+  Future<String?> seedDraftConsumption() async {
+    _requireDevelopmentBuild();
+
+    final users = await _master.activeUsers();
+    final nurses = users.where((user) => user.role == UserRole.perawat);
+    if (nurses.isEmpty) return null;
+    final nurse = nurses.first;
+    final branchId = nurse.branchId;
+    if (branchId == null) return null;
+
+    final previous = await _existingConsumptionForNurse(nurse.id);
+    if (previous != null) return previous;
+
+    final rooms = await _consumptions.activeRoomsOfBranch(branchId);
+    if (rooms.isEmpty) return null;
+    final room = rooms.first;
+
+    final locations = await _consumptions.roomLocations(room.roomId);
+    if (locations.length != 1) return null;
+    final location = locations.single;
+
+    final nowUtc = DateTime.now().toUtc();
+    final available = await _consumptions.roomPositions(
+      roomId: room.roomId,
+      roomLocationId: location.id,
+      nowUtc: nowUtc,
+      activeItemsOnly: true,
+    );
+    if (available.isEmpty) return null;
+
+    final consumption =
+        await CreateConsumptionUseCase(
+          consumptions: _consumptions,
+          master: _master,
+        ).call(
+          actorUserId: nurse.id,
+          roomId: room.roomId,
+          // A real remark, not a preset code (§19): what goes in the column is what a
+          // reader sees a year later. Deliberately says nothing about a patient (§9).
+          note: 'Pemakaian shift pagi — seed pengembangan',
+        );
+
+    final add = AddConsumptionLineUseCase(
+      consumptions: _consumptions,
+      master: _master,
+      stock: RoomConsumptionStockReader(_inventory),
+    );
+    // Two positions, and the pick is deliberate: one without a batch and one with, so
+    // the demo document exercises both halves of G-E2 rather than only the batched one
+    // the Pemusnahan seed shows.
+    final unbatched = available.where((position) => !position.isBatched);
+    final batched = available.where((position) => position.isBatched);
+    final chosen = <RoomStockPosition>[
+      if (unbatched.isNotEmpty) unbatched.first,
+      if (batched.isNotEmpty) batched.first,
+    ];
+
+    for (final position in chosen) {
+      final half = position.qtyOnHand.scaledBy(numerator: 1, denominator: 2);
+      if (!half.isPositive) continue;
+      try {
+        await add.call(
+          actorUserId: nurse.id,
+          consumptionId: consumption.id,
+          itemId: position.itemId,
+          batchId: position.batchId,
+          qty: half,
+        );
+      } on AppFailure {
+        // Anything the rules refuse — a batch that expired between the read and the
+        // write — is simply left off the demo document.
+        continue;
+      }
+    }
+
+    final detail = await _consumptions.getDetail(consumption.id);
+    if (detail == null || detail.isEmpty) return null;
+    return consumption.id;
+  }
+
+  /// Posts the seeded Pemakaian, so a fresh install has a read-only document *and* a
+  /// `consumption` movement that arrived the way real ones do (§36).
+  ///
+  /// Goes through [PostConsumptionUseCase] rather than mutating balances: every rule the
+  /// screens enforce applies to the seed too, and the reduction it produces is backed by
+  /// real ledger rows carrying the room and the actor.
+  ///
+  /// Deliberately **not** called by [run], and not by [seedDraftConsumption] either. A
+  /// fresh install should show both shapes — a draft to continue and a posted document
+  /// for the branch head to read — and posting the only draft would leave the form with
+  /// nothing to open. Returns the document id, or `null` when there is nothing to post.
+  Future<String?> seedPostedConsumption() async {
+    _requireDevelopmentBuild();
+
+    final users = await _master.activeUsers();
+    final nurses = users.where((user) => user.role == UserRole.perawat);
+    if (nurses.isEmpty) return null;
+    final nurse = nurses.first;
+
+    final consumptionId = await seedDraftConsumption();
+    if (consumptionId == null) return null;
+
+    final consumption = await _consumptions.getById(consumptionId);
+    if (consumption == null) return null;
+    // Already posted by an earlier run.
+    if (consumption.isPosted) return consumptionId;
+
+    await PostConsumptionUseCase(
+      consumptions: _consumptions,
+      master: _master,
+      posting: _posting,
+      stock: RoomConsumptionStockReader(_inventory),
+    ).call(actorUserId: nurse.id, consumptionId: consumptionId);
+
+    return consumptionId;
+  }
+
+  /// The id of any Pemakaian this nurse already has, or `null`.
+  ///
+  /// Read through the **owner**-scoped list rather than a branch one, because that is
+  /// the scope this document lives in (§14): it cannot report another nurse's draft, and
+  /// it is status-agnostic so a *posted* one still counts as "already seeded" — which is
+  /// what makes a second run a no-op.
+  Future<String?> _existingConsumptionForNurse(String nurseId) async {
+    final rows = await _consumptions.listOwn(actorUserId: nurseId);
+    return rows.isEmpty ? null : rows.first.id;
   }
 
   /// The id of any Pemusnahan this branch already has, or `null`.

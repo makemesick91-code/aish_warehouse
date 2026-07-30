@@ -13,6 +13,7 @@ import '../../../inventory/presentation/widgets/expiry_badge.dart';
 import '../../../master/domain/models/master_models.dart';
 import '../../../master/presentation/providers/master_providers.dart';
 import '../../../good_receipt/presentation/widgets/good_receipt_dashboard_cards.dart';
+import '../../../consumption/presentation/widgets/consumption_dashboard_cards.dart';
 import '../../../disposal/presentation/widgets/disposal_dashboard_cards.dart';
 import '../../../distribution/presentation/widgets/distribution_dashboard_cards.dart';
 import '../providers/development_home_providers.dart';
@@ -365,6 +366,42 @@ class _SessionCard extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.sm),
               const BranchDisposalCard(),
+            ],
+            // Pemakaian. Two entry points for two *roles* rather than two scopes of one:
+            // the nurse records what their room used, and the branch head reads the
+            // result. `canRecordConsumption` and `canReadConsumptionHistory` are
+            // deliberately separate predicates — one covering both would be the quiet
+            // grant G-R4 is about, and it would put a write button in front of the one
+            // person §14 says must not have it.
+            if (session.value?.canRecordConsumption ?? false) ...[
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  key: const ValueKey('homeNurseConsumptions'),
+                  onPressed: () =>
+                      context.pushNamed(AppRoutes.consumptionsName),
+                  icon: const Icon(Icons.medical_services_outlined),
+                  label: const Text('Catat Pemakaian'),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              const ConsumptionDashboardCards(),
+            ],
+            if (session.value?.canReadConsumptionHistory ?? false) ...[
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('homeBranchConsumptions'),
+                  onPressed: () =>
+                      context.pushNamed(AppRoutes.branchConsumptionsName),
+                  icon: const Icon(Icons.history),
+                  label: const Text('Riwayat Pemakaian'),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              const BranchConsumptionCard(),
             ],
             if (session.value?.canDisposeWarehouseStock ?? false) ...[
               const SizedBox(height: AppSpacing.sm),

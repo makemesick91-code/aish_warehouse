@@ -4,6 +4,16 @@ import 'package:aish_warehouse/core/enums/app_enums.dart';
 import 'package:aish_warehouse/core/quantity/quantity.dart';
 import 'package:aish_warehouse/core/time/app_time_zone.dart';
 import 'package:aish_warehouse/core/time/date_only.dart';
+import 'package:aish_warehouse/features/consumption/data/repositories/drift_consumption_repository.dart';
+import 'package:aish_warehouse/features/consumption/domain/models/consumption_models.dart';
+import 'package:aish_warehouse/features/consumption/domain/repositories/consumption_repository.dart';
+import 'package:aish_warehouse/features/consumption/domain/services/consumption_stock_reader.dart';
+import 'package:aish_warehouse/features/consumption/domain/use_cases/add_consumption_line_use_case.dart';
+import 'package:aish_warehouse/features/consumption/domain/use_cases/create_consumption_use_case.dart';
+import 'package:aish_warehouse/features/consumption/domain/use_cases/post_consumption_use_case.dart';
+import 'package:aish_warehouse/features/consumption/domain/use_cases/remove_consumption_line_use_case.dart';
+import 'package:aish_warehouse/features/consumption/domain/use_cases/update_consumption_header_use_case.dart';
+import 'package:aish_warehouse/features/consumption/domain/use_cases/update_consumption_line_use_case.dart';
 import 'package:aish_warehouse/features/delivery/data/repositories/drift_delivery_order_repository.dart';
 import 'package:aish_warehouse/features/delivery/domain/models/delivery_models.dart';
 import 'package:aish_warehouse/features/delivery/domain/repositories/delivery_order_repository.dart';
@@ -81,6 +91,7 @@ class TestContext {
     required this.receipts,
     required this.distributions,
     required this.disposals,
+    required this.consumptions,
     required this.posting,
     required this.clock,
   });
@@ -100,6 +111,7 @@ class TestContext {
     final receipts = DriftGoodReceiptRepository(database.goodReceiptDao);
     final distributions = DriftDistributionRepository(database.distributionDao);
     final disposals = DriftDisposalRepository(database.disposalDao);
+    final consumptions = DriftConsumptionRepository(database.consumptionDao);
     return TestContext._(
       database: database,
       master: master,
@@ -110,6 +122,7 @@ class TestContext {
       receipts: receipts,
       distributions: distributions,
       disposals: disposals,
+      consumptions: consumptions,
       clock: clock,
       posting: StockPostingService(
         inventory: inventory,
@@ -129,6 +142,7 @@ class TestContext {
   final GoodReceiptRepository receipts;
   final DistributionRepository distributions;
   final DisposalRepository disposals;
+  final ConsumptionRepository consumptions;
   final StockPostingService posting;
 
   /// The injected UTC clock, or `null` when the real one is in use.
@@ -523,6 +537,75 @@ class TestContext {
     );
   }
 
+  // --- Pemakaian use cases --------------------------------------------------
+  //
+  // Each takes an optional clock so a test can sit anywhere in the operational
+  // calendar — either side of a batch's expiry date for §17, or behind the
+  // document's own timestamps for the clock-skew rules (§35).
+
+  RoomConsumptionStockReader get consumptionStock =>
+      RoomConsumptionStockReader(inventory);
+
+  CreateConsumptionUseCase createConsumption({
+    DateTime Function()? clock,
+    String Function()? idGenerator,
+  }) => CreateConsumptionUseCase(
+    consumptions: consumptions,
+    master: master,
+    clock: clock ?? this.clock,
+    idGenerator: idGenerator,
+  );
+
+  UpdateConsumptionHeaderUseCase get updateConsumptionHeader =>
+      UpdateConsumptionHeaderUseCase(
+        consumptions: consumptions,
+        master: master,
+      );
+
+  AddConsumptionLineUseCase addConsumptionLine({DateTime Function()? clock}) =>
+      AddConsumptionLineUseCase(
+        consumptions: consumptions,
+        master: master,
+        stock: consumptionStock,
+        clock: clock ?? this.clock,
+      );
+
+  UpdateConsumptionLineUseCase updateConsumptionLine({
+    DateTime Function()? clock,
+  }) => UpdateConsumptionLineUseCase(
+    consumptions: consumptions,
+    master: master,
+    stock: consumptionStock,
+    clock: clock ?? this.clock,
+  );
+
+  RemoveConsumptionLineUseCase get removeConsumptionLine =>
+      RemoveConsumptionLineUseCase(consumptions: consumptions, master: master);
+
+  /// The post use case, with both clocks pointing at the same instant.
+  ///
+  /// [posting] is injectable so an atomicity test can hand it a service that fails on
+  /// a chosen line and then assert that *nothing* was written — the rollback assertion
+  /// §42 exists for, and one that matters as much here as on a Pemusnahan because a
+  /// `consumption` movement has no counter-entry to reconcile against.
+  PostConsumptionUseCase postConsumption({
+    DateTime Function()? clock,
+    StockPostingService? posting,
+  }) {
+    final effectiveClock = clock ?? this.clock;
+    return PostConsumptionUseCase(
+      consumptions: consumptions,
+      master: master,
+      posting:
+          posting ??
+          (effectiveClock == null
+              ? this.posting
+              : postingWithClock(effectiveClock)),
+      stock: consumptionStock,
+      clock: effectiveClock,
+    );
+  }
+
   /// A posting service on the same database but with a different notion of
   /// "now", used to test expiry rules without waiting.
   StockPostingService postingWithClock(DateTime Function() clock) =>
@@ -554,6 +637,7 @@ class TestContext {
     receipts: receipts,
     distributions: distributions,
     disposals: disposals,
+    consumptions: consumptions,
     isDevelopmentBuild: true,
   );
 
@@ -568,6 +652,7 @@ class TestContext {
     receipts: receipts,
     distributions: distributions,
     disposals: disposals,
+    consumptions: consumptions,
     isDevelopmentBuild: false,
   );
 
@@ -1137,6 +1222,140 @@ class TestContext {
           "FROM stock_movements WHERE ref_doc_type = 'DSP' AND ref_doc_id = ? "
           'ORDER BY created_at, id;',
           variables: [Variable<String>(disposalId)],
+        )
+        .get();
+    return rows
+        .map(
+          (row) => <String, Object?>{
+            'item_id': row.read<String>('item_id'),
+            'batch_id': row.read<String?>('batch_id'),
+            'from_location_id': row.read<String?>('from_location_id'),
+            'to_location_id': row.read<String?>('to_location_id'),
+            'qty': row.read<int>('qty'),
+            'movement_type': row.read<String>('movement_type'),
+            'ref_doc_type': row.read<String?>('ref_doc_type'),
+            'ref_doc_id': row.read<String?>('ref_doc_id'),
+            'actor_user_id': row.read<String>('actor_user_id'),
+            'note': row.read<String?>('note'),
+          },
+        )
+        .toList(growable: false);
+  }
+
+  // --- Pemakaian raw reads, for rollback and atomicity assertions ------------
+  //
+  // All of these read the columns directly, so an assertion about a rolled-back
+  // transaction cannot be fooled by a cached repository read.
+
+  /// The stored status of one Pemakaian.
+  Future<String> consumptionStatusOf(String consumptionId) async {
+    final row = await database
+        .customSelect(
+          'SELECT status FROM consumptions WHERE id = ?;',
+          variables: [Variable<String>(consumptionId)],
+        )
+        .getSingle();
+    return row.read<String>('status');
+  }
+
+  /// One raw column of a Pemakaian, for assertions about audit metadata.
+  Future<String?> consumptionColumn(String consumptionId, String column) async {
+    final row = await database
+        .customSelect(
+          'SELECT $column AS value FROM consumptions WHERE id = ?;',
+          variables: [Variable<String>(consumptionId)],
+        )
+        .getSingle();
+    return row.read<String?>('value');
+  }
+
+  /// Live line count of one consumption, read without any join.
+  Future<int> consumptionLineCount(String consumptionId) async {
+    final row = await database
+        .customSelect(
+          'SELECT COUNT(*) AS c FROM consumption_lines '
+          'WHERE consumption_id = ? AND deleted_at IS NULL;',
+          variables: [Variable<String>(consumptionId)],
+        )
+        .getSingle();
+    return row.read<int>('c');
+  }
+
+  /// Raw line rows of one consumption, keyed by line id.
+  Future<Map<String, Map<String, Object?>>> consumptionLineRows(
+    String consumptionId,
+  ) async {
+    final rows = await database
+        .customSelect(
+          'SELECT id, item_id, batch_id, qty, note FROM consumption_lines '
+          'WHERE consumption_id = ? AND deleted_at IS NULL;',
+          variables: [Variable<String>(consumptionId)],
+        )
+        .get();
+    return {
+      for (final row in rows)
+        row.read<String>('id'): <String, Object?>{
+          'item_id': row.read<String>('item_id'),
+          'batch_id': row.read<String?>('batch_id'),
+          'qty': row.read<int>('qty'),
+          'note': row.read<String?>('note'),
+        },
+    };
+  }
+
+  /// Ledger rows written against one Pemakaian.
+  ///
+  /// The assertion behind every rollback test: a failed posting must leave **zero** of
+  /// these, whichever line it failed on (§42).
+  Future<int> consumptionMovementCount(String consumptionId) async {
+    final row = await database
+        .customSelect(
+          "SELECT COUNT(*) AS c FROM stock_movements "
+          "WHERE ref_doc_type = 'CONS' AND ref_doc_id = ?;",
+          variables: [Variable<String>(consumptionId)],
+        )
+        .getSingle();
+    return row.read<int>('c');
+  }
+
+  /// The ledger row ids of one Pemakaian, oldest first.
+  ///
+  /// Separate from [consumptionMovements] rather than added to it, because the widget tests
+  /// key their assertions on movement ids while the ledger tests compare whole column maps —
+  /// putting the id into those maps would make every literal expectation depend on a UUID.
+  Future<List<String>> consumptionMovementIds(String consumptionId) async {
+    final rows = await database
+        .customSelect(
+          "SELECT id FROM stock_movements WHERE ref_doc_type = 'CONS' "
+          'AND ref_doc_id = ? ORDER BY created_at, id;',
+          variables: [Variable<String>(consumptionId)],
+        )
+        .get();
+    return rows.map((row) => row.read<String>('id')).toList(growable: false);
+  }
+
+  /// The `doc_number` of one Pemakaian, read raw.
+  Future<String> consumptionDocNumber(String consumptionId) async {
+    final row = await database
+        .customSelect(
+          'SELECT doc_number FROM consumptions WHERE id = ?;',
+          variables: [Variable<String>(consumptionId)],
+        )
+        .getSingle();
+    return row.read<String>('doc_number');
+  }
+
+  /// Every `consumption` movement of one document, as raw column values.
+  Future<List<Map<String, Object?>>> consumptionMovements(
+    String consumptionId,
+  ) async {
+    final rows = await database
+        .customSelect(
+          'SELECT item_id, batch_id, from_location_id, to_location_id, qty, '
+          'movement_type, ref_doc_type, ref_doc_id, actor_user_id, note '
+          "FROM stock_movements WHERE ref_doc_type = 'CONS' AND ref_doc_id = ? "
+          'ORDER BY created_at, id;',
+          variables: [Variable<String>(consumptionId)],
         )
         .get();
     return rows
@@ -3616,3 +3835,496 @@ Future<Quantity> locationBalance(
   itemId: itemId,
   batchId: batchId,
 );
+
+/// The world a Pemakaian test needs: two branches, three rooms, five roles, and a room
+/// shelf holding one position of every eligibility shape (§38 … §41).
+///
+/// Deliberately richer than [DisposalFixture] on the *item* side and poorer on the
+/// *location* side, and both differences follow from what a consumption is. A disposal
+/// may leave a warehouse, a store or a room, so its fixture needs all three; a
+/// consumption only ever leaves a room, so this one needs rooms — but it needs items
+/// *with* and *without* expiry, because G-E2 splits the whole document down that line and
+/// a fixture that only had batch-tracked products would leave half the rules untested.
+class ConsumptionFixture {
+  const ConsumptionFixture({
+    required this.branch,
+    required this.otherBranch,
+    required this.warehouse,
+    required this.branchStore,
+    required this.roomOne,
+    required this.roomTwo,
+    required this.otherBranchRoom,
+    required this.locationOne,
+    required this.locationTwo,
+    required this.otherBranchRoomLocation,
+    required this.nurse,
+    required this.otherNurse,
+    required this.otherBranchNurse,
+    required this.branchHead,
+    required this.otherBranchHead,
+    required this.warehouseUser,
+    required this.superAdmin,
+    required this.category,
+    required this.otherCategory,
+    required this.expiryItem,
+    required this.otherExpiryItem,
+    required this.plainItem,
+    required this.otherPlainItem,
+    required this.validBatch,
+    required this.nearBatch,
+    required this.todayBatch,
+    required this.expiredBatch,
+    required this.otherItemBatch,
+    required this.emptyBatch,
+  });
+
+  final MasterBranch branch;
+  final MasterBranch otherBranch;
+
+  /// Present so a test can assert that a warehouse balance is **not** a consumption
+  /// candidate, and that a warehouse location can never become a source.
+  final MasterLocation warehouse;
+  final MasterLocation branchStore;
+
+  final MasterRoom roomOne;
+  final MasterRoom roomTwo;
+  final MasterRoom otherBranchRoom;
+
+  final MasterLocation locationOne;
+  final MasterLocation locationTwo;
+  final MasterLocation otherBranchRoomLocation;
+
+  /// The nurse every write test acts as.
+  final MasterUser nurse;
+
+  /// A **second nurse in the same branch** — the actor the ownership rule of §14 exists
+  /// for, and the one no other fixture in this suite has needed.
+  final MasterUser otherNurse;
+
+  final MasterUser otherBranchNurse;
+  final MasterUser branchHead;
+  final MasterUser otherBranchHead;
+  final MasterUser warehouseUser;
+  final MasterUser superAdmin;
+
+  final MasterCategory category;
+  final MasterCategory otherCategory;
+
+  /// Batch-tracked. Every batch below except [otherItemBatch] belongs to it.
+  final MasterItem expiryItem;
+
+  /// A second batch-tracked item in the other category, so the category filter has
+  /// something to exclude.
+  final MasterItem otherExpiryItem;
+
+  /// `has_expiry = false`. Consumed without a batch (G-E2).
+  final MasterItem plainItem;
+
+  /// A second non-expiry item, in the other category.
+  final MasterItem otherPlainItem;
+
+  /// Two hundred days left. The ordinary candidate.
+  final MasterBatch validBatch;
+
+  /// Ten days left, inside the default thirty-day alert window — a candidate **with an
+  /// orange badge** (G-E6), never a refusal (§17).
+  final MasterBatch nearBatch;
+
+  /// Expires **today** in operational time. Still consumable for the whole of its day
+  /// (T-10) — the boundary case.
+  final MasterBatch todayBatch;
+
+  /// Expired three days ago. Never a candidate, and refused at add, at update and at
+  /// posting; it leaves only through a Pemusnahan (G-E7).
+  final MasterBatch expiredBatch;
+
+  /// A valid batch of [otherExpiryItem], for the category filter.
+  final MasterBatch otherItemBatch;
+
+  /// A valid batch of [expiryItem] that carries **no room stock at all**, so a test can
+  /// assert that a zero balance is not a candidate and that naming it is refused.
+  final MasterBatch emptyBatch;
+}
+
+/// Builds [ConsumptionFixture] against the injected [nowUtc].
+///
+/// Stock is placed **through the ledger** — an inbound movement into the central
+/// warehouse, then transfers down to the branch store and into the rooms — never by
+/// writing `stock_balances` directly, which is the same rule the production code follows
+/// (G-A1).
+///
+/// The transfers run on a clock 400 days before [nowUtc] for one reason: a transfer
+/// refuses an expired batch (G-E4), so [ConsumptionFixture.expiredBatch] could not be
+/// moved into a room *today*. Backdating the placement is how a room comes to hold the
+/// expired bottle that a consumption must refuse — which is exactly the state a real
+/// clinic is in when nobody has filed a Pemusnahan yet.
+Future<ConsumptionFixture> buildConsumptionFixture(
+  TestContext context, {
+  required DateTime nowUtc,
+}) async {
+  final master = context.master;
+  final today = AppTimeZone.operationalDate(nowUtc);
+
+  final branch = await master.ensureBranch(
+    code: 'CAB-01',
+    name: 'Cabang Uji',
+    address: 'Jl. Uji No. 1',
+  );
+  final otherBranch = await master.ensureBranch(
+    code: 'CAB-02',
+    name: 'Cabang Lain',
+  );
+
+  final roomOne = await master.ensureRoom(
+    branchId: branch.id,
+    code: 'R1',
+    name: 'Ruang Dental 1',
+  );
+  final roomTwo = await master.ensureRoom(
+    branchId: branch.id,
+    code: 'R2',
+    name: 'Ruang Dental 2',
+  );
+  final otherBranchRoom = await master.ensureRoom(
+    branchId: otherBranch.id,
+    code: 'R1',
+    name: 'Ruang Dental 1 Cabang Lain',
+  );
+
+  final warehouse = await master.ensureLocation(
+    type: StockLocationType.warehouse,
+    name: 'Warehouse Pusat',
+  );
+  final branchStore = await master.ensureLocation(
+    type: StockLocationType.branchStore,
+    name: 'Gudang Cabang Uji',
+    branchId: branch.id,
+  );
+  final otherBranchStore = await master.ensureLocation(
+    type: StockLocationType.branchStore,
+    name: 'Gudang Cabang Lain',
+    branchId: otherBranch.id,
+  );
+  final locationOne = await master.ensureLocation(
+    type: StockLocationType.room,
+    name: roomOne.name,
+    branchId: branch.id,
+    roomId: roomOne.id,
+  );
+  final locationTwo = await master.ensureLocation(
+    type: StockLocationType.room,
+    name: roomTwo.name,
+    branchId: branch.id,
+    roomId: roomTwo.id,
+  );
+  final otherBranchRoomLocation = await master.ensureLocation(
+    type: StockLocationType.room,
+    name: otherBranchRoom.name,
+    branchId: otherBranch.id,
+    roomId: otherBranchRoom.id,
+  );
+
+  final nurse = await master.ensureUser(
+    email: 'perawat@test.local',
+    fullName: 'Perawat Uji',
+    role: UserRole.perawat,
+    branchId: branch.id,
+  );
+  final otherNurse = await master.ensureUser(
+    email: 'perawat2@test.local',
+    fullName: 'Perawat Kedua',
+    role: UserRole.perawat,
+    branchId: branch.id,
+  );
+  final otherBranchNurse = await master.ensureUser(
+    email: 'perawat3@test.local',
+    fullName: 'Perawat Cabang Lain',
+    role: UserRole.perawat,
+    branchId: otherBranch.id,
+  );
+  final branchHead = await master.ensureUser(
+    email: 'kacab@test.local',
+    fullName: 'Kepala Cabang Uji',
+    role: UserRole.kepalaCabang,
+    branchId: branch.id,
+  );
+  final otherBranchHead = await master.ensureUser(
+    email: 'kacab2@test.local',
+    fullName: 'Kepala Cabang Lain',
+    role: UserRole.kepalaCabang,
+    branchId: otherBranch.id,
+  );
+  final warehouseUser = await master.ensureUser(
+    email: 'warehouse@test.local',
+    fullName: 'Petugas Warehouse Uji',
+    role: UserRole.warehouse,
+  );
+  final superAdmin = await master.ensureUser(
+    email: 'admin@test.local',
+    fullName: 'Super Admin Uji',
+    role: UserRole.superAdmin,
+  );
+
+  final category = await master.ensureCategory('Obat');
+  final otherCategory = await master.ensureCategory('Alat Sekali Pakai');
+
+  final expiryItem = await master.ensureItem(
+    sku: 'CNS-0001',
+    name: 'Anestesi Lokal',
+    categoryId: category.id,
+    unit: 'ampul',
+    minStockRoom: 10,
+    minStockBranch: 40,
+    hasExpiry: true,
+  );
+  final otherExpiryItem = await master.ensureItem(
+    sku: 'CNS-0002',
+    name: 'Kasa Steril',
+    categoryId: otherCategory.id,
+    unit: 'roll',
+    minStockRoom: 4,
+    minStockBranch: 12,
+    hasExpiry: true,
+  );
+  final plainItem = await master.ensureItem(
+    sku: 'CNS-0003',
+    name: 'Masker Bedah',
+    categoryId: category.id,
+    unit: 'box',
+    minStockRoom: 5,
+    minStockBranch: 20,
+    hasExpiry: false,
+  );
+  final otherPlainItem = await master.ensureItem(
+    sku: 'CNS-0004',
+    name: 'Sarung Tangan Latex',
+    categoryId: otherCategory.id,
+    unit: 'box',
+    minStockRoom: 5,
+    minStockBranch: 20,
+    hasExpiry: false,
+  );
+
+  // `expiry_alert_days` defaults to 30, so 10 days is inside the alert window and 200 is
+  // comfortably outside it. `todayBatch` is the T-10 boundary and `expiredBatch` is one
+  // day past it.
+  final validBatch = await master.ensureBatch(
+    itemId: expiryItem.id,
+    batchNo: 'A-VALID',
+    expiryDate: DateOnly.addDays(today, 200),
+  );
+  final nearBatch = await master.ensureBatch(
+    itemId: expiryItem.id,
+    batchNo: 'B-NEAR',
+    expiryDate: DateOnly.addDays(today, 10),
+  );
+  final todayBatch = await master.ensureBatch(
+    itemId: expiryItem.id,
+    batchNo: 'C-TODAY',
+    expiryDate: today,
+  );
+  final expiredBatch = await master.ensureBatch(
+    itemId: expiryItem.id,
+    batchNo: 'D-EXPIRED',
+    expiryDate: DateOnly.addDays(today, -3),
+  );
+  final emptyBatch = await master.ensureBatch(
+    itemId: expiryItem.id,
+    batchNo: 'E-EMPTY',
+    expiryDate: DateOnly.addDays(today, 150),
+  );
+  final otherItemBatch = await master.ensureBatch(
+    itemId: otherExpiryItem.id,
+    batchNo: 'F-VALID',
+    expiryDate: DateOnly.addDays(today, 120),
+  );
+
+  // Every posting runs 400 days before "now", which is before the *oldest* expiry date
+  // above — so no transfer here is ever refused for carrying expired stock.
+  final earlyPosting = context.postingWithClock(
+    () => nowUtc.subtract(const Duration(days: 400)),
+  );
+
+  Future<void> stockWarehouse(String itemId, String? batchId, String qty) =>
+      earlyPosting.postInboundWarehouse(
+        itemId: itemId,
+        batchId: batchId,
+        toLocationId: warehouse.id,
+        qty: Quantity.parse(qty),
+        actorUserId: warehouseUser.id,
+        refDocType: RefDocType.seed,
+        refDocId: 'cns-wh-$itemId-${batchId ?? 'nobatch'}-$qty',
+        note: 'Saldo awal fixture',
+      );
+
+  Future<void> moveDown(
+    String itemId,
+    String? batchId,
+    String qty,
+    String toLocationId,
+    String fromLocationId,
+  ) => earlyPosting.postTransfer(
+    itemId: itemId,
+    batchId: batchId,
+    fromLocationId: fromLocationId,
+    toLocationId: toLocationId,
+    qty: Quantity.parse(qty),
+    movementType: fromLocationId == warehouse.id
+        ? StockMovementType.goodReceipt
+        : StockMovementType.distribution,
+    actorUserId: warehouseUser.id,
+    refDocType: RefDocType.seed,
+    refDocId: 'cns-move-$itemId-${batchId ?? 'nobatch'}-$toLocationId-$qty',
+    note: 'Perpindahan awal fixture',
+  );
+
+  /// Places [qty] of one position in a room, via the warehouse and the branch store.
+  ///
+  /// Warehouse totals are deliberately larger than what moves on, so a test asserting
+  /// that a consumption left the *warehouse* untouched has a non-zero number to compare.
+  Future<void> stockRoom(
+    String itemId,
+    String? batchId,
+    String qty,
+    String roomLocationId, {
+    String? viaStore,
+  }) async {
+    await stockWarehouse(itemId, batchId, qty);
+    await moveDown(
+      itemId,
+      batchId,
+      qty,
+      viaStore ?? branchStore.id,
+      warehouse.id,
+    );
+    await moveDown(
+      itemId,
+      batchId,
+      qty,
+      roomLocationId,
+      viaStore ?? branchStore.id,
+    );
+  }
+
+  // Room 1 — one position of every shape, with decimal quantities throughout.
+  await stockRoom(expiryItem.id, validBatch.id, '5.5', locationOne.id);
+  await stockRoom(expiryItem.id, nearBatch.id, '2.375', locationOne.id);
+  await stockRoom(expiryItem.id, todayBatch.id, '3', locationOne.id);
+  await stockRoom(expiryItem.id, expiredBatch.id, '1.25', locationOne.id);
+  await stockRoom(plainItem.id, null, '10.5', locationOne.id);
+  await stockRoom(otherExpiryItem.id, otherItemBatch.id, '4', locationOne.id);
+  await stockRoom(otherPlainItem.id, null, '6', locationOne.id);
+
+  // Room 2 — a smaller shelf, so a room filter has something to distinguish.
+  await stockRoom(expiryItem.id, validBatch.id, '2', locationTwo.id);
+  await stockRoom(plainItem.id, null, '1.5', locationTwo.id);
+
+  // The other branch's room gets its own stock, so a cross-branch refusal is refused
+  // against something real rather than against an empty shelf.
+  await stockRoom(
+    expiryItem.id,
+    validBatch.id,
+    '4',
+    otherBranchRoomLocation.id,
+    viaStore: otherBranchStore.id,
+  );
+
+  // `emptyBatch` is stocked at the warehouse only: it exists, it is in date, and no room
+  // holds any of it.
+  await stockWarehouse(expiryItem.id, emptyBatch.id, '7');
+
+  return ConsumptionFixture(
+    branch: branch,
+    otherBranch: otherBranch,
+    warehouse: warehouse,
+    branchStore: branchStore,
+    roomOne: roomOne,
+    roomTwo: roomTwo,
+    otherBranchRoom: otherBranchRoom,
+    locationOne: locationOne,
+    locationTwo: locationTwo,
+    otherBranchRoomLocation: otherBranchRoomLocation,
+    nurse: nurse,
+    otherNurse: otherNurse,
+    otherBranchNurse: otherBranchNurse,
+    branchHead: branchHead,
+    otherBranchHead: otherBranchHead,
+    warehouseUser: warehouseUser,
+    superAdmin: superAdmin,
+    category: category,
+    otherCategory: otherCategory,
+    expiryItem: expiryItem,
+    otherExpiryItem: otherExpiryItem,
+    plainItem: plainItem,
+    otherPlainItem: otherPlainItem,
+    validBatch: validBatch,
+    nearBatch: nearBatch,
+    todayBatch: todayBatch,
+    expiredBatch: expiredBatch,
+    otherItemBatch: otherItemBatch,
+    emptyBatch: emptyBatch,
+  );
+}
+
+/// Creates a `draft` consumption against one room and returns its id.
+Future<String> createConsumptionDraft(
+  TestContext context,
+  ConsumptionFixture fixture, {
+  required String roomId,
+  required DateTime nowUtc,
+  String? actorUserId,
+  String? note,
+}) async {
+  final consumption = await context
+      .createConsumption(clock: () => nowUtc)
+      .call(
+        actorUserId: actorUserId ?? fixture.nurse.id,
+        roomId: roomId,
+        note: note,
+      );
+  return consumption.id;
+}
+
+/// Adds one consumed position to a draft.
+Future<ConsumptionLineReference> addConsumptionPosition(
+  TestContext context,
+  ConsumptionFixture fixture, {
+  required String consumptionId,
+  required String itemId,
+  String? batchId,
+  required String qty,
+  required DateTime nowUtc,
+  String? note,
+  String? actorUserId,
+}) => context
+    .addConsumptionLine(clock: () => nowUtc)
+    .call(
+      actorUserId: actorUserId ?? fixture.nurse.id,
+      consumptionId: consumptionId,
+      itemId: itemId,
+      batchId: batchId,
+      qty: Quantity.parse(qty),
+      note: note,
+    );
+
+/// `item|batch → consumption_lines.id` for one document.
+///
+/// The same grain as the partial unique indexes — with an empty batch segment for an item
+/// without expiry — so a test addresses a line the way the database identifies it.
+Future<Map<String, String>> consumptionLineIdsByPosition(
+  TestContext context,
+  String consumptionId,
+) async {
+  final rows = await context.database
+      .customSelect(
+        'SELECT id, item_id, batch_id FROM consumption_lines '
+        'WHERE consumption_id = ? AND deleted_at IS NULL;',
+        variables: [Variable<String>(consumptionId)],
+      )
+      .get();
+  return {
+    for (final row in rows)
+      '${row.read<String>('item_id')}|${row.read<String?>('batch_id') ?? ''}':
+          row.read<String>('id'),
+  };
+}

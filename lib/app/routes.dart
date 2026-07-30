@@ -190,6 +190,45 @@ abstract final class AppRoutes {
   static const String disposalEdit = 'edit';
   static const String disposalEditName = 'disposalEdit';
 
+  // --- Pemakaian (Milestone 8) ----------------------------------------------
+
+  /// The Perawat's Pemakaian section, reached from *Stok Ruangan* (spec §4.2).
+  ///
+  /// The first section in this application whose documents are scoped to the acting
+  /// **person** rather than to a place: a nurse sees their own drafts and their own
+  /// posted history, never a colleague's (§14).
+  static const String consumptions = '/consumptions';
+  static const String consumptionsName = 'consumptions';
+
+  /// Nested under [consumptions], so the full path is `/consumptions/new`. Declared
+  /// **before** the `:id` pattern, or the literal segment would be matched as a document
+  /// id.
+  static const String consumptionNew = 'new';
+  static const String consumptionNewName = 'consumptionNew';
+
+  static const String consumptionDetail = ':id';
+  static const String consumptionDetailName = 'consumptionDetail';
+
+  /// `/consumptions/{id}/edit` — the form, nested under the detail route so both share
+  /// the same `:id`. A distinct route rather than a mode of the detail page, because the
+  /// editor additionally requires the document to still be a draft (G-S2) and that is a
+  /// *route* precondition the guard can enforce before anything is fetched.
+  static const String consumptionEdit = 'edit';
+  static const String consumptionEditName = 'consumptionEdit';
+
+  /// The Kepala Cabang's read-only Pemakaian history.
+  ///
+  /// A separate top-level path rather than a child of [consumptions], and the separation
+  /// is the point: the two are different *scopes*, not two views of one list. A nested
+  /// route would share a prefix with the nurse's own documents and make the redirect
+  /// decide between them by role, which is exactly the kind of shared path an IDOR hides
+  /// in.
+  static const String branchConsumptions = '/branch-consumptions';
+  static const String branchConsumptionsName = 'branchConsumptions';
+
+  static const String branchConsumptionDetail = ':id';
+  static const String branchConsumptionDetailName = 'branchConsumptionDetail';
+
   // There is deliberately no `/akses-ditolak` route. A refused document route
   // renders `AccessDeniedPage` *in place*, keeping the URL the user typed:
   // redirecting to a dedicated path would tell them, by the address bar alone,

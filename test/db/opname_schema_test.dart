@@ -69,7 +69,7 @@ void main() {
   }
 
   group('struktur tabel', () {
-    test('semua tabel schema v7 tersedia', () async {
+    test('semua tabel schema terkini tersedia', () async {
       final rows = await context.database
           .customSelect(
             "SELECT name FROM sqlite_master WHERE type = 'table' "
@@ -101,6 +101,8 @@ void main() {
         'distribution_lines',
         'disposals',
         'disposal_lines',
+        'consumptions',
+        'consumption_lines',
       });
     });
 

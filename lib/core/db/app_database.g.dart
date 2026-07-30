@@ -15194,6 +15194,1422 @@ class DisposalLinesCompanion extends UpdateCompanion<DisposalLineRow> {
   }
 }
 
+class $ConsumptionsTable extends Consumptions
+    with TableInfo<$ConsumptionsTable, ConsumptionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ConsumptionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>($ConsumptionsTable.$convertersyncStatus);
+  static const VerificationMeta _docNumberMeta = const VerificationMeta(
+    'docNumber',
+  );
+  @override
+  late final GeneratedColumn<String> docNumber = GeneratedColumn<String>(
+    'doc_number',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _branchIdMeta = const VerificationMeta(
+    'branchId',
+  );
+  @override
+  late final GeneratedColumn<String> branchId = GeneratedColumn<String>(
+    'branch_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES branches (id)',
+    ),
+  );
+  static const VerificationMeta _roomIdMeta = const VerificationMeta('roomId');
+  @override
+  late final GeneratedColumn<String> roomId = GeneratedColumn<String>(
+    'room_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES rooms (id)',
+    ),
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<ConsumptionStatus, String>
+  status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => ConsumptionStatus.draft.dbValue,
+  ).withConverter<ConsumptionStatus>($ConsumptionsTable.$converterstatus);
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _postedAtMeta = const VerificationMeta(
+    'postedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> postedAt = GeneratedColumn<DateTime>(
+    'posted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _postedByMeta = const VerificationMeta(
+    'postedBy',
+  );
+  @override
+  late final GeneratedColumn<String> postedBy = GeneratedColumn<String>(
+    'posted_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    docNumber,
+    branchId,
+    roomId,
+    createdBy,
+    status,
+    note,
+    postedAt,
+    postedBy,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'consumptions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ConsumptionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('doc_number')) {
+      context.handle(
+        _docNumberMeta,
+        docNumber.isAcceptableOrUnknown(data['doc_number']!, _docNumberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_docNumberMeta);
+    }
+    if (data.containsKey('branch_id')) {
+      context.handle(
+        _branchIdMeta,
+        branchId.isAcceptableOrUnknown(data['branch_id']!, _branchIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_branchIdMeta);
+    }
+    if (data.containsKey('room_id')) {
+      context.handle(
+        _roomIdMeta,
+        roomId.isAcceptableOrUnknown(data['room_id']!, _roomIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_roomIdMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdByMeta);
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('posted_at')) {
+      context.handle(
+        _postedAtMeta,
+        postedAt.isAcceptableOrUnknown(data['posted_at']!, _postedAtMeta),
+      );
+    }
+    if (data.containsKey('posted_by')) {
+      context.handle(
+        _postedByMeta,
+        postedBy.isAcceptableOrUnknown(data['posted_by']!, _postedByMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ConsumptionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ConsumptionRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $ConsumptionsTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      docNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}doc_number'],
+      )!,
+      branchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}branch_id'],
+      )!,
+      roomId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}room_id'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      )!,
+      status: $ConsumptionsTable.$converterstatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}status'],
+        )!,
+      ),
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      postedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}posted_at'],
+      ),
+      postedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}posted_by'],
+      ),
+    );
+  }
+
+  @override
+  $ConsumptionsTable createAlias(String alias) {
+    return $ConsumptionsTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+  static TypeConverter<ConsumptionStatus, String> $converterstatus =
+      const ConsumptionStatusConverter();
+}
+
+class ConsumptionRow extends DataClass implements Insertable<ConsumptionRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+
+  /// Temporary local number `TMP-CNS-{uuid}` until a sync backend assigns the final
+  /// `CNS-{cabang}-{yyyyMMdd}-{seq}` (G-Y4). Minting a server-shaped number offline
+  /// would collide across devices — every room records its own usage.
+  final String docNumber;
+
+  /// The branch whose room the goods leave. Must be the room's branch and the
+  /// nurse's branch — cross-table equalities SQLite cannot express, so the use cases
+  /// enforce them and the posting transaction revalidates them.
+  final String branchId;
+
+  /// The one room the goods are used in. Fixed at creation: there is no statement
+  /// anywhere that updates this column.
+  final String roomId;
+
+  /// The Perawat who recorded the usage (G-A3).
+  final String createdBy;
+  final ConsumptionStatus status;
+
+  /// Free-text remark about the usage as a whole, e.g. *"pemakaian shift pagi"*.
+  ///
+  /// **Optional**, unlike `disposals.reason`. G-E7 makes a note mandatory on a
+  /// disposal because destruction has to be explained; nothing in the specification
+  /// asks a nurse to justify ordinary consumption, and inventing that requirement
+  /// would be inventing a rule. What the CHECK below does refuse is *whitespace*
+  /// pretending to be a remark.
+  ///
+  /// Never a place for patient information — see the class note.
+  final String? note;
+
+  /// UTC instant the consumption was posted and the room balance fell (T-1).
+  final DateTime? postedAt;
+
+  /// Who posted it. Null exactly while the document is a draft.
+  final String? postedBy;
+  const ConsumptionRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.docNumber,
+    required this.branchId,
+    required this.roomId,
+    required this.createdBy,
+    required this.status,
+    this.note,
+    this.postedAt,
+    this.postedBy,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $ConsumptionsTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    map['doc_number'] = Variable<String>(docNumber);
+    map['branch_id'] = Variable<String>(branchId);
+    map['room_id'] = Variable<String>(roomId);
+    map['created_by'] = Variable<String>(createdBy);
+    {
+      map['status'] = Variable<String>(
+        $ConsumptionsTable.$converterstatus.toSql(status),
+      );
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    if (!nullToAbsent || postedAt != null) {
+      map['posted_at'] = Variable<DateTime>(postedAt);
+    }
+    if (!nullToAbsent || postedBy != null) {
+      map['posted_by'] = Variable<String>(postedBy);
+    }
+    return map;
+  }
+
+  ConsumptionsCompanion toCompanion(bool nullToAbsent) {
+    return ConsumptionsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      docNumber: Value(docNumber),
+      branchId: Value(branchId),
+      roomId: Value(roomId),
+      createdBy: Value(createdBy),
+      status: Value(status),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      postedAt: postedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(postedAt),
+      postedBy: postedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(postedBy),
+    );
+  }
+
+  factory ConsumptionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ConsumptionRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      docNumber: serializer.fromJson<String>(json['docNumber']),
+      branchId: serializer.fromJson<String>(json['branchId']),
+      roomId: serializer.fromJson<String>(json['roomId']),
+      createdBy: serializer.fromJson<String>(json['createdBy']),
+      status: serializer.fromJson<ConsumptionStatus>(json['status']),
+      note: serializer.fromJson<String?>(json['note']),
+      postedAt: serializer.fromJson<DateTime?>(json['postedAt']),
+      postedBy: serializer.fromJson<String?>(json['postedBy']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'docNumber': serializer.toJson<String>(docNumber),
+      'branchId': serializer.toJson<String>(branchId),
+      'roomId': serializer.toJson<String>(roomId),
+      'createdBy': serializer.toJson<String>(createdBy),
+      'status': serializer.toJson<ConsumptionStatus>(status),
+      'note': serializer.toJson<String?>(note),
+      'postedAt': serializer.toJson<DateTime?>(postedAt),
+      'postedBy': serializer.toJson<String?>(postedBy),
+    };
+  }
+
+  ConsumptionRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    String? docNumber,
+    String? branchId,
+    String? roomId,
+    String? createdBy,
+    ConsumptionStatus? status,
+    Value<String?> note = const Value.absent(),
+    Value<DateTime?> postedAt = const Value.absent(),
+    Value<String?> postedBy = const Value.absent(),
+  }) => ConsumptionRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    docNumber: docNumber ?? this.docNumber,
+    branchId: branchId ?? this.branchId,
+    roomId: roomId ?? this.roomId,
+    createdBy: createdBy ?? this.createdBy,
+    status: status ?? this.status,
+    note: note.present ? note.value : this.note,
+    postedAt: postedAt.present ? postedAt.value : this.postedAt,
+    postedBy: postedBy.present ? postedBy.value : this.postedBy,
+  );
+  ConsumptionRow copyWithCompanion(ConsumptionsCompanion data) {
+    return ConsumptionRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      docNumber: data.docNumber.present ? data.docNumber.value : this.docNumber,
+      branchId: data.branchId.present ? data.branchId.value : this.branchId,
+      roomId: data.roomId.present ? data.roomId.value : this.roomId,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      status: data.status.present ? data.status.value : this.status,
+      note: data.note.present ? data.note.value : this.note,
+      postedAt: data.postedAt.present ? data.postedAt.value : this.postedAt,
+      postedBy: data.postedBy.present ? data.postedBy.value : this.postedBy,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConsumptionRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('docNumber: $docNumber, ')
+          ..write('branchId: $branchId, ')
+          ..write('roomId: $roomId, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('status: $status, ')
+          ..write('note: $note, ')
+          ..write('postedAt: $postedAt, ')
+          ..write('postedBy: $postedBy')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    docNumber,
+    branchId,
+    roomId,
+    createdBy,
+    status,
+    note,
+    postedAt,
+    postedBy,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ConsumptionRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.docNumber == this.docNumber &&
+          other.branchId == this.branchId &&
+          other.roomId == this.roomId &&
+          other.createdBy == this.createdBy &&
+          other.status == this.status &&
+          other.note == this.note &&
+          other.postedAt == this.postedAt &&
+          other.postedBy == this.postedBy);
+}
+
+class ConsumptionsCompanion extends UpdateCompanion<ConsumptionRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<String> docNumber;
+  final Value<String> branchId;
+  final Value<String> roomId;
+  final Value<String> createdBy;
+  final Value<ConsumptionStatus> status;
+  final Value<String?> note;
+  final Value<DateTime?> postedAt;
+  final Value<String?> postedBy;
+  final Value<int> rowid;
+  const ConsumptionsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.docNumber = const Value.absent(),
+    this.branchId = const Value.absent(),
+    this.roomId = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.status = const Value.absent(),
+    this.note = const Value.absent(),
+    this.postedAt = const Value.absent(),
+    this.postedBy = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ConsumptionsCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String docNumber,
+    required String branchId,
+    required String roomId,
+    required String createdBy,
+    this.status = const Value.absent(),
+    this.note = const Value.absent(),
+    this.postedAt = const Value.absent(),
+    this.postedBy = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : docNumber = Value(docNumber),
+       branchId = Value(branchId),
+       roomId = Value(roomId),
+       createdBy = Value(createdBy);
+  static Insertable<ConsumptionRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? docNumber,
+    Expression<String>? branchId,
+    Expression<String>? roomId,
+    Expression<String>? createdBy,
+    Expression<String>? status,
+    Expression<String>? note,
+    Expression<DateTime>? postedAt,
+    Expression<String>? postedBy,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (docNumber != null) 'doc_number': docNumber,
+      if (branchId != null) 'branch_id': branchId,
+      if (roomId != null) 'room_id': roomId,
+      if (createdBy != null) 'created_by': createdBy,
+      if (status != null) 'status': status,
+      if (note != null) 'note': note,
+      if (postedAt != null) 'posted_at': postedAt,
+      if (postedBy != null) 'posted_by': postedBy,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ConsumptionsCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<String>? docNumber,
+    Value<String>? branchId,
+    Value<String>? roomId,
+    Value<String>? createdBy,
+    Value<ConsumptionStatus>? status,
+    Value<String?>? note,
+    Value<DateTime?>? postedAt,
+    Value<String?>? postedBy,
+    Value<int>? rowid,
+  }) {
+    return ConsumptionsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      docNumber: docNumber ?? this.docNumber,
+      branchId: branchId ?? this.branchId,
+      roomId: roomId ?? this.roomId,
+      createdBy: createdBy ?? this.createdBy,
+      status: status ?? this.status,
+      note: note ?? this.note,
+      postedAt: postedAt ?? this.postedAt,
+      postedBy: postedBy ?? this.postedBy,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $ConsumptionsTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (docNumber.present) {
+      map['doc_number'] = Variable<String>(docNumber.value);
+    }
+    if (branchId.present) {
+      map['branch_id'] = Variable<String>(branchId.value);
+    }
+    if (roomId.present) {
+      map['room_id'] = Variable<String>(roomId.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(
+        $ConsumptionsTable.$converterstatus.toSql(status.value),
+      );
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (postedAt.present) {
+      map['posted_at'] = Variable<DateTime>(postedAt.value);
+    }
+    if (postedBy.present) {
+      map['posted_by'] = Variable<String>(postedBy.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConsumptionsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('docNumber: $docNumber, ')
+          ..write('branchId: $branchId, ')
+          ..write('roomId: $roomId, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('status: $status, ')
+          ..write('note: $note, ')
+          ..write('postedAt: $postedAt, ')
+          ..write('postedBy: $postedBy, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ConsumptionLinesTable extends ConsumptionLines
+    with TableInfo<$ConsumptionLinesTable, ConsumptionLineRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ConsumptionLinesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>($ConsumptionLinesTable.$convertersyncStatus);
+  static const VerificationMeta _consumptionIdMeta = const VerificationMeta(
+    'consumptionId',
+  );
+  @override
+  late final GeneratedColumn<String> consumptionId = GeneratedColumn<String>(
+    'consumption_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES consumptions (id)',
+    ),
+  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+    'item_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES items (id)',
+    ),
+  );
+  static const VerificationMeta _batchIdMeta = const VerificationMeta(
+    'batchId',
+  );
+  @override
+  late final GeneratedColumn<String> batchId = GeneratedColumn<String>(
+    'batch_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES item_batches (id)',
+    ),
+  );
+  static const VerificationMeta _qtyMeta = const VerificationMeta('qty');
+  @override
+  late final GeneratedColumn<int> qty = GeneratedColumn<int>(
+    'qty',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    consumptionId,
+    itemId,
+    batchId,
+    qty,
+    note,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'consumption_lines';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ConsumptionLineRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('consumption_id')) {
+      context.handle(
+        _consumptionIdMeta,
+        consumptionId.isAcceptableOrUnknown(
+          data['consumption_id']!,
+          _consumptionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_consumptionIdMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('batch_id')) {
+      context.handle(
+        _batchIdMeta,
+        batchId.isAcceptableOrUnknown(data['batch_id']!, _batchIdMeta),
+      );
+    }
+    if (data.containsKey('qty')) {
+      context.handle(
+        _qtyMeta,
+        qty.isAcceptableOrUnknown(data['qty']!, _qtyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_qtyMeta);
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ConsumptionLineRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ConsumptionLineRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $ConsumptionLinesTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      consumptionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}consumption_id'],
+      )!,
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}item_id'],
+      )!,
+      batchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}batch_id'],
+      ),
+      qty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}qty'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+    );
+  }
+
+  @override
+  $ConsumptionLinesTable createAlias(String alias) {
+    return $ConsumptionLinesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+}
+
+class ConsumptionLineRow extends DataClass
+    implements Insertable<ConsumptionLineRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+  final String consumptionId;
+  final String itemId;
+
+  /// The batch used. NULL, and only NULL, for an item without expiry (G-E2); the use
+  /// case enforces both directions because the rule depends on `items.has_expiry`,
+  /// which this table cannot read.
+  final String? batchId;
+
+  /// Consumed quantity in **milli-units** (Q-3). Strictly positive: a consumption of
+  /// nothing is not a line, and the ledger records changes rather than confirmations
+  /// (G-A1).
+  final int qty;
+
+  /// Optional per-line detail, e.g. *"1 ampul pecah saat dibuka"*. Adds specificity
+  /// to one position; never patient information.
+  final String? note;
+  const ConsumptionLineRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.consumptionId,
+    required this.itemId,
+    this.batchId,
+    required this.qty,
+    this.note,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $ConsumptionLinesTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    map['consumption_id'] = Variable<String>(consumptionId);
+    map['item_id'] = Variable<String>(itemId);
+    if (!nullToAbsent || batchId != null) {
+      map['batch_id'] = Variable<String>(batchId);
+    }
+    map['qty'] = Variable<int>(qty);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    return map;
+  }
+
+  ConsumptionLinesCompanion toCompanion(bool nullToAbsent) {
+    return ConsumptionLinesCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      consumptionId: Value(consumptionId),
+      itemId: Value(itemId),
+      batchId: batchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(batchId),
+      qty: Value(qty),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+    );
+  }
+
+  factory ConsumptionLineRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ConsumptionLineRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      consumptionId: serializer.fromJson<String>(json['consumptionId']),
+      itemId: serializer.fromJson<String>(json['itemId']),
+      batchId: serializer.fromJson<String?>(json['batchId']),
+      qty: serializer.fromJson<int>(json['qty']),
+      note: serializer.fromJson<String?>(json['note']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'consumptionId': serializer.toJson<String>(consumptionId),
+      'itemId': serializer.toJson<String>(itemId),
+      'batchId': serializer.toJson<String?>(batchId),
+      'qty': serializer.toJson<int>(qty),
+      'note': serializer.toJson<String?>(note),
+    };
+  }
+
+  ConsumptionLineRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    String? consumptionId,
+    String? itemId,
+    Value<String?> batchId = const Value.absent(),
+    int? qty,
+    Value<String?> note = const Value.absent(),
+  }) => ConsumptionLineRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    consumptionId: consumptionId ?? this.consumptionId,
+    itemId: itemId ?? this.itemId,
+    batchId: batchId.present ? batchId.value : this.batchId,
+    qty: qty ?? this.qty,
+    note: note.present ? note.value : this.note,
+  );
+  ConsumptionLineRow copyWithCompanion(ConsumptionLinesCompanion data) {
+    return ConsumptionLineRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      consumptionId: data.consumptionId.present
+          ? data.consumptionId.value
+          : this.consumptionId,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      batchId: data.batchId.present ? data.batchId.value : this.batchId,
+      qty: data.qty.present ? data.qty.value : this.qty,
+      note: data.note.present ? data.note.value : this.note,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConsumptionLineRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('consumptionId: $consumptionId, ')
+          ..write('itemId: $itemId, ')
+          ..write('batchId: $batchId, ')
+          ..write('qty: $qty, ')
+          ..write('note: $note')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    consumptionId,
+    itemId,
+    batchId,
+    qty,
+    note,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ConsumptionLineRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.consumptionId == this.consumptionId &&
+          other.itemId == this.itemId &&
+          other.batchId == this.batchId &&
+          other.qty == this.qty &&
+          other.note == this.note);
+}
+
+class ConsumptionLinesCompanion extends UpdateCompanion<ConsumptionLineRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<String> consumptionId;
+  final Value<String> itemId;
+  final Value<String?> batchId;
+  final Value<int> qty;
+  final Value<String?> note;
+  final Value<int> rowid;
+  const ConsumptionLinesCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.consumptionId = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.batchId = const Value.absent(),
+    this.qty = const Value.absent(),
+    this.note = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ConsumptionLinesCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String consumptionId,
+    required String itemId,
+    this.batchId = const Value.absent(),
+    required int qty,
+    this.note = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : consumptionId = Value(consumptionId),
+       itemId = Value(itemId),
+       qty = Value(qty);
+  static Insertable<ConsumptionLineRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? consumptionId,
+    Expression<String>? itemId,
+    Expression<String>? batchId,
+    Expression<int>? qty,
+    Expression<String>? note,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (consumptionId != null) 'consumption_id': consumptionId,
+      if (itemId != null) 'item_id': itemId,
+      if (batchId != null) 'batch_id': batchId,
+      if (qty != null) 'qty': qty,
+      if (note != null) 'note': note,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ConsumptionLinesCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<String>? consumptionId,
+    Value<String>? itemId,
+    Value<String?>? batchId,
+    Value<int>? qty,
+    Value<String?>? note,
+    Value<int>? rowid,
+  }) {
+    return ConsumptionLinesCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      consumptionId: consumptionId ?? this.consumptionId,
+      itemId: itemId ?? this.itemId,
+      batchId: batchId ?? this.batchId,
+      qty: qty ?? this.qty,
+      note: note ?? this.note,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $ConsumptionLinesTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (consumptionId.present) {
+      map['consumption_id'] = Variable<String>(consumptionId.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (batchId.present) {
+      map['batch_id'] = Variable<String>(batchId.value);
+    }
+    if (qty.present) {
+      map['qty'] = Variable<int>(qty.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConsumptionLinesCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('consumptionId: $consumptionId, ')
+          ..write('itemId: $itemId, ')
+          ..write('batchId: $batchId, ')
+          ..write('qty: $qty, ')
+          ..write('note: $note, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   late final $BranchesTable branches = $BranchesTable(this);
@@ -15228,6 +16644,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $DistributionLinesTable(this);
   late final $DisposalsTable disposals = $DisposalsTable(this);
   late final $DisposalLinesTable disposalLines = $DisposalLinesTable(this);
+  late final $ConsumptionsTable consumptions = $ConsumptionsTable(this);
+  late final $ConsumptionLinesTable consumptionLines = $ConsumptionLinesTable(
+    this,
+  );
   late final Index idxStockBalancesBatched = Index(
     'idx_stock_balances_batched',
     'CREATE UNIQUE INDEX idx_stock_balances_batched ON stock_balances (location_id, item_id, batch_id) WHERE batch_id IS NOT NULL',
@@ -15496,6 +16916,54 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_disposal_lines_position',
     'CREATE UNIQUE INDEX idx_disposal_lines_position ON disposal_lines (disposal_id, item_id, batch_id) WHERE deleted_at IS NULL',
   );
+  late final Index idxConsumptionsBranchStatus = Index(
+    'idx_consumptions_branch_status',
+    'CREATE INDEX idx_consumptions_branch_status ON consumptions (branch_id, status)',
+  );
+  late final Index idxConsumptionsRoomStatus = Index(
+    'idx_consumptions_room_status',
+    'CREATE INDEX idx_consumptions_room_status ON consumptions (room_id, status)',
+  );
+  late final Index idxConsumptionsCreatedByStatus = Index(
+    'idx_consumptions_created_by_status',
+    'CREATE INDEX idx_consumptions_created_by_status ON consumptions (created_by, status)',
+  );
+  late final Index idxConsumptionsPostedByStatus = Index(
+    'idx_consumptions_posted_by_status',
+    'CREATE INDEX idx_consumptions_posted_by_status ON consumptions (posted_by, status)',
+  );
+  late final Index idxConsumptionsCreatedAt = Index(
+    'idx_consumptions_created_at',
+    'CREATE INDEX idx_consumptions_created_at ON consumptions (created_at)',
+  );
+  late final Index idxConsumptionsPostedAt = Index(
+    'idx_consumptions_posted_at',
+    'CREATE INDEX idx_consumptions_posted_at ON consumptions (posted_at)',
+  );
+  late final Index idxConsumptionsDocNumber = Index(
+    'idx_consumptions_doc_number',
+    'CREATE UNIQUE INDEX idx_consumptions_doc_number ON consumptions (doc_number)',
+  );
+  late final Index idxConsumptionLinesConsumption = Index(
+    'idx_consumption_lines_consumption',
+    'CREATE INDEX idx_consumption_lines_consumption ON consumption_lines (consumption_id)',
+  );
+  late final Index idxConsumptionLinesItem = Index(
+    'idx_consumption_lines_item',
+    'CREATE INDEX idx_consumption_lines_item ON consumption_lines (item_id)',
+  );
+  late final Index idxConsumptionLinesBatch = Index(
+    'idx_consumption_lines_batch',
+    'CREATE INDEX idx_consumption_lines_batch ON consumption_lines (batch_id)',
+  );
+  late final Index idxConsumptionLinesBatched = Index(
+    'idx_consumption_lines_batched',
+    'CREATE UNIQUE INDEX idx_consumption_lines_batched ON consumption_lines (consumption_id, item_id, batch_id) WHERE batch_id IS NOT NULL AND deleted_at IS NULL',
+  );
+  late final Index idxConsumptionLinesUnbatched = Index(
+    'idx_consumption_lines_unbatched',
+    'CREATE UNIQUE INDEX idx_consumption_lines_unbatched ON consumption_lines (consumption_id, item_id) WHERE batch_id IS NULL AND deleted_at IS NULL',
+  );
   late final MasterDataDao masterDataDao = MasterDataDao(this as AppDatabase);
   late final InventoryDao inventoryDao = InventoryDao(this as AppDatabase);
   late final OpnameDao opnameDao = OpnameDao(this as AppDatabase);
@@ -15512,6 +16980,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this as AppDatabase,
   );
   late final DisposalDao disposalDao = DisposalDao(this as AppDatabase);
+  late final ConsumptionDao consumptionDao = ConsumptionDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -15539,6 +17010,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     distributionLines,
     disposals,
     disposalLines,
+    consumptions,
+    consumptionLines,
     idxStockBalancesBatched,
     idxStockBalancesUnbatched,
     idxStockMovementsItem,
@@ -15606,6 +17079,18 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxDisposalLinesItem,
     idxDisposalLinesBatch,
     idxDisposalLinesPosition,
+    idxConsumptionsBranchStatus,
+    idxConsumptionsRoomStatus,
+    idxConsumptionsCreatedByStatus,
+    idxConsumptionsPostedByStatus,
+    idxConsumptionsCreatedAt,
+    idxConsumptionsPostedAt,
+    idxConsumptionsDocNumber,
+    idxConsumptionLinesConsumption,
+    idxConsumptionLinesItem,
+    idxConsumptionLinesBatch,
+    idxConsumptionLinesBatched,
+    idxConsumptionLinesUnbatched,
   ];
   @override
   DriftDatabaseOptions get options =>

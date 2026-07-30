@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../enums/app_enums.dart';
 import '../quantity/quantity.dart';
 import 'converters/enum_converters.dart';
+import 'daos/consumption_dao.dart';
 import 'daos/delivery_order_dao.dart';
 import 'daos/disposal_dao.dart';
 import 'daos/distribution_dao.dart';
@@ -12,6 +13,7 @@ import 'daos/master_data_dao.dart';
 import 'daos/opname_dao.dart';
 import 'daos/purchase_request_dao.dart';
 import 'tables/base_columns.dart';
+import 'tables/consumption_tables.dart';
 import 'tables/delivery_tables.dart';
 import 'tables/disposal_tables.dart';
 import 'tables/distribution_tables.dart';
@@ -47,6 +49,8 @@ part 'app_database.g.dart';
     DistributionLines,
     Disposals,
     DisposalLines,
+    Consumptions,
+    ConsumptionLines,
   ],
   daos: [
     MasterDataDao,
@@ -57,6 +61,7 @@ part 'app_database.g.dart';
     GoodReceiptDao,
     DistributionDao,
     DisposalDao,
+    ConsumptionDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -76,8 +81,9 @@ class AppDatabase extends _$AppDatabase {
   /// * v7 — Milestone 5, Good Receipt (`good_receipts`, `good_receipt_lines`).
   /// * v8 — Milestone 6, Distribusi (`distributions`, `distribution_lines`).
   /// * v9 — Milestone 7, Pemusnahan (`disposals`, `disposal_lines`).
+  /// * v10 — Milestone 8, Pemakaian (`consumptions`, `consumption_lines`).
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -281,6 +287,40 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(disposals);
         await m.createTable(disposalLines);
         for (final statement in _v9DisposalIndexes) {
+          await customStatement(statement);
+        }
+      }
+      if (from < 10) {
+        // Milestone 8, purely additive in the sense the `from < 3` block
+        // established: two new tables and their indexes, and not one statement
+        // touching an existing column.
+        //
+        // The Pemakaian is the document that takes room stock *out of* the system
+        // (§2.2: `to_location_id` is NULL when goods leave through usage), and this
+        // step still does not migrate stock: the posting happens when a document is
+        // posted, at runtime, not when the schema is upgraded. So ledger quantities
+        // keep the scaling the `from < 2` block gave them, `stock_opnames` keeps the
+        // shape the `from < 4` rebuild left it in, and every Purchase Request,
+        // Delivery Order, Good Receipt, Distribusi and Pemusnahan row is untouched.
+        //
+        // In particular this step invents no consumptions for the room stock that
+        // has already been used — and some has been, because nothing before this
+        // milestone could record it. Whatever explained those balances is already in
+        // the ledger, most likely as an opname adjustment; writing documents to
+        // reinterpret it would be a migration asserting that a named nurse consumed
+        // a named batch on a date, which nobody recorded. The rooms simply start
+        // with the balances they have.
+        //
+        // It also has to leave `stock_opnames` alone for the second reason the
+        // `from < 5` block spells out: the `from < 4` block reads the *current* Dart
+        // definition of that table through `alterTable`, so a v10 that changed its
+        // shape would make a v3 → v10 upgrade land on the v10 shape at step 4 and
+        // then apply steps 5 to 10 on top. Pemakaian only references `branches`,
+        // `rooms`, `users`, `items` and `item_batches` by foreign key, so that trap
+        // stays shut.
+        await m.createTable(consumptions);
+        await m.createTable(consumptionLines);
+        for (final statement in _v10ConsumptionIndexes) {
           await customStatement(statement);
         }
       }
@@ -561,5 +601,62 @@ class AppDatabase extends _$AppDatabase {
     'CREATE UNIQUE INDEX IF NOT EXISTS idx_disposal_lines_position '
         'ON disposal_lines (disposal_id, item_id, batch_id) '
         'WHERE deleted_at IS NULL;',
+  ];
+
+  /// The Pemakaian indexes **exactly as schema v10 defined them**.
+  ///
+  /// Frozen as literal SQL for the reason [_v3OpnameIndexes] spells out: a migration
+  /// step must keep doing what it did the day it shipped, so this list must not be
+  /// derived from `allSchemaEntities` — that getter always describes the current
+  /// schema, and a v11 index added to one of these tables would silently change what
+  /// the `from < 10` block creates.
+  ///
+  /// Three of these are load-bearing, in two different shapes:
+  ///
+  /// * `idx_consumptions_doc_number` is **unqualified**, like the disposal's and
+  ///   unlike every other document-number index in this schema. G-A3 is why —
+  ///   *"nomor dokumen berurut dan tidak dipakai ulang"* — and a consumption is the
+  ///   document that explains where room stock went, so a reissued number would let
+  ///   two rows answer to one reference. See the note on `Consumptions`.
+  /// * `idx_consumption_lines_batched` and `idx_consumption_lines_unbatched` are the
+  ///   partial pair that stops the same `(item, batch)` position appearing twice on
+  ///   one document, which would take double the quantity off the room's shelf while
+  ///   every per-line check still passed. `deleted_at IS NULL` is what lets a line
+  ///   removed from a draft be added back afterwards, and the split into two shapes
+  ///   exists because SQLite treats every NULL as distinct — one index over
+  ///   `(…, batch_id)` would let an item without expiry be added any number of times.
+  ///
+  /// There is deliberately **no** unique index involving `branch_id` and `room_id`: a
+  /// room may be the source of any number of consumptions, and the rule that the room
+  /// belongs to the header's branch is a cross-table one SQLite cannot express at
+  /// all — it lives in the use cases and is revalidated inside the posting
+  /// transaction.
+  static const List<String> _v10ConsumptionIndexes = [
+    'CREATE INDEX IF NOT EXISTS idx_consumptions_branch_status '
+        'ON consumptions (branch_id, status);',
+    'CREATE INDEX IF NOT EXISTS idx_consumptions_room_status '
+        'ON consumptions (room_id, status);',
+    'CREATE INDEX IF NOT EXISTS idx_consumptions_created_by_status '
+        'ON consumptions (created_by, status);',
+    'CREATE INDEX IF NOT EXISTS idx_consumptions_posted_by_status '
+        'ON consumptions (posted_by, status);',
+    'CREATE INDEX IF NOT EXISTS idx_consumptions_created_at '
+        'ON consumptions (created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_consumptions_posted_at '
+        'ON consumptions (posted_at);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_consumptions_doc_number '
+        'ON consumptions (doc_number);',
+    'CREATE INDEX IF NOT EXISTS idx_consumption_lines_consumption '
+        'ON consumption_lines (consumption_id);',
+    'CREATE INDEX IF NOT EXISTS idx_consumption_lines_item '
+        'ON consumption_lines (item_id);',
+    'CREATE INDEX IF NOT EXISTS idx_consumption_lines_batch '
+        'ON consumption_lines (batch_id);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_consumption_lines_batched '
+        'ON consumption_lines (consumption_id, item_id, batch_id) '
+        'WHERE batch_id IS NOT NULL AND deleted_at IS NULL;',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_consumption_lines_unbatched '
+        'ON consumption_lines (consumption_id, item_id) '
+        'WHERE batch_id IS NULL AND deleted_at IS NULL;',
   ];
 }

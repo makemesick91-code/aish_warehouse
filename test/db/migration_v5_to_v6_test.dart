@@ -77,6 +77,11 @@ void main() {
   /// exhaustive rather than being loosened to `containsAll` every milestone.
   const disposalTables = <String>['disposals', 'disposal_lines'];
 
+  /// The tables versions **after** this migration add. Named here rather than
+  /// omitted so the exhaustive table assertion below stays exhaustive: a v11 that
+  /// added a table would fail this test until somebody accounted for it.
+  const consumptionTables = <String>['consumptions', 'consumption_lines'];
+
   const deliveryIndexes = <String>[
     'idx_delivery_orders_pr_status',
     'idx_delivery_orders_status_created',
@@ -307,7 +312,7 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 9);
+      expect(row.read<int>('user_version'), 10);
 
       await database.close();
     });
@@ -329,6 +334,7 @@ void main() {
           ...goodReceiptTables,
           ...distributionTables,
           ...disposalTables,
+          ...consumptionTables,
         });
 
         await database.close();
@@ -763,7 +769,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 9);
+      expect(version.read<int>('user_version'), 10);
 
       final tables = await objectNames(second, 'table');
       expect(tables, containsAll(deliveryTables));
@@ -850,7 +856,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 9);
+        expect(version.read<int>('user_version'), 10);
 
         final tables = await objectNames(database, 'table');
         expect(tables, containsAll(deliveryTables));
