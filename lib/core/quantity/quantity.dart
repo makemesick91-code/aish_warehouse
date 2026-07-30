@@ -207,6 +207,32 @@ final class Quantity implements Comparable<Quantity> {
   Quantity scaledBy({required int numerator, required int denominator}) =>
       Quantity.fromMilliUnits(milliUnits * numerator ~/ denominator);
 
+  /// How much of [total] this quantity represents, in **permille** (`0 … 1000`).
+  ///
+  /// Exists for exactly one purpose: filling a progress bar. A widget must not
+  /// reach for [milliUnits] to work that out itself (Q-4), and it must not be handed
+  /// a `double` either — this type deliberately offers no conversion to one, and
+  /// adding a `toDouble()` "just for display" is how the rounding drift it exists to
+  /// prevent gets back in. So the ratio is computed the way everything else here is,
+  /// in integer arithmetic on the scaled values, and the caller divides by
+  /// [permilleScale] at the last moment for the widget that needs a fraction.
+  ///
+  /// Named for what it may be used for. Nothing decides a business rule from this
+  /// value: G-D2's ceiling, G-D5's completeness and G-P3's threshold are all
+  /// answered by exact comparison ([exceedsRatioOf], `==`, `>`), and a caller
+  /// reaching for a ratio to answer one of them would be reintroducing the bug.
+  ///
+  /// A zero or negative [total] yields `0`: "how far along is a request for
+  /// nothing" has no meaningful answer, and dividing by it would throw.
+  int displayPermilleOf(Quantity total) {
+    if (total.milliUnits <= 0) return 0;
+    final permille = milliUnits * permilleScale ~/ total.milliUnits;
+    return permille.clamp(0, permilleScale);
+  }
+
+  /// Denominator of [displayPermilleOf].
+  static const int permilleScale = 1000;
+
   /// The larger of two quantities — `max(zero, min − counted)` is how a Purchase
   /// Request suggestion clamps a surplus to nothing rather than to a negative
   /// order.

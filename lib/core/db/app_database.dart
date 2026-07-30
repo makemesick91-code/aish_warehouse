@@ -3,11 +3,13 @@ import 'package:drift/drift.dart';
 import '../enums/app_enums.dart';
 import '../quantity/quantity.dart';
 import 'converters/enum_converters.dart';
+import 'daos/delivery_order_dao.dart';
 import 'daos/inventory_dao.dart';
 import 'daos/master_data_dao.dart';
 import 'daos/opname_dao.dart';
 import 'daos/purchase_request_dao.dart';
 import 'tables/base_columns.dart';
+import 'tables/delivery_tables.dart';
 import 'tables/inventory_tables.dart';
 import 'tables/master_tables.dart';
 import 'tables/opname_tables.dart';
@@ -31,8 +33,16 @@ part 'app_database.g.dart';
     PurchaseRequests,
     PurchaseRequestOpnames,
     PurchaseRequestLines,
+    DeliveryOrders,
+    DeliveryOrderLines,
   ],
-  daos: [MasterDataDao, InventoryDao, OpnameDao, PurchaseRequestDao],
+  daos: [
+    MasterDataDao,
+    InventoryDao,
+    OpnameDao,
+    PurchaseRequestDao,
+    DeliveryOrderDao,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   /// The executor is injected so tests can pass an in-memory database while the
@@ -46,8 +56,10 @@ class AppDatabase extends _$AppDatabase {
   ///   without the lexical timestamp-order CHECK.
   /// * v5 — Milestone 3, Purchase Request (`purchase_requests`,
   ///   `purchase_request_opnames`, `purchase_request_lines`).
+  /// * v6 — Milestone 4, Delivery Order (`delivery_orders`,
+  ///   `delivery_order_lines`).
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -128,6 +140,32 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(purchaseRequestOpnames);
         await m.createTable(purchaseRequestLines);
         for (final statement in _v5PurchaseRequestIndexes) {
+          await customStatement(statement);
+        }
+      }
+      if (from < 6) {
+        // Milestone 4, purely additive in the sense the `from < 3` block
+        // established: two new tables and their indexes, and not one statement
+        // touching an existing column.
+        //
+        // The Delivery Order is the first document that *does* post to the
+        // ledger (spec §2.5), and this step still does not migrate stock — the
+        // posting happens when a document is shipped, at runtime, not when the
+        // schema is upgraded. So ledger quantities keep the scaling the
+        // `from < 2` block gave them, `stock_opnames` keeps the shape the
+        // `from < 4` rebuild left it in, and every Purchase Request row is
+        // untouched.
+        //
+        // It also has to leave `stock_opnames` alone for the second reason the
+        // `from < 5` block spells out: the `from < 4` block reads the *current*
+        // Dart definition of that table through `alterTable`, so a v6 that
+        // changed its shape would make a v3 → v6 upgrade land on the v6 shape at
+        // step 4 and then apply step 5 and step 6 on top. Delivery Order only
+        // references `purchase_requests`, `items`, `item_batches` and `users` by
+        // foreign key, so that trap stays shut.
+        await m.createTable(deliveryOrders);
+        await m.createTable(deliveryOrderLines);
+        for (final statement in _v6DeliveryOrderIndexes) {
           await customStatement(statement);
         }
       }
@@ -219,5 +257,50 @@ class AppDatabase extends _$AppDatabase {
         'idx_purchase_request_lines_item_unique '
         'ON purchase_request_lines (pr_id, item_id) '
         'WHERE deleted_at IS NULL;',
+  ];
+
+  /// The Delivery Order indexes **exactly as schema v6 defined them**.
+  ///
+  /// Frozen as literal SQL for the reason [_v3OpnameIndexes] spells out: a
+  /// migration step must keep doing what it did the day it shipped, so this list
+  /// must not be derived from `allSchemaEntities` — that getter always describes
+  /// the current schema, and a v7 index added to one of these tables would
+  /// silently change what the `from < 6` block creates.
+  ///
+  /// The two partial unique indexes on `delivery_order_lines` are the
+  /// load-bearing ones: they are what stops the same `(PR line, batch)` position
+  /// being allocated twice on one document, which would double the quantity a
+  /// shipment takes out of the warehouse while every per-line check still
+  /// passed. `deleted_at IS NULL` is what lets an allocation removed from a
+  /// `preparing` document be added back afterwards.
+  ///
+  /// There is deliberately **no** unique index on `delivery_orders.pr_id`: spec
+  /// §2.3 allows one Purchase Request to have several Delivery Orders, and
+  /// partial shipment (G-D2) depends on it.
+  static const List<String> _v6DeliveryOrderIndexes = [
+    'CREATE INDEX IF NOT EXISTS idx_delivery_orders_pr_status '
+        'ON delivery_orders (pr_id, status);',
+    'CREATE INDEX IF NOT EXISTS idx_delivery_orders_status_created '
+        'ON delivery_orders (status, created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_delivery_orders_prepared_by_status '
+        'ON delivery_orders (prepared_by, status);',
+    'CREATE INDEX IF NOT EXISTS idx_delivery_orders_shipped_at '
+        'ON delivery_orders (shipped_at);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_delivery_orders_doc_number '
+        'ON delivery_orders (doc_number) WHERE deleted_at IS NULL;',
+    'CREATE INDEX IF NOT EXISTS idx_delivery_order_lines_do '
+        'ON delivery_order_lines (do_id);',
+    'CREATE INDEX IF NOT EXISTS idx_delivery_order_lines_pr_line '
+        'ON delivery_order_lines (pr_line_id);',
+    'CREATE INDEX IF NOT EXISTS idx_delivery_order_lines_item '
+        'ON delivery_order_lines (item_id);',
+    'CREATE INDEX IF NOT EXISTS idx_delivery_order_lines_batch '
+        'ON delivery_order_lines (batch_id);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_delivery_order_lines_batched '
+        'ON delivery_order_lines (do_id, pr_line_id, batch_id) '
+        'WHERE batch_id IS NOT NULL AND deleted_at IS NULL;',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_delivery_order_lines_unbatched '
+        'ON delivery_order_lines (do_id, pr_line_id) '
+        'WHERE batch_id IS NULL AND deleted_at IS NULL;',
   ];
 }

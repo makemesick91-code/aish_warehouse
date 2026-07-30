@@ -9472,6 +9472,1550 @@ class PurchaseRequestLinesCompanion
   }
 }
 
+class $DeliveryOrdersTable extends DeliveryOrders
+    with TableInfo<$DeliveryOrdersTable, DeliveryOrderRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DeliveryOrdersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>($DeliveryOrdersTable.$convertersyncStatus);
+  static const VerificationMeta _docNumberMeta = const VerificationMeta(
+    'docNumber',
+  );
+  @override
+  late final GeneratedColumn<String> docNumber = GeneratedColumn<String>(
+    'doc_number',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _prIdMeta = const VerificationMeta('prId');
+  @override
+  late final GeneratedColumn<String> prId = GeneratedColumn<String>(
+    'pr_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES purchase_requests (id)',
+    ),
+  );
+  static const VerificationMeta _preparedByMeta = const VerificationMeta(
+    'preparedBy',
+  );
+  @override
+  late final GeneratedColumn<String> preparedBy = GeneratedColumn<String>(
+    'prepared_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<DeliveryOrderStatus, String>
+  status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => DeliveryOrderStatus.preparing.dbValue,
+  ).withConverter<DeliveryOrderStatus>($DeliveryOrdersTable.$converterstatus);
+  static const VerificationMeta _shippedAtMeta = const VerificationMeta(
+    'shippedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> shippedAt = GeneratedColumn<DateTime>(
+    'shipped_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _shippedByMeta = const VerificationMeta(
+    'shippedBy',
+  );
+  @override
+  late final GeneratedColumn<String> shippedBy = GeneratedColumn<String>(
+    'shipped_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    docNumber,
+    prId,
+    preparedBy,
+    status,
+    shippedAt,
+    shippedBy,
+    note,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'delivery_orders';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DeliveryOrderRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('doc_number')) {
+      context.handle(
+        _docNumberMeta,
+        docNumber.isAcceptableOrUnknown(data['doc_number']!, _docNumberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_docNumberMeta);
+    }
+    if (data.containsKey('pr_id')) {
+      context.handle(
+        _prIdMeta,
+        prId.isAcceptableOrUnknown(data['pr_id']!, _prIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_prIdMeta);
+    }
+    if (data.containsKey('prepared_by')) {
+      context.handle(
+        _preparedByMeta,
+        preparedBy.isAcceptableOrUnknown(data['prepared_by']!, _preparedByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_preparedByMeta);
+    }
+    if (data.containsKey('shipped_at')) {
+      context.handle(
+        _shippedAtMeta,
+        shippedAt.isAcceptableOrUnknown(data['shipped_at']!, _shippedAtMeta),
+      );
+    }
+    if (data.containsKey('shipped_by')) {
+      context.handle(
+        _shippedByMeta,
+        shippedBy.isAcceptableOrUnknown(data['shipped_by']!, _shippedByMeta),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DeliveryOrderRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DeliveryOrderRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $DeliveryOrdersTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      docNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}doc_number'],
+      )!,
+      prId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pr_id'],
+      )!,
+      preparedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}prepared_by'],
+      )!,
+      status: $DeliveryOrdersTable.$converterstatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}status'],
+        )!,
+      ),
+      shippedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}shipped_at'],
+      ),
+      shippedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}shipped_by'],
+      ),
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+    );
+  }
+
+  @override
+  $DeliveryOrdersTable createAlias(String alias) {
+    return $DeliveryOrdersTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+  static TypeConverter<DeliveryOrderStatus, String> $converterstatus =
+      const DeliveryOrderStatusConverter();
+}
+
+class DeliveryOrderRow extends DataClass
+    implements Insertable<DeliveryOrderRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+
+  /// Temporary local number `TMP-DO-{uuid}` until a sync backend assigns the
+  /// final `DO-{yyyyMMdd}-{seq}` (G-Y4). Minting a server-shaped number offline
+  /// would collide across devices — and a warehouse ships from several of them.
+  final String docNumber;
+  final String prId;
+
+  /// The warehouse officer who assembled the shipment.
+  final String preparedBy;
+  final DeliveryOrderStatus status;
+
+  /// UTC instant the goods left the warehouse (T-1).
+  final DateTime? shippedAt;
+
+  /// The warehouse officer who posted the shipment.
+  final String? shippedBy;
+
+  /// Free text printed on the Surat Jalan — courier, vehicle, handover notes.
+  final String? note;
+  const DeliveryOrderRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.docNumber,
+    required this.prId,
+    required this.preparedBy,
+    required this.status,
+    this.shippedAt,
+    this.shippedBy,
+    this.note,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $DeliveryOrdersTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    map['doc_number'] = Variable<String>(docNumber);
+    map['pr_id'] = Variable<String>(prId);
+    map['prepared_by'] = Variable<String>(preparedBy);
+    {
+      map['status'] = Variable<String>(
+        $DeliveryOrdersTable.$converterstatus.toSql(status),
+      );
+    }
+    if (!nullToAbsent || shippedAt != null) {
+      map['shipped_at'] = Variable<DateTime>(shippedAt);
+    }
+    if (!nullToAbsent || shippedBy != null) {
+      map['shipped_by'] = Variable<String>(shippedBy);
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    return map;
+  }
+
+  DeliveryOrdersCompanion toCompanion(bool nullToAbsent) {
+    return DeliveryOrdersCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      docNumber: Value(docNumber),
+      prId: Value(prId),
+      preparedBy: Value(preparedBy),
+      status: Value(status),
+      shippedAt: shippedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shippedAt),
+      shippedBy: shippedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shippedBy),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+    );
+  }
+
+  factory DeliveryOrderRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DeliveryOrderRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      docNumber: serializer.fromJson<String>(json['docNumber']),
+      prId: serializer.fromJson<String>(json['prId']),
+      preparedBy: serializer.fromJson<String>(json['preparedBy']),
+      status: serializer.fromJson<DeliveryOrderStatus>(json['status']),
+      shippedAt: serializer.fromJson<DateTime?>(json['shippedAt']),
+      shippedBy: serializer.fromJson<String?>(json['shippedBy']),
+      note: serializer.fromJson<String?>(json['note']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'docNumber': serializer.toJson<String>(docNumber),
+      'prId': serializer.toJson<String>(prId),
+      'preparedBy': serializer.toJson<String>(preparedBy),
+      'status': serializer.toJson<DeliveryOrderStatus>(status),
+      'shippedAt': serializer.toJson<DateTime?>(shippedAt),
+      'shippedBy': serializer.toJson<String?>(shippedBy),
+      'note': serializer.toJson<String?>(note),
+    };
+  }
+
+  DeliveryOrderRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    String? docNumber,
+    String? prId,
+    String? preparedBy,
+    DeliveryOrderStatus? status,
+    Value<DateTime?> shippedAt = const Value.absent(),
+    Value<String?> shippedBy = const Value.absent(),
+    Value<String?> note = const Value.absent(),
+  }) => DeliveryOrderRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    docNumber: docNumber ?? this.docNumber,
+    prId: prId ?? this.prId,
+    preparedBy: preparedBy ?? this.preparedBy,
+    status: status ?? this.status,
+    shippedAt: shippedAt.present ? shippedAt.value : this.shippedAt,
+    shippedBy: shippedBy.present ? shippedBy.value : this.shippedBy,
+    note: note.present ? note.value : this.note,
+  );
+  DeliveryOrderRow copyWithCompanion(DeliveryOrdersCompanion data) {
+    return DeliveryOrderRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      docNumber: data.docNumber.present ? data.docNumber.value : this.docNumber,
+      prId: data.prId.present ? data.prId.value : this.prId,
+      preparedBy: data.preparedBy.present
+          ? data.preparedBy.value
+          : this.preparedBy,
+      status: data.status.present ? data.status.value : this.status,
+      shippedAt: data.shippedAt.present ? data.shippedAt.value : this.shippedAt,
+      shippedBy: data.shippedBy.present ? data.shippedBy.value : this.shippedBy,
+      note: data.note.present ? data.note.value : this.note,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeliveryOrderRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('docNumber: $docNumber, ')
+          ..write('prId: $prId, ')
+          ..write('preparedBy: $preparedBy, ')
+          ..write('status: $status, ')
+          ..write('shippedAt: $shippedAt, ')
+          ..write('shippedBy: $shippedBy, ')
+          ..write('note: $note')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    docNumber,
+    prId,
+    preparedBy,
+    status,
+    shippedAt,
+    shippedBy,
+    note,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DeliveryOrderRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.docNumber == this.docNumber &&
+          other.prId == this.prId &&
+          other.preparedBy == this.preparedBy &&
+          other.status == this.status &&
+          other.shippedAt == this.shippedAt &&
+          other.shippedBy == this.shippedBy &&
+          other.note == this.note);
+}
+
+class DeliveryOrdersCompanion extends UpdateCompanion<DeliveryOrderRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<String> docNumber;
+  final Value<String> prId;
+  final Value<String> preparedBy;
+  final Value<DeliveryOrderStatus> status;
+  final Value<DateTime?> shippedAt;
+  final Value<String?> shippedBy;
+  final Value<String?> note;
+  final Value<int> rowid;
+  const DeliveryOrdersCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.docNumber = const Value.absent(),
+    this.prId = const Value.absent(),
+    this.preparedBy = const Value.absent(),
+    this.status = const Value.absent(),
+    this.shippedAt = const Value.absent(),
+    this.shippedBy = const Value.absent(),
+    this.note = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DeliveryOrdersCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String docNumber,
+    required String prId,
+    required String preparedBy,
+    this.status = const Value.absent(),
+    this.shippedAt = const Value.absent(),
+    this.shippedBy = const Value.absent(),
+    this.note = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : docNumber = Value(docNumber),
+       prId = Value(prId),
+       preparedBy = Value(preparedBy);
+  static Insertable<DeliveryOrderRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? docNumber,
+    Expression<String>? prId,
+    Expression<String>? preparedBy,
+    Expression<String>? status,
+    Expression<DateTime>? shippedAt,
+    Expression<String>? shippedBy,
+    Expression<String>? note,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (docNumber != null) 'doc_number': docNumber,
+      if (prId != null) 'pr_id': prId,
+      if (preparedBy != null) 'prepared_by': preparedBy,
+      if (status != null) 'status': status,
+      if (shippedAt != null) 'shipped_at': shippedAt,
+      if (shippedBy != null) 'shipped_by': shippedBy,
+      if (note != null) 'note': note,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DeliveryOrdersCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<String>? docNumber,
+    Value<String>? prId,
+    Value<String>? preparedBy,
+    Value<DeliveryOrderStatus>? status,
+    Value<DateTime?>? shippedAt,
+    Value<String?>? shippedBy,
+    Value<String?>? note,
+    Value<int>? rowid,
+  }) {
+    return DeliveryOrdersCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      docNumber: docNumber ?? this.docNumber,
+      prId: prId ?? this.prId,
+      preparedBy: preparedBy ?? this.preparedBy,
+      status: status ?? this.status,
+      shippedAt: shippedAt ?? this.shippedAt,
+      shippedBy: shippedBy ?? this.shippedBy,
+      note: note ?? this.note,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $DeliveryOrdersTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (docNumber.present) {
+      map['doc_number'] = Variable<String>(docNumber.value);
+    }
+    if (prId.present) {
+      map['pr_id'] = Variable<String>(prId.value);
+    }
+    if (preparedBy.present) {
+      map['prepared_by'] = Variable<String>(preparedBy.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(
+        $DeliveryOrdersTable.$converterstatus.toSql(status.value),
+      );
+    }
+    if (shippedAt.present) {
+      map['shipped_at'] = Variable<DateTime>(shippedAt.value);
+    }
+    if (shippedBy.present) {
+      map['shipped_by'] = Variable<String>(shippedBy.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeliveryOrdersCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('docNumber: $docNumber, ')
+          ..write('prId: $prId, ')
+          ..write('preparedBy: $preparedBy, ')
+          ..write('status: $status, ')
+          ..write('shippedAt: $shippedAt, ')
+          ..write('shippedBy: $shippedBy, ')
+          ..write('note: $note, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DeliveryOrderLinesTable extends DeliveryOrderLines
+    with TableInfo<$DeliveryOrderLinesTable, DeliveryOrderLineRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DeliveryOrderLinesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>(
+        $DeliveryOrderLinesTable.$convertersyncStatus,
+      );
+  static const VerificationMeta _doIdMeta = const VerificationMeta('doId');
+  @override
+  late final GeneratedColumn<String> doId = GeneratedColumn<String>(
+    'do_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES delivery_orders (id)',
+    ),
+  );
+  static const VerificationMeta _prLineIdMeta = const VerificationMeta(
+    'prLineId',
+  );
+  @override
+  late final GeneratedColumn<String> prLineId = GeneratedColumn<String>(
+    'pr_line_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES purchase_request_lines (id)',
+    ),
+  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+    'item_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES items (id)',
+    ),
+  );
+  static const VerificationMeta _batchIdMeta = const VerificationMeta(
+    'batchId',
+  );
+  @override
+  late final GeneratedColumn<String> batchId = GeneratedColumn<String>(
+    'batch_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES item_batches (id)',
+    ),
+  );
+  static const VerificationMeta _shippedQtyMeta = const VerificationMeta(
+    'shippedQty',
+  );
+  @override
+  late final GeneratedColumn<int> shippedQty = GeneratedColumn<int>(
+    'shipped_qty',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fefoOverrideReasonMeta =
+      const VerificationMeta('fefoOverrideReason');
+  @override
+  late final GeneratedColumn<String> fefoOverrideReason =
+      GeneratedColumn<String>(
+        'fefo_override_reason',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _nearExpiryConfirmedMeta =
+      const VerificationMeta('nearExpiryConfirmed');
+  @override
+  late final GeneratedColumn<bool> nearExpiryConfirmed = GeneratedColumn<bool>(
+    'near_expiry_confirmed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("near_expiry_confirmed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _nearExpiryNoteMeta = const VerificationMeta(
+    'nearExpiryNote',
+  );
+  @override
+  late final GeneratedColumn<String> nearExpiryNote = GeneratedColumn<String>(
+    'near_expiry_note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    doId,
+    prLineId,
+    itemId,
+    batchId,
+    shippedQty,
+    fefoOverrideReason,
+    nearExpiryConfirmed,
+    nearExpiryNote,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'delivery_order_lines';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DeliveryOrderLineRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('do_id')) {
+      context.handle(
+        _doIdMeta,
+        doId.isAcceptableOrUnknown(data['do_id']!, _doIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_doIdMeta);
+    }
+    if (data.containsKey('pr_line_id')) {
+      context.handle(
+        _prLineIdMeta,
+        prLineId.isAcceptableOrUnknown(data['pr_line_id']!, _prLineIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_prLineIdMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('batch_id')) {
+      context.handle(
+        _batchIdMeta,
+        batchId.isAcceptableOrUnknown(data['batch_id']!, _batchIdMeta),
+      );
+    }
+    if (data.containsKey('shipped_qty')) {
+      context.handle(
+        _shippedQtyMeta,
+        shippedQty.isAcceptableOrUnknown(data['shipped_qty']!, _shippedQtyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_shippedQtyMeta);
+    }
+    if (data.containsKey('fefo_override_reason')) {
+      context.handle(
+        _fefoOverrideReasonMeta,
+        fefoOverrideReason.isAcceptableOrUnknown(
+          data['fefo_override_reason']!,
+          _fefoOverrideReasonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('near_expiry_confirmed')) {
+      context.handle(
+        _nearExpiryConfirmedMeta,
+        nearExpiryConfirmed.isAcceptableOrUnknown(
+          data['near_expiry_confirmed']!,
+          _nearExpiryConfirmedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('near_expiry_note')) {
+      context.handle(
+        _nearExpiryNoteMeta,
+        nearExpiryNote.isAcceptableOrUnknown(
+          data['near_expiry_note']!,
+          _nearExpiryNoteMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DeliveryOrderLineRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DeliveryOrderLineRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $DeliveryOrderLinesTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      doId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}do_id'],
+      )!,
+      prLineId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pr_line_id'],
+      )!,
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}item_id'],
+      )!,
+      batchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}batch_id'],
+      ),
+      shippedQty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}shipped_qty'],
+      )!,
+      fefoOverrideReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fefo_override_reason'],
+      ),
+      nearExpiryConfirmed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}near_expiry_confirmed'],
+      )!,
+      nearExpiryNote: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}near_expiry_note'],
+      ),
+    );
+  }
+
+  @override
+  $DeliveryOrderLinesTable createAlias(String alias) {
+    return $DeliveryOrderLinesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+}
+
+class DeliveryOrderLineRow extends DataClass
+    implements Insertable<DeliveryOrderLineRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+  final String doId;
+
+  /// The requested position this allocation satisfies. Mandatory (spec §2.3:
+  /// *"Wajib merujuk baris PR"*).
+  final String prLineId;
+  final String itemId;
+
+  /// The batch the warehouse picked — FEFO by default (G-E3). NULL, and only
+  /// NULL, for an item without expiry (G-E2); the use case enforces both
+  /// directions because the rule depends on `items.has_expiry`.
+  final String? batchId;
+
+  /// Quantity in **milli-units**, matching `stock_balances.qty_on_hand` (Q-3).
+  /// Strictly positive: a zero allocation is not a shipment, it is an absent
+  /// line.
+  final int shippedQty;
+
+  /// Why the officer picked a batch that is not the FEFO suggestion (G-E3).
+  ///
+  /// Mandatory *when the selection violates FEFO*, which is a cross-table
+  /// question — it depends on the expiry dates and the current warehouse
+  /// balances of every other batch of the item — and is therefore enforced by
+  /// `ShipDeliveryOrderUseCase` and re-checked at ship time rather than by a
+  /// CHECK. What the constraint below can state is that a stored reason is never
+  /// blank.
+  final String? fefoOverrideReason;
+
+  /// Explicit acknowledgement that the batch has less than `expiry_alert_days`
+  /// of shelf life left (G-E4). Never defaulted to true anywhere.
+  final bool nearExpiryConfirmed;
+
+  /// Optional context for the confirmation, printed on the Surat Jalan.
+  final String? nearExpiryNote;
+  const DeliveryOrderLineRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.doId,
+    required this.prLineId,
+    required this.itemId,
+    this.batchId,
+    required this.shippedQty,
+    this.fefoOverrideReason,
+    required this.nearExpiryConfirmed,
+    this.nearExpiryNote,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $DeliveryOrderLinesTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    map['do_id'] = Variable<String>(doId);
+    map['pr_line_id'] = Variable<String>(prLineId);
+    map['item_id'] = Variable<String>(itemId);
+    if (!nullToAbsent || batchId != null) {
+      map['batch_id'] = Variable<String>(batchId);
+    }
+    map['shipped_qty'] = Variable<int>(shippedQty);
+    if (!nullToAbsent || fefoOverrideReason != null) {
+      map['fefo_override_reason'] = Variable<String>(fefoOverrideReason);
+    }
+    map['near_expiry_confirmed'] = Variable<bool>(nearExpiryConfirmed);
+    if (!nullToAbsent || nearExpiryNote != null) {
+      map['near_expiry_note'] = Variable<String>(nearExpiryNote);
+    }
+    return map;
+  }
+
+  DeliveryOrderLinesCompanion toCompanion(bool nullToAbsent) {
+    return DeliveryOrderLinesCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      doId: Value(doId),
+      prLineId: Value(prLineId),
+      itemId: Value(itemId),
+      batchId: batchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(batchId),
+      shippedQty: Value(shippedQty),
+      fefoOverrideReason: fefoOverrideReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fefoOverrideReason),
+      nearExpiryConfirmed: Value(nearExpiryConfirmed),
+      nearExpiryNote: nearExpiryNote == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nearExpiryNote),
+    );
+  }
+
+  factory DeliveryOrderLineRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DeliveryOrderLineRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      doId: serializer.fromJson<String>(json['doId']),
+      prLineId: serializer.fromJson<String>(json['prLineId']),
+      itemId: serializer.fromJson<String>(json['itemId']),
+      batchId: serializer.fromJson<String?>(json['batchId']),
+      shippedQty: serializer.fromJson<int>(json['shippedQty']),
+      fefoOverrideReason: serializer.fromJson<String?>(
+        json['fefoOverrideReason'],
+      ),
+      nearExpiryConfirmed: serializer.fromJson<bool>(
+        json['nearExpiryConfirmed'],
+      ),
+      nearExpiryNote: serializer.fromJson<String?>(json['nearExpiryNote']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'doId': serializer.toJson<String>(doId),
+      'prLineId': serializer.toJson<String>(prLineId),
+      'itemId': serializer.toJson<String>(itemId),
+      'batchId': serializer.toJson<String?>(batchId),
+      'shippedQty': serializer.toJson<int>(shippedQty),
+      'fefoOverrideReason': serializer.toJson<String?>(fefoOverrideReason),
+      'nearExpiryConfirmed': serializer.toJson<bool>(nearExpiryConfirmed),
+      'nearExpiryNote': serializer.toJson<String?>(nearExpiryNote),
+    };
+  }
+
+  DeliveryOrderLineRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    String? doId,
+    String? prLineId,
+    String? itemId,
+    Value<String?> batchId = const Value.absent(),
+    int? shippedQty,
+    Value<String?> fefoOverrideReason = const Value.absent(),
+    bool? nearExpiryConfirmed,
+    Value<String?> nearExpiryNote = const Value.absent(),
+  }) => DeliveryOrderLineRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    doId: doId ?? this.doId,
+    prLineId: prLineId ?? this.prLineId,
+    itemId: itemId ?? this.itemId,
+    batchId: batchId.present ? batchId.value : this.batchId,
+    shippedQty: shippedQty ?? this.shippedQty,
+    fefoOverrideReason: fefoOverrideReason.present
+        ? fefoOverrideReason.value
+        : this.fefoOverrideReason,
+    nearExpiryConfirmed: nearExpiryConfirmed ?? this.nearExpiryConfirmed,
+    nearExpiryNote: nearExpiryNote.present
+        ? nearExpiryNote.value
+        : this.nearExpiryNote,
+  );
+  DeliveryOrderLineRow copyWithCompanion(DeliveryOrderLinesCompanion data) {
+    return DeliveryOrderLineRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      doId: data.doId.present ? data.doId.value : this.doId,
+      prLineId: data.prLineId.present ? data.prLineId.value : this.prLineId,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      batchId: data.batchId.present ? data.batchId.value : this.batchId,
+      shippedQty: data.shippedQty.present
+          ? data.shippedQty.value
+          : this.shippedQty,
+      fefoOverrideReason: data.fefoOverrideReason.present
+          ? data.fefoOverrideReason.value
+          : this.fefoOverrideReason,
+      nearExpiryConfirmed: data.nearExpiryConfirmed.present
+          ? data.nearExpiryConfirmed.value
+          : this.nearExpiryConfirmed,
+      nearExpiryNote: data.nearExpiryNote.present
+          ? data.nearExpiryNote.value
+          : this.nearExpiryNote,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeliveryOrderLineRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('doId: $doId, ')
+          ..write('prLineId: $prLineId, ')
+          ..write('itemId: $itemId, ')
+          ..write('batchId: $batchId, ')
+          ..write('shippedQty: $shippedQty, ')
+          ..write('fefoOverrideReason: $fefoOverrideReason, ')
+          ..write('nearExpiryConfirmed: $nearExpiryConfirmed, ')
+          ..write('nearExpiryNote: $nearExpiryNote')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    doId,
+    prLineId,
+    itemId,
+    batchId,
+    shippedQty,
+    fefoOverrideReason,
+    nearExpiryConfirmed,
+    nearExpiryNote,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DeliveryOrderLineRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.doId == this.doId &&
+          other.prLineId == this.prLineId &&
+          other.itemId == this.itemId &&
+          other.batchId == this.batchId &&
+          other.shippedQty == this.shippedQty &&
+          other.fefoOverrideReason == this.fefoOverrideReason &&
+          other.nearExpiryConfirmed == this.nearExpiryConfirmed &&
+          other.nearExpiryNote == this.nearExpiryNote);
+}
+
+class DeliveryOrderLinesCompanion
+    extends UpdateCompanion<DeliveryOrderLineRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<String> doId;
+  final Value<String> prLineId;
+  final Value<String> itemId;
+  final Value<String?> batchId;
+  final Value<int> shippedQty;
+  final Value<String?> fefoOverrideReason;
+  final Value<bool> nearExpiryConfirmed;
+  final Value<String?> nearExpiryNote;
+  final Value<int> rowid;
+  const DeliveryOrderLinesCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.doId = const Value.absent(),
+    this.prLineId = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.batchId = const Value.absent(),
+    this.shippedQty = const Value.absent(),
+    this.fefoOverrideReason = const Value.absent(),
+    this.nearExpiryConfirmed = const Value.absent(),
+    this.nearExpiryNote = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DeliveryOrderLinesCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String doId,
+    required String prLineId,
+    required String itemId,
+    this.batchId = const Value.absent(),
+    required int shippedQty,
+    this.fefoOverrideReason = const Value.absent(),
+    this.nearExpiryConfirmed = const Value.absent(),
+    this.nearExpiryNote = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : doId = Value(doId),
+       prLineId = Value(prLineId),
+       itemId = Value(itemId),
+       shippedQty = Value(shippedQty);
+  static Insertable<DeliveryOrderLineRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? doId,
+    Expression<String>? prLineId,
+    Expression<String>? itemId,
+    Expression<String>? batchId,
+    Expression<int>? shippedQty,
+    Expression<String>? fefoOverrideReason,
+    Expression<bool>? nearExpiryConfirmed,
+    Expression<String>? nearExpiryNote,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (doId != null) 'do_id': doId,
+      if (prLineId != null) 'pr_line_id': prLineId,
+      if (itemId != null) 'item_id': itemId,
+      if (batchId != null) 'batch_id': batchId,
+      if (shippedQty != null) 'shipped_qty': shippedQty,
+      if (fefoOverrideReason != null)
+        'fefo_override_reason': fefoOverrideReason,
+      if (nearExpiryConfirmed != null)
+        'near_expiry_confirmed': nearExpiryConfirmed,
+      if (nearExpiryNote != null) 'near_expiry_note': nearExpiryNote,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DeliveryOrderLinesCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<String>? doId,
+    Value<String>? prLineId,
+    Value<String>? itemId,
+    Value<String?>? batchId,
+    Value<int>? shippedQty,
+    Value<String?>? fefoOverrideReason,
+    Value<bool>? nearExpiryConfirmed,
+    Value<String?>? nearExpiryNote,
+    Value<int>? rowid,
+  }) {
+    return DeliveryOrderLinesCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      doId: doId ?? this.doId,
+      prLineId: prLineId ?? this.prLineId,
+      itemId: itemId ?? this.itemId,
+      batchId: batchId ?? this.batchId,
+      shippedQty: shippedQty ?? this.shippedQty,
+      fefoOverrideReason: fefoOverrideReason ?? this.fefoOverrideReason,
+      nearExpiryConfirmed: nearExpiryConfirmed ?? this.nearExpiryConfirmed,
+      nearExpiryNote: nearExpiryNote ?? this.nearExpiryNote,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $DeliveryOrderLinesTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (doId.present) {
+      map['do_id'] = Variable<String>(doId.value);
+    }
+    if (prLineId.present) {
+      map['pr_line_id'] = Variable<String>(prLineId.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (batchId.present) {
+      map['batch_id'] = Variable<String>(batchId.value);
+    }
+    if (shippedQty.present) {
+      map['shipped_qty'] = Variable<int>(shippedQty.value);
+    }
+    if (fefoOverrideReason.present) {
+      map['fefo_override_reason'] = Variable<String>(fefoOverrideReason.value);
+    }
+    if (nearExpiryConfirmed.present) {
+      map['near_expiry_confirmed'] = Variable<bool>(nearExpiryConfirmed.value);
+    }
+    if (nearExpiryNote.present) {
+      map['near_expiry_note'] = Variable<String>(nearExpiryNote.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeliveryOrderLinesCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('doId: $doId, ')
+          ..write('prLineId: $prLineId, ')
+          ..write('itemId: $itemId, ')
+          ..write('batchId: $batchId, ')
+          ..write('shippedQty: $shippedQty, ')
+          ..write('fefoOverrideReason: $fefoOverrideReason, ')
+          ..write('nearExpiryConfirmed: $nearExpiryConfirmed, ')
+          ..write('nearExpiryNote: $nearExpiryNote, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   late final $BranchesTable branches = $BranchesTable(this);
@@ -9494,6 +11038,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $PurchaseRequestOpnamesTable(this);
   late final $PurchaseRequestLinesTable purchaseRequestLines =
       $PurchaseRequestLinesTable(this);
+  late final $DeliveryOrdersTable deliveryOrders = $DeliveryOrdersTable(this);
+  late final $DeliveryOrderLinesTable deliveryOrderLines =
+      $DeliveryOrderLinesTable(this);
   late final Index idxStockBalancesBatched = Index(
     'idx_stock_balances_batched',
     'CREATE UNIQUE INDEX idx_stock_balances_batched ON stock_balances (location_id, item_id, batch_id) WHERE batch_id IS NOT NULL',
@@ -9590,10 +11137,57 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_purchase_request_lines_item_unique',
     'CREATE UNIQUE INDEX idx_purchase_request_lines_item_unique ON purchase_request_lines (pr_id, item_id) WHERE deleted_at IS NULL',
   );
+  late final Index idxDeliveryOrdersPrStatus = Index(
+    'idx_delivery_orders_pr_status',
+    'CREATE INDEX idx_delivery_orders_pr_status ON delivery_orders (pr_id, status)',
+  );
+  late final Index idxDeliveryOrdersStatusCreated = Index(
+    'idx_delivery_orders_status_created',
+    'CREATE INDEX idx_delivery_orders_status_created ON delivery_orders (status, created_at)',
+  );
+  late final Index idxDeliveryOrdersPreparedByStatus = Index(
+    'idx_delivery_orders_prepared_by_status',
+    'CREATE INDEX idx_delivery_orders_prepared_by_status ON delivery_orders (prepared_by, status)',
+  );
+  late final Index idxDeliveryOrdersShippedAt = Index(
+    'idx_delivery_orders_shipped_at',
+    'CREATE INDEX idx_delivery_orders_shipped_at ON delivery_orders (shipped_at)',
+  );
+  late final Index idxDeliveryOrdersDocNumber = Index(
+    'idx_delivery_orders_doc_number',
+    'CREATE UNIQUE INDEX idx_delivery_orders_doc_number ON delivery_orders (doc_number) WHERE deleted_at IS NULL',
+  );
+  late final Index idxDeliveryOrderLinesDo = Index(
+    'idx_delivery_order_lines_do',
+    'CREATE INDEX idx_delivery_order_lines_do ON delivery_order_lines (do_id)',
+  );
+  late final Index idxDeliveryOrderLinesPrLine = Index(
+    'idx_delivery_order_lines_pr_line',
+    'CREATE INDEX idx_delivery_order_lines_pr_line ON delivery_order_lines (pr_line_id)',
+  );
+  late final Index idxDeliveryOrderLinesItem = Index(
+    'idx_delivery_order_lines_item',
+    'CREATE INDEX idx_delivery_order_lines_item ON delivery_order_lines (item_id)',
+  );
+  late final Index idxDeliveryOrderLinesBatch = Index(
+    'idx_delivery_order_lines_batch',
+    'CREATE INDEX idx_delivery_order_lines_batch ON delivery_order_lines (batch_id)',
+  );
+  late final Index idxDeliveryOrderLinesBatched = Index(
+    'idx_delivery_order_lines_batched',
+    'CREATE UNIQUE INDEX idx_delivery_order_lines_batched ON delivery_order_lines (do_id, pr_line_id, batch_id) WHERE batch_id IS NOT NULL AND deleted_at IS NULL',
+  );
+  late final Index idxDeliveryOrderLinesUnbatched = Index(
+    'idx_delivery_order_lines_unbatched',
+    'CREATE UNIQUE INDEX idx_delivery_order_lines_unbatched ON delivery_order_lines (do_id, pr_line_id) WHERE batch_id IS NULL AND deleted_at IS NULL',
+  );
   late final MasterDataDao masterDataDao = MasterDataDao(this as AppDatabase);
   late final InventoryDao inventoryDao = InventoryDao(this as AppDatabase);
   late final OpnameDao opnameDao = OpnameDao(this as AppDatabase);
   late final PurchaseRequestDao purchaseRequestDao = PurchaseRequestDao(
+    this as AppDatabase,
+  );
+  late final DeliveryOrderDao deliveryOrderDao = DeliveryOrderDao(
     this as AppDatabase,
   );
   @override
@@ -9615,6 +11209,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     purchaseRequests,
     purchaseRequestOpnames,
     purchaseRequestLines,
+    deliveryOrders,
+    deliveryOrderLines,
     idxStockBalancesBatched,
     idxStockBalancesUnbatched,
     idxStockMovementsItem,
@@ -9639,6 +11235,17 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxPurchaseRequestLinesPr,
     idxPurchaseRequestLinesItem,
     idxPurchaseRequestLinesItemUnique,
+    idxDeliveryOrdersPrStatus,
+    idxDeliveryOrdersStatusCreated,
+    idxDeliveryOrdersPreparedByStatus,
+    idxDeliveryOrdersShippedAt,
+    idxDeliveryOrdersDocNumber,
+    idxDeliveryOrderLinesDo,
+    idxDeliveryOrderLinesPrLine,
+    idxDeliveryOrderLinesItem,
+    idxDeliveryOrderLinesBatch,
+    idxDeliveryOrderLinesBatched,
+    idxDeliveryOrderLinesUnbatched,
   ];
   @override
   DriftDatabaseOptions get options =>

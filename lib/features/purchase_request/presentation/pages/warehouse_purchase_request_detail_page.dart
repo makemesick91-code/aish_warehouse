@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../app/routes.dart';
 import '../../../../app/theme.dart';
 import '../../../../core/errors/failure_presenter.dart';
 import '../../../../core/time/app_date_time_formatter.dart';
@@ -35,6 +37,10 @@ class WarehousePurchaseRequestDetailPage extends ConsumerWidget {
 
   static const Key processButtonKey = ValueKey('warehousePrProcess');
   static const Key rejectButtonKey = ValueKey('warehousePrReject');
+
+  /// The Delivery Order entry point (§27.1). Not a write on this screen — it
+  /// navigates to the shipment form, which is where G-D1 is enforced.
+  static const Key createDeliveryKey = ValueKey('warehousePrCreateDelivery');
 
   /// Lets tests scroll the document without guessing which scrollable is which.
   static const Key bodyKey = ValueKey('warehousePurchaseRequestDetailBody');
@@ -182,6 +188,30 @@ class _Body extends ConsumerWidget {
             ],
           ),
         ),
+        // G-D1's entry point. Offered for `submitted` as well as `processing`,
+        // because creating the first Delivery Order is what moves the request to
+        // `processing` — and only while something is still outstanding (G-D2), which
+        // `DeliveryOrderCreatePage` shows and this button therefore does not have to
+        // decide.
+        if (request.isSubmitted || request.isProcessing)
+          SafeArea(
+            top: false,
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              child: OutlinedButton.icon(
+                key: WarehousePurchaseRequestDetailPage.createDeliveryKey,
+                onPressed: busy
+                    ? null
+                    : () => context.pushNamed(
+                        AppRoutes.warehouseDeliveryOrderNewName,
+                        pathParameters: {'purchaseRequestId': request.id},
+                      ),
+                icon: const Icon(Icons.local_shipping_outlined),
+                label: const Text('Buat Delivery Order'),
+              ),
+            ),
+          ),
         if (request.isSubmitted || request.isProcessing)
           SafeArea(
             child: Padding(

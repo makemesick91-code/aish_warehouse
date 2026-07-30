@@ -58,6 +58,18 @@ class PurchaseRequestStatusConverter
   String toSql(PurchaseRequestStatus value) => value.dbValue;
 }
 
+class DeliveryOrderStatusConverter
+    extends TypeConverter<DeliveryOrderStatus, String> {
+  const DeliveryOrderStatusConverter();
+
+  @override
+  DeliveryOrderStatus fromSql(String fromDb) =>
+      DeliveryOrderStatus.fromDbValue(fromDb);
+
+  @override
+  String toSql(DeliveryOrderStatus value) => value.dbValue;
+}
+
 class StockMovementTypeConverter
     extends TypeConverter<StockMovementType, String> {
   const StockMovementTypeConverter();

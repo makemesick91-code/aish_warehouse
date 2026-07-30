@@ -231,6 +231,64 @@ enum PurchaseRequestStatus {
   );
 }
 
+/// Lifecycle of a Delivery Order / Surat Jalan (schema v6, spec §2.3/§3.2).
+///
+/// ```
+/// preparing ──▶ shipped ──▶ received   (final)
+/// ```
+///
+/// Only the first transition belongs to Milestone 4. `received` is a value here
+/// because the database and the sync backend will store it and a row written by
+/// a later version — or by the server — must round-trip through the converter
+/// instead of throwing. Which transitions are permitted, and who may drive them,
+/// is [DeliveryOrderStatePolicy]'s to decide; this enum only answers questions
+/// about a single status.
+enum DeliveryOrderStatus {
+  preparing('preparing'),
+  shipped('shipped'),
+  received('received');
+
+  const DeliveryOrderStatus(this.dbValue);
+
+  final String dbValue;
+
+  bool get isPreparing => this == preparing;
+
+  bool get isShipped => this == shipped;
+
+  bool get isReceived => this == received;
+
+  /// Read-only permanently (G-S2). `shipped` is deliberately **not** final: the
+  /// goods are on their way but the branch has not checked them in yet.
+  bool get isFinal => this == received;
+
+  /// Only a document that has not left the warehouse may be edited (G-S1/G-S2).
+  bool get isEditable => this == preparing;
+
+  /// Whether the warehouse may still post this document to the ledger.
+  bool get canShip => this == preparing;
+
+  /// Whether the goods have physically left the central warehouse — the two
+  /// statuses whose quantities count towards G-D2's cumulative total.
+  bool get countsAsShipped => this == shipped || this == received;
+
+  /// Indonesian label for chips and document timelines (§4.3).
+  String get label => switch (this) {
+    preparing => 'Disiapkan',
+    shipped => 'Dikirim',
+    received => 'Diterima',
+  };
+
+  static DeliveryOrderStatus fromDbValue(String value) => values.firstWhere(
+    (status) => status.dbValue == value,
+    orElse: () => throw ArgumentError.value(
+      value,
+      'value',
+      'Unknown DeliveryOrderStatus',
+    ),
+  );
+}
+
 /// Document types referenced by ledger entries (`ref_doc_type`).
 abstract final class RefDocType {
   static const stockOpname = 'SO';

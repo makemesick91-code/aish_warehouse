@@ -15,11 +15,12 @@ void main() {
 
   tearDown(() => context.dispose());
 
-  test('schema version adalah 4', () {
+  test('schema version adalah 6', () {
     // v2 introduced fixed-point milli-unit quantities; v3 adds Stok Opname
     // as its own version rather than extending v2 (spec §6.3); v4 hardens
-    // `stock_opnames` by dropping the lexical timestamp-order CHECK.
-    expect(context.database.schemaVersion, 5);
+    // `stock_opnames` by dropping the lexical timestamp-order CHECK; v5 adds
+    // Purchase Request; v6 adds Delivery Order.
+    expect(context.database.schemaVersion, 6);
   });
 
   test('kolom kuantitas ledger bertipe INTEGER, bukan REAL', () async {

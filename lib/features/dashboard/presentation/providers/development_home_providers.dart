@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/db/database_providers.dart';
 import '../../../../core/db/seed/development_seed.dart';
+import '../../../delivery/presentation/providers/delivery_providers.dart';
 import '../../../inventory/domain/models/inventory_models.dart';
 import '../../../inventory/presentation/providers/inventory_providers.dart';
 import '../../../master/presentation/providers/master_providers.dart';
@@ -17,6 +18,7 @@ final developmentSeedProvider = Provider<DevelopmentSeed>(
     posting: ref.watch(stockPostingServiceProvider),
     opnames: ref.watch(opnameRepositoryProvider),
     requests: ref.watch(purchaseRequestRepositoryProvider),
+    deliveries: ref.watch(deliveryOrderRepositoryProvider),
   ),
 );
 

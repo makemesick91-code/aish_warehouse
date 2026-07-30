@@ -4,6 +4,15 @@ import 'package:aish_warehouse/core/enums/app_enums.dart';
 import 'package:aish_warehouse/core/quantity/quantity.dart';
 import 'package:aish_warehouse/core/time/app_time_zone.dart';
 import 'package:aish_warehouse/core/time/date_only.dart';
+import 'package:aish_warehouse/features/delivery/data/repositories/drift_delivery_order_repository.dart';
+import 'package:aish_warehouse/features/delivery/domain/models/delivery_models.dart';
+import 'package:aish_warehouse/features/delivery/domain/repositories/delivery_order_repository.dart';
+import 'package:aish_warehouse/features/delivery/domain/services/delivery_warehouse_stock_reader.dart';
+import 'package:aish_warehouse/features/delivery/domain/use_cases/build_fefo_delivery_allocation_use_case.dart';
+import 'package:aish_warehouse/features/delivery/domain/use_cases/create_delivery_order_use_case.dart';
+import 'package:aish_warehouse/features/delivery/domain/use_cases/remove_delivery_order_line_use_case.dart';
+import 'package:aish_warehouse/features/delivery/domain/use_cases/ship_delivery_order_use_case.dart';
+import 'package:aish_warehouse/features/delivery/domain/use_cases/update_delivery_order_line_use_case.dart';
 import 'package:aish_warehouse/features/inventory/data/repositories/drift_inventory_repository.dart';
 import 'package:aish_warehouse/features/inventory/domain/repositories/inventory_repository.dart';
 import 'package:aish_warehouse/features/inventory/domain/services/stock_posting_service.dart';
@@ -42,6 +51,7 @@ class TestContext {
     required this.inventory,
     required this.opnames,
     required this.requests,
+    required this.deliveries,
     required this.posting,
     required this.clock,
   });
@@ -57,12 +67,14 @@ class TestContext {
     final requests = DriftPurchaseRequestRepository(
       database.purchaseRequestDao,
     );
+    final deliveries = DriftDeliveryOrderRepository(database.deliveryOrderDao);
     return TestContext._(
       database: database,
       master: master,
       inventory: inventory,
       opnames: opnames,
       requests: requests,
+      deliveries: deliveries,
       clock: clock,
       posting: StockPostingService(
         inventory: inventory,
@@ -78,6 +90,7 @@ class TestContext {
   final InventoryRepository inventory;
   final OpnameRepository opnames;
   final PurchaseRequestRepository requests;
+  final DeliveryOrderRepository deliveries;
   final StockPostingService posting;
 
   /// The injected UTC clock, or `null` when the real one is in use.
@@ -201,6 +214,72 @@ class TestContext {
     periods: eligiblePeriods(utcNow),
   );
 
+  // --- Delivery Order use cases ---------------------------------------------
+  //
+  // Each takes an optional clock so a test can sit on the day a batch expires, one
+  // day past it, or behind the document's own timestamps for the clock-skew rules
+  // (T-7). Omitting it falls back to the context's clock, and omitting that too
+  // uses the real one.
+
+  DeliveryWarehouseStockReader get deliveryStock =>
+      DeliveryWarehouseStockReader(inventory);
+
+  CreateDeliveryOrderUseCase createDeliveryOrder({
+    DateTime Function()? clock,
+    String Function()? idGenerator,
+  }) => CreateDeliveryOrderUseCase(
+    deliveries: deliveries,
+    requests: requests,
+    master: master,
+    clock: clock ?? this.clock,
+    idGenerator: idGenerator,
+  );
+
+  BuildFefoDeliveryAllocationUseCase allocateFefo({
+    DateTime Function()? clock,
+  }) => BuildFefoDeliveryAllocationUseCase(
+    deliveries: deliveries,
+    master: master,
+    stock: deliveryStock,
+    clock: clock ?? this.clock,
+  );
+
+  UpdateDeliveryOrderLineUseCase updateDeliveryLine({
+    DateTime Function()? clock,
+  }) => UpdateDeliveryOrderLineUseCase(
+    deliveries: deliveries,
+    master: master,
+    stock: deliveryStock,
+    clock: clock ?? this.clock,
+  );
+
+  RemoveDeliveryOrderLineUseCase get removeDeliveryLine =>
+      RemoveDeliveryOrderLineUseCase(deliveries: deliveries, master: master);
+
+  /// The ship use case, with both clocks pointing at the same instant.
+  ///
+  /// [posting] is injectable so a test can hand it a service that fails on a
+  /// chosen line and then assert that *nothing* was written — the rollback
+  /// assertion the atomicity rule exists for.
+  ShipDeliveryOrderUseCase shipDeliveryOrder({
+    DateTime Function()? clock,
+    StockPostingService? posting,
+  }) {
+    final effectiveClock = clock ?? this.clock;
+    return ShipDeliveryOrderUseCase(
+      deliveries: deliveries,
+      requests: requests,
+      master: master,
+      posting:
+          posting ??
+          (effectiveClock == null
+              ? this.posting
+              : postingWithClock(effectiveClock)),
+      stock: deliveryStock,
+      clock: effectiveClock,
+    );
+  }
+
   /// A posting service on the same database but with a different notion of
   /// "now", used to test expiry rules without waiting.
   StockPostingService postingWithClock(DateTime Function() clock) =>
@@ -212,6 +291,7 @@ class TestContext {
     posting: posting,
     opnames: opnames,
     requests: requests,
+    deliveries: deliveries,
     isDevelopmentBuild: true,
   );
 
@@ -222,6 +302,7 @@ class TestContext {
     posting: posting,
     opnames: opnames,
     requests: requests,
+    deliveries: deliveries,
     isDevelopmentBuild: false,
   );
 
@@ -338,6 +419,104 @@ class TestContext {
         )
         .getSingle();
     return row.read<int>('c');
+  }
+
+  // --- Delivery Order raw reads, for rollback and atomicity assertions -------
+  //
+  // All of these read the columns directly, so an assertion about a rolled-back
+  // transaction cannot be fooled by a cached repository read.
+
+  /// The stored status of one Delivery Order.
+  Future<String> deliveryOrderStatusOf(String doId) async {
+    final row = await database
+        .customSelect(
+          'SELECT status FROM delivery_orders WHERE id = ?;',
+          variables: [Variable<String>(doId)],
+        )
+        .getSingle();
+    return row.read<String>('status');
+  }
+
+  /// One raw column of a Delivery Order, for assertions about audit metadata.
+  Future<String?> deliveryOrderColumn(String doId, String column) async {
+    final row = await database
+        .customSelect(
+          'SELECT $column AS value FROM delivery_orders WHERE id = ?;',
+          variables: [Variable<String>(doId)],
+        )
+        .getSingle();
+    return row.read<String?>('value');
+  }
+
+  /// Live allocation count of one shipment, read without any join.
+  Future<int> deliveryLineCount(String doId) async {
+    final row = await database
+        .customSelect(
+          'SELECT COUNT(*) AS c FROM delivery_order_lines '
+          'WHERE do_id = ? AND deleted_at IS NULL;',
+          variables: [Variable<String>(doId)],
+        )
+        .getSingle();
+    return row.read<int>('c');
+  }
+
+  /// Ledger rows written against one Delivery Order.
+  ///
+  /// The assertion behind every rollback test: a failed shipment must leave
+  /// **zero** of these, whichever line it failed on.
+  Future<int> shipmentMovementCount(String doId) async {
+    final row = await database
+        .customSelect(
+          "SELECT COUNT(*) AS c FROM stock_movements WHERE ref_doc_type = 'DO' "
+          'AND ref_doc_id = ?;',
+          variables: [Variable<String>(doId)],
+        )
+        .getSingle();
+    return row.read<int>('c');
+  }
+
+  /// Every `shipment` movement of one document, as raw column values.
+  Future<List<Map<String, Object?>>> shipmentMovements(String doId) async {
+    final rows = await database
+        .customSelect(
+          'SELECT item_id, batch_id, from_location_id, to_location_id, qty, '
+          'movement_type, ref_doc_type, ref_doc_id, actor_user_id '
+          "FROM stock_movements WHERE ref_doc_type = 'DO' AND ref_doc_id = ? "
+          'ORDER BY created_at, id;',
+          variables: [Variable<String>(doId)],
+        )
+        .get();
+    return rows
+        .map(
+          (row) => <String, Object?>{
+            'item_id': row.read<String>('item_id'),
+            'batch_id': row.read<String?>('batch_id'),
+            'from_location_id': row.read<String?>('from_location_id'),
+            'to_location_id': row.read<String?>('to_location_id'),
+            'qty': row.read<int>('qty'),
+            'movement_type': row.read<String>('movement_type'),
+            'ref_doc_type': row.read<String?>('ref_doc_type'),
+            'ref_doc_id': row.read<String?>('ref_doc_id'),
+            'actor_user_id': row.read<String>('actor_user_id'),
+          },
+        )
+        .toList(growable: false);
+  }
+
+  /// Balance rows at one location, keyed `item|batch`, read straight from SQL.
+  Future<Map<String, int>> balancesAt(String locationId) async {
+    final rows = await database
+        .customSelect(
+          'SELECT item_id, batch_id, qty_on_hand FROM stock_balances '
+          'WHERE location_id = ? AND deleted_at IS NULL;',
+          variables: [Variable<String>(locationId)],
+        )
+        .get();
+    return {
+      for (final row in rows)
+        '${row.read<String>('item_id')}|${row.read<String?>('batch_id') ?? ''}':
+            row.read<int>('qty_on_hand'),
+    };
   }
 
   /// The stored status of one document, bypassing every Dart layer.
@@ -1105,3 +1284,467 @@ DateTime prWednesdayUtc() => DateTime.utc(2026, 7, 29, 3, 0);
 /// The same weekday one or more operational weeks earlier.
 DateTime prWeeksBefore(int weeks) =>
     prWednesdayUtc().subtract(Duration(days: 7 * weeks));
+
+/// A branch, a warehouse with stock, and a `processing` Purchase Request — the
+/// state every Delivery Order test starts from.
+///
+/// The quantities are the interesting part, and each one exists to make a specific
+/// rule reachable:
+///
+/// | item          | expiry | requested | warehouse stock                     |
+/// |---------------|--------|-----------|-------------------------------------|
+/// | `simpleItem`  | no     | `3`       | `2.5` — forces a **partial** shipment |
+/// | `batchItem`   | yes    | `4`       | `1.5` near + `2` soon + `6` safe + `3` expired |
+/// | `scarceItem`  | no     | `2`       | `0` — nothing to send at all          |
+///
+/// * `simpleItem` cannot be shipped in full, so G-D2's partial path and G-D5's
+///   "stays `processing`" path are both reachable without touching anything else.
+/// * `batchItem` has four batches covering every expiry case: `nearBatch` inside
+///   the alert window (needs a confirmation, G-E4), `soonBatch` and `safeBatch`
+///   further out, and `expiredBatch` holding real stock that must never ship. The
+///   FEFO order is deliberately *not* the batch-number order, so an allocator that
+///   sorted by name would fail.
+/// * `tieBatchA`/`tieBatchB` share an expiry date, which is the case a naive
+///   "diff against the canonical allocation" FEFO check gets wrong.
+class DeliveryFixture {
+  const DeliveryFixture({
+    required this.branch,
+    required this.otherBranch,
+    required this.warehouse,
+    required this.branchStore,
+    required this.warehouseUser,
+    required this.secondWarehouseUser,
+    required this.branchHead,
+    required this.otherBranchHead,
+    required this.nurse,
+    required this.simpleItem,
+    required this.batchItem,
+    required this.scarceItem,
+    required this.tieItem,
+    required this.nearBatch,
+    required this.soonBatch,
+    required this.safeBatch,
+    required this.expiredBatch,
+    required this.tieBatchA,
+    required this.tieBatchB,
+    required this.purchaseRequestId,
+    required this.simpleLineId,
+    required this.batchLineId,
+    required this.scarceLineId,
+    required this.tieLineId,
+  });
+
+  final MasterBranch branch;
+  final MasterBranch otherBranch;
+  final MasterLocation warehouse;
+  final MasterLocation branchStore;
+  final MasterUser warehouseUser;
+  final MasterUser secondWarehouseUser;
+  final MasterUser branchHead;
+  final MasterUser otherBranchHead;
+  final MasterUser nurse;
+
+  final MasterItem simpleItem;
+  final MasterItem batchItem;
+  final MasterItem scarceItem;
+  final MasterItem tieItem;
+
+  final MasterBatch nearBatch;
+  final MasterBatch soonBatch;
+  final MasterBatch safeBatch;
+  final MasterBatch expiredBatch;
+  final MasterBatch tieBatchA;
+  final MasterBatch tieBatchB;
+
+  /// A Purchase Request in `processing`, with one line per item above.
+  final String purchaseRequestId;
+
+  final String simpleLineId;
+  final String batchLineId;
+  final String scarceLineId;
+  final String tieLineId;
+}
+
+/// Builds [DeliveryFixture] against the injected [nowUtc].
+///
+/// Warehouse stock is placed **through the ledger** — inbound movements posted with
+/// a clock at which every batch is still valid — never by writing `stock_balances`
+/// directly, which is the same rule the production code follows (G-A1). The expired
+/// batch is stocked while it was still in date, because inbound refuses an expired
+/// batch (G-E4); that is precisely the situation a shipment then has to block.
+///
+/// The Purchase Request is written with raw SQL rather than through the create use
+/// case, and deliberately so: `CreatePurchaseRequestUseCase` derives its lines from
+/// stock opnames (G-P1), and going through it would make every delivery test depend
+/// on the suggestion arithmetic of the previous milestone. What these tests need is
+/// a request with exact requested quantities, which is what this writes.
+Future<DeliveryFixture> buildDeliveryFixture(
+  TestContext context, {
+  required DateTime nowUtc,
+}) async {
+  final master = context.master;
+  final today = AppTimeZone.operationalDate(nowUtc);
+
+  final branch = await master.ensureBranch(
+    code: 'CAB-01',
+    name: 'Cabang Uji',
+    address: 'Jl. Uji No. 1',
+  );
+  final otherBranch = await master.ensureBranch(
+    code: 'CAB-02',
+    name: 'Cabang Lain',
+  );
+  final room = await master.ensureRoom(
+    branchId: branch.id,
+    code: 'R1',
+    name: 'Ruang Dental 1',
+  );
+
+  final warehouse = await master.ensureLocation(
+    type: StockLocationType.warehouse,
+    name: 'Warehouse Pusat',
+  );
+  final branchStore = await master.ensureLocation(
+    type: StockLocationType.branchStore,
+    name: 'Gudang Cabang Uji',
+    branchId: branch.id,
+  );
+  await master.ensureLocation(
+    type: StockLocationType.room,
+    name: room.name,
+    branchId: branch.id,
+    roomId: room.id,
+  );
+
+  final warehouseUser = await master.ensureUser(
+    email: 'warehouse@test.local',
+    fullName: 'Petugas Warehouse Uji',
+    role: UserRole.warehouse,
+  );
+  final secondWarehouseUser = await master.ensureUser(
+    email: 'warehouse2@test.local',
+    fullName: 'Petugas Warehouse Kedua',
+    role: UserRole.warehouse,
+  );
+  final branchHead = await master.ensureUser(
+    email: 'kacab@test.local',
+    fullName: 'Kepala Cabang Uji',
+    role: UserRole.kepalaCabang,
+    branchId: branch.id,
+  );
+  final otherBranchHead = await master.ensureUser(
+    email: 'kacab2@test.local',
+    fullName: 'Kepala Cabang Lain',
+    role: UserRole.kepalaCabang,
+    branchId: otherBranch.id,
+  );
+  final nurse = await master.ensureUser(
+    email: 'perawat@test.local',
+    fullName: 'Perawat Uji',
+    role: UserRole.perawat,
+    branchId: branch.id,
+  );
+
+  final category = await master.ensureCategory('Alat Sekali Pakai');
+  final simpleItem = await master.ensureItem(
+    sku: 'DO-0001',
+    name: 'Masker Bedah',
+    categoryId: category.id,
+    unit: 'box',
+    minStockRoom: 5,
+    minStockBranch: 20,
+    hasExpiry: false,
+  );
+  final batchItem = await master.ensureItem(
+    sku: 'DO-0002',
+    name: 'Anestesi Lokal',
+    categoryId: category.id,
+    unit: 'ampul',
+    minStockRoom: 10,
+    minStockBranch: 40,
+    hasExpiry: true,
+  );
+  final scarceItem = await master.ensureItem(
+    sku: 'DO-0003',
+    name: 'Bonding Agent',
+    categoryId: category.id,
+    unit: 'botol',
+    minStockRoom: 3,
+    minStockBranch: 9,
+    hasExpiry: false,
+  );
+  final tieItem = await master.ensureItem(
+    sku: 'DO-0004',
+    name: 'Kasa Steril',
+    categoryId: category.id,
+    unit: 'roll',
+    minStockRoom: 4,
+    minStockBranch: 12,
+    hasExpiry: true,
+  );
+
+  // `expiry_alert_days` defaults to 30, so 12 days is inside the window and 25 is
+  // too; 300 is comfortably outside it.
+  final nearBatch = await master.ensureBatch(
+    itemId: batchItem.id,
+    batchNo: 'B-NEAR',
+    expiryDate: DateOnly.addDays(today, 12),
+  );
+  final soonBatch = await master.ensureBatch(
+    itemId: batchItem.id,
+    batchNo: 'A-SOON',
+    expiryDate: DateOnly.addDays(today, 25),
+  );
+  final safeBatch = await master.ensureBatch(
+    itemId: batchItem.id,
+    batchNo: 'C-SAFE',
+    expiryDate: DateOnly.addDays(today, 300),
+  );
+  final expiredBatch = await master.ensureBatch(
+    itemId: batchItem.id,
+    batchNo: 'D-EXPIRED',
+    expiryDate: DateOnly.addDays(today, -3),
+  );
+  // Same expiry date, different batch numbers: the tie case.
+  final tieBatchA = await master.ensureBatch(
+    itemId: tieItem.id,
+    batchNo: 'T-A',
+    expiryDate: DateOnly.addDays(today, 100),
+  );
+  final tieBatchB = await master.ensureBatch(
+    itemId: tieItem.id,
+    batchNo: 'T-B',
+    expiryDate: DateOnly.addDays(today, 100),
+  );
+
+  // Inbound at a clock well before every expiry date, so the expired batch can be
+  // stocked while it was still valid.
+  final earlyPosting = context.postingWithClock(
+    () => nowUtc.subtract(const Duration(days: 30)),
+  );
+  Future<void> place(String itemId, String? batchId, String qty) =>
+      earlyPosting.postInboundWarehouse(
+        itemId: itemId,
+        batchId: batchId,
+        toLocationId: warehouse.id,
+        qty: Quantity.parse(qty),
+        actorUserId: warehouseUser.id,
+        refDocType: RefDocType.seed,
+        refDocId: 'fixture-$itemId-${batchId ?? 'nobatch'}',
+        note: 'Saldo awal fixture',
+      );
+
+  await place(simpleItem.id, null, '2.5');
+  await place(batchItem.id, nearBatch.id, '1.5');
+  await place(batchItem.id, soonBatch.id, '2');
+  await place(batchItem.id, safeBatch.id, '6');
+  await place(batchItem.id, expiredBatch.id, '3');
+  await place(tieItem.id, tieBatchA.id, '2');
+  await place(tieItem.id, tieBatchB.id, '2');
+  // `scarceItem` is deliberately left with no warehouse stock at all.
+
+  final prId = await writeProcessingPurchaseRequest(
+    context,
+    branchId: branch.id,
+    requestedBy: branchHead.id,
+    processedBy: warehouseUser.id,
+    nowUtc: nowUtc,
+    lines: {
+      simpleItem.id: '3',
+      batchItem.id: '4',
+      scarceItem.id: '2',
+      tieItem.id: '3',
+    },
+  );
+
+  final lineIds = await purchaseRequestLineIdsByItem(context, prId);
+
+  return DeliveryFixture(
+    branch: branch,
+    otherBranch: otherBranch,
+    warehouse: warehouse,
+    branchStore: branchStore,
+    warehouseUser: warehouseUser,
+    secondWarehouseUser: secondWarehouseUser,
+    branchHead: branchHead,
+    otherBranchHead: otherBranchHead,
+    nurse: nurse,
+    simpleItem: simpleItem,
+    batchItem: batchItem,
+    scarceItem: scarceItem,
+    tieItem: tieItem,
+    nearBatch: nearBatch,
+    soonBatch: soonBatch,
+    safeBatch: safeBatch,
+    expiredBatch: expiredBatch,
+    tieBatchA: tieBatchA,
+    tieBatchB: tieBatchB,
+    purchaseRequestId: prId,
+    simpleLineId: lineIds[simpleItem.id]!,
+    batchLineId: lineIds[batchItem.id]!,
+    scarceLineId: lineIds[scarceItem.id]!,
+    tieLineId: lineIds[tieItem.id]!,
+  );
+}
+
+/// Writes one Purchase Request directly, in [status], with the exact requested
+/// quantities [lines] names (`itemId → "2.5"`).
+///
+/// Raw SQL on purpose. The production create path derives its lines from stock
+/// opnames (G-P1) and its quantities from the suggestion arithmetic (§14); a
+/// delivery test that went through it would be asserting the previous milestone's
+/// behaviour before it got to its own. What it does **not** bypass is any
+/// constraint: the CHECKs on `purchase_requests` still apply, which is why the
+/// audit timestamps below are filled in exactly as a real transition would leave
+/// them.
+Future<String> writeProcessingPurchaseRequest(
+  TestContext context, {
+  required String branchId,
+  required String requestedBy,
+  required String processedBy,
+  required DateTime nowUtc,
+  required Map<String, String> lines,
+  String status = 'processing',
+  String? prId,
+}) async {
+  final id = prId ?? 'pr-${branchId.hashCode.abs()}-${lines.length}-$status';
+  final submittedAt = nowUtc
+      .subtract(const Duration(hours: 2))
+      .toIso8601String();
+  final processingAt = nowUtc
+      .subtract(const Duration(hours: 1))
+      .toIso8601String();
+
+  await context.database.customStatement(
+    'INSERT INTO purchase_requests (id, created_at, updated_at, sync_status, '
+    'doc_number, branch_id, requested_by, status, submitted_at, processing_at, '
+    'processed_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);',
+    [
+      id,
+      nowUtc.subtract(const Duration(hours: 3)).toIso8601String(),
+      processingAt,
+      'pending',
+      'TMP-PR-$id',
+      branchId,
+      requestedBy,
+      status,
+      submittedAt,
+      // A `submitted` request has not been through the warehouse yet, so its
+      // processing pair must be NULL — the table's CHECK says so.
+      status == 'submitted' || status == 'draft' ? null : processingAt,
+      status == 'submitted' || status == 'draft' ? null : processedBy,
+    ],
+  );
+
+  var index = 0;
+  for (final entry in lines.entries) {
+    index += 1;
+    await context.database.customStatement(
+      'INSERT INTO purchase_request_lines (id, created_at, updated_at, '
+      'sync_status, pr_id, item_id, suggested_qty, requested_qty) '
+      'VALUES (?, ?, ?, ?, ?, ?, ?, ?);',
+      [
+        '$id-line-$index',
+        processingAt,
+        processingAt,
+        'pending',
+        id,
+        entry.key,
+        0,
+        Quantity.parse(entry.value).milliUnits,
+      ],
+    );
+  }
+  return id;
+}
+
+/// `itemId → purchase_request_lines.id` for one request.
+Future<Map<String, String>> purchaseRequestLineIdsByItem(
+  TestContext context,
+  String prId,
+) async {
+  final rows = await context.database
+      .customSelect(
+        'SELECT id, item_id FROM purchase_request_lines '
+        'WHERE pr_id = ? AND deleted_at IS NULL;',
+        variables: [Variable<String>(prId)],
+      )
+      .get();
+  return {
+    for (final row in rows) row.read<String>('item_id'): row.read<String>('id'),
+  };
+}
+
+/// `prLineId|batchId → delivery_order_lines.id` for one shipment.
+Future<Map<String, String>> deliveryLineIdsByAllocation(
+  TestContext context,
+  String doId,
+) async {
+  final rows = await context.database
+      .customSelect(
+        'SELECT id, pr_line_id, batch_id FROM delivery_order_lines '
+        'WHERE do_id = ? AND deleted_at IS NULL;',
+        variables: [Variable<String>(doId)],
+      )
+      .get();
+  return {
+    for (final row in rows)
+      '${row.read<String>('pr_line_id')}|${row.read<String?>('batch_id') ?? ''}':
+          row.read<String>('id'),
+  };
+}
+
+/// Creates a `preparing` shipment and allocates exactly [allocations] onto it.
+///
+/// `prLineId → (batchId, qty)`, written through the repository so the partial
+/// unique indexes and the CHECKs all apply. Used by the tests that care about what
+/// happens at *ship* time and need a document in a precise shape to get there.
+Future<String> prepareDeliveryOrder(
+  TestContext context,
+  DeliveryFixture fixture, {
+  required DateTime nowUtc,
+  required List<DeliveryAllocation> allocations,
+  String? actorUserId,
+}) async {
+  final order = await context
+      .createDeliveryOrder(clock: () => nowUtc)
+      .call(
+        actorUserId: actorUserId ?? fixture.warehouseUser.id,
+        purchaseRequestId: fixture.purchaseRequestId,
+      );
+  if (allocations.isNotEmpty) {
+    await context.deliveries.replacePreparingLines(
+      doId: order.id,
+      allocations: allocations,
+    );
+  }
+  return order.id;
+}
+
+/// One allocation of the fixture's expiry-tracked item.
+DeliveryAllocation batchAllocation(
+  DeliveryFixture fixture, {
+  required String batchId,
+  required String qty,
+  String? fefoOverrideReason,
+  bool nearExpiryConfirmed = false,
+  String? nearExpiryNote,
+}) => DeliveryAllocation(
+  prLineId: fixture.batchLineId,
+  itemId: fixture.batchItem.id,
+  batchId: batchId,
+  qty: Quantity.parse(qty),
+  fefoOverrideReason: fefoOverrideReason,
+  nearExpiryConfirmed: nearExpiryConfirmed,
+  nearExpiryNote: nearExpiryNote,
+);
+
+/// One allocation of the fixture's item without expiry.
+DeliveryAllocation simpleAllocation(
+  DeliveryFixture fixture, {
+  required String qty,
+}) => DeliveryAllocation(
+  prLineId: fixture.simpleLineId,
+  itemId: fixture.simpleItem.id,
+  qty: Quantity.parse(qty),
+);

@@ -53,6 +53,44 @@ abstract final class AppRoutes {
   static const String warehousePurchaseRequestDetailName =
       'warehousePurchaseRequestDetail';
 
+  // --- Delivery Order (Milestone 4) -----------------------------------------
+
+  /// The warehouse's shipments, across every branch.
+  static const String warehouseDeliveryOrders = '/warehouse/delivery-orders';
+  static const String warehouseDeliveryOrdersName = 'warehouseDeliveryOrders';
+
+  /// `/warehouse/delivery-orders/new/{purchaseRequestId}` — raise a shipment
+  /// from one request. Declared **before** the `:id` pattern, or the literal
+  /// `new` segment would be matched as a document id.
+  static const String warehouseDeliveryOrderNew = 'new/:purchaseRequestId';
+  static const String warehouseDeliveryOrderNewName =
+      'warehouseDeliveryOrderNew';
+
+  static const String warehouseDeliveryOrderDetail = ':id';
+  static const String warehouseDeliveryOrderDetailName =
+      'warehouseDeliveryOrderDetail';
+
+  /// `/warehouse/delivery-orders/{id}/edit` — the allocation editor, nested under
+  /// the detail route so both share the same `:id`.
+  static const String warehouseDeliveryOrderEdit = 'edit';
+  static const String warehouseDeliveryOrderEditName =
+      'warehouseDeliveryOrderEdit';
+
+  /// `/warehouse/delivery-orders/{id}/waybill` — the Surat Jalan, draft included.
+  static const String warehouseDeliveryOrderWaybill = 'waybill';
+  static const String warehouseDeliveryOrderWaybillName =
+      'warehouseDeliveryOrderWaybill';
+
+  /// The Kepala Cabang's incoming shipments — read-only in this milestone.
+  static const String deliveries = '/deliveries';
+  static const String deliveriesName = 'deliveries';
+
+  static const String deliveryDetail = ':id';
+  static const String deliveryDetailName = 'deliveryDetail';
+
+  static const String deliveryWaybill = 'waybill';
+  static const String deliveryWaybillName = 'deliveryWaybill';
+
   // There is deliberately no `/akses-ditolak` route. A refused document route
   // renders `AccessDeniedPage` *in place*, keeping the URL the user typed:
   // redirecting to a dedicated path would tell them, by the address bar alone,

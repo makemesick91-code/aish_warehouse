@@ -534,3 +534,280 @@ final class HistoricalPurchaseRequestReferenceMissingFailure
 
   final String prId;
 }
+
+// --- Delivery Order (Milestone 4) -------------------------------------------
+
+/// The Delivery Order does not exist, or has been soft deleted.
+final class DeliveryOrderNotFoundFailure extends AppFailure {
+  const DeliveryOrderNotFoundFailure(super.message, {required this.doId});
+
+  final String doId;
+}
+
+/// The line does not exist on this document.
+final class DeliveryOrderLineNotFoundFailure extends AppFailure {
+  const DeliveryOrderLineNotFoundFailure(super.message, {required this.lineId});
+
+  final String lineId;
+}
+
+/// G-S1/G-S2: the requested transition or edit is not allowed from the status the
+/// document is actually in.
+final class InvalidDeliveryOrderStateFailure extends AppFailure {
+  const InvalidDeliveryOrderStateFailure(
+    super.message, {
+    required this.doId,
+    required this.currentStatus,
+    this.attemptedStatus,
+  });
+
+  final String doId;
+  final DeliveryOrderStatus currentStatus;
+  final DeliveryOrderStatus? attemptedStatus;
+}
+
+/// The document has already been posted to the ledger.
+///
+/// Separate from [InvalidDeliveryOrderStateFailure] because the situation has its
+/// own remedy: nothing is wrong with the shipment, it simply already happened, and
+/// the officer needs the shipped document rather than a corrected draft.
+final class DeliveryOrderAlreadyShippedFailure extends AppFailure {
+  const DeliveryOrderAlreadyShippedFailure(
+    super.message, {
+    required this.doId,
+    this.shippedAt,
+  });
+
+  final String doId;
+
+  /// UTC instant (T-1).
+  final DateTime? shippedAt;
+}
+
+/// G-D1: the Purchase Request is not one a shipment may be raised against —
+/// still a draft, already shipped, closed, rejected or cancelled.
+final class InvalidPurchaseRequestForDeliveryFailure extends AppFailure {
+  const InvalidPurchaseRequestForDeliveryFailure(
+    super.message, {
+    required this.prId,
+    required this.currentStatus,
+  });
+
+  final String prId;
+  final PurchaseRequestStatus currentStatus;
+}
+
+/// A shipment with no allocations cannot be posted — there would be nothing to
+/// move and nothing to print.
+final class DeliveryOrderLineRequiredFailure extends AppFailure {
+  const DeliveryOrderLineRequiredFailure(super.message, {required this.doId});
+
+  final String doId;
+}
+
+/// G-D4: the item is not on the Purchase Request at all.
+final class DeliveryItemNotInPurchaseRequestFailure extends AppFailure {
+  const DeliveryItemNotInPurchaseRequestFailure(
+    super.message, {
+    required this.doId,
+    required this.itemId,
+  });
+
+  final String doId;
+  final String itemId;
+}
+
+/// G-D4: the allocation cites a Purchase Request line that belongs to another
+/// request, or names an item the line does not ask for.
+final class DeliveryPrLineMismatchFailure extends AppFailure {
+  const DeliveryPrLineMismatchFailure(
+    super.message, {
+    required this.doId,
+    required this.prLineId,
+    this.itemId,
+  });
+
+  final String doId;
+  final String prLineId;
+  final String? itemId;
+}
+
+/// The same `(PR line, batch)` position was allocated twice on one document.
+final class DuplicateDeliveryAllocationFailure extends AppFailure {
+  const DuplicateDeliveryAllocationFailure(
+    super.message, {
+    required this.doId,
+    required this.prLineId,
+    this.batchId,
+  });
+
+  final String doId;
+  final String prLineId;
+  final String? batchId;
+}
+
+/// G-D2: the cumulative shipped quantity of a requested position would exceed
+/// what the branch asked for.
+final class DeliveryQuantityExceedsRequestedFailure extends AppFailure {
+  const DeliveryQuantityExceedsRequestedFailure(
+    super.message, {
+    required this.prLineId,
+    required this.requested,
+    required this.alreadyShipped,
+    required this.attempted,
+  });
+
+  final String prLineId;
+  final Quantity requested;
+
+  /// Cumulative quantity of every `shipped`/`received` Delivery Order, read
+  /// inside the transaction that is about to post.
+  final Quantity alreadyShipped;
+
+  /// What this document adds on top.
+  final Quantity attempted;
+
+  Quantity get remaining => requested - alreadyShipped;
+}
+
+/// G-D3: the central warehouse does not hold enough of this item or batch.
+///
+/// Distinct from the generic [InsufficientStockFailure] so the Delivery Order UI
+/// can point at the allocation that is short rather than at the document.
+final class InsufficientWarehouseStockFailure extends AppFailure {
+  const InsufficientWarehouseStockFailure(
+    super.message, {
+    required this.itemId,
+    this.batchId,
+    required this.available,
+    required this.requested,
+  });
+
+  final String itemId;
+  final String? batchId;
+  final Quantity available;
+  final Quantity requested;
+}
+
+/// There is no central-warehouse stock location at all, so a shipment has no
+/// source to leave from (G-D3).
+final class WarehouseLocationNotFoundFailure extends AppFailure {
+  const WarehouseLocationNotFoundFailure(super.message);
+}
+
+/// There is more than one central-warehouse stock location.
+///
+/// Refused rather than resolved: which of two warehouses the goods left is a
+/// business fact, and picking one would post the ledger against a location
+/// nobody chose.
+final class AmbiguousWarehouseLocationFailure extends AppFailure {
+  const AmbiguousWarehouseLocationFailure(
+    super.message, {
+    required this.locationIds,
+  });
+
+  final List<String> locationIds;
+}
+
+/// G-E4: the batch is past its expiry date and is blocked from shipping
+/// outright. No confirmation and no note can let it through.
+final class ExpiredBatchForDeliveryFailure extends AppFailure {
+  const ExpiredBatchForDeliveryFailure(
+    super.message, {
+    required this.batchId,
+    required this.batchNo,
+    required this.expiryDate,
+  });
+
+  final String batchId;
+  final String batchNo;
+
+  /// Civil date — never timezone converted (T-8).
+  final DateTime expiryDate;
+}
+
+/// G-E4: the batch has less than `expiry_alert_days` of shelf life left and the
+/// officer has not confirmed it explicitly.
+final class NearExpiryConfirmationRequiredFailure extends AppFailure {
+  const NearExpiryConfirmationRequiredFailure(
+    super.message, {
+    required this.batchId,
+    required this.batchNo,
+    required this.remainingDays,
+    required this.expiryAlertDays,
+  });
+
+  final String batchId;
+  final String batchNo;
+
+  /// Whole operational days until the expiry date, GMT+8 (T-3/T-10).
+  final int remainingDays;
+  final int expiryAlertDays;
+}
+
+/// G-E3: a batch younger than the FEFO suggestion was picked without a reason.
+final class FefoOverrideReasonRequiredFailure extends AppFailure {
+  const FefoOverrideReasonRequiredFailure(
+    super.message, {
+    required this.batchId,
+    required this.batchNo,
+    required this.skippedBatchNo,
+  });
+
+  final String batchId;
+  final String batchNo;
+
+  /// The nearest-expiry batch that still has stock and was passed over — the one
+  /// fact that makes the warning actionable.
+  final String skippedBatchNo;
+}
+
+/// The batch does not belong to the item, or the item's expiry tracking and the
+/// allocation disagree (G-E1/G-E2).
+final class InvalidDeliveryBatchFailure extends AppFailure {
+  const InvalidDeliveryBatchFailure(
+    super.message, {
+    required this.itemId,
+    this.batchId,
+  });
+
+  final String itemId;
+  final String? batchId;
+}
+
+/// A guarded write affected no rows: somebody else changed the document between
+/// reading it and writing it. The caller must reload rather than retry blindly.
+final class ConcurrentDeliveryOrderUpdateFailure extends AppFailure {
+  const ConcurrentDeliveryOrderUpdateFailure(
+    super.message, {
+    required this.doId,
+  });
+
+  final String doId;
+}
+
+/// A master or Purchase Request row a Delivery Order depends on is physically
+/// gone.
+///
+/// The same distinction [HistoricalReferenceMissingFailure] draws for Stok
+/// Opname: a deactivated or soft-deleted row is still there and the shipment may
+/// still be posted against it, but a row that cannot be found at all means the
+/// reference is broken. Nothing may be invented, substituted or guessed to paper
+/// over it.
+final class HistoricalDeliveryReferenceMissingFailure extends AppFailure {
+  const HistoricalDeliveryReferenceMissingFailure(
+    super.message, {
+    required this.entity,
+    required this.id,
+    required this.doId,
+  });
+
+  /// The table whose row is missing: `items`, `item_batches`,
+  /// `purchase_request_lines`, `stock_locations`…
+  final String entity;
+
+  /// The id the document still points at.
+  final String id;
+
+  final String doId;
+}

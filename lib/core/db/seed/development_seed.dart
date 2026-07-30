@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../features/delivery/domain/repositories/delivery_order_repository.dart';
+import '../../../features/delivery/domain/services/delivery_order_state_policy.dart';
+import '../../../features/delivery/domain/use_cases/create_delivery_order_use_case.dart';
 import '../../../features/inventory/domain/repositories/inventory_repository.dart';
 import '../../../features/inventory/domain/services/stock_posting_service.dart';
 import '../../../features/master/domain/models/master_models.dart';
@@ -110,6 +113,7 @@ class DevelopmentSeed {
     required this._posting,
     required OpnameRepository opnames,
     required this._requests,
+    required this._deliveries,
     bool? isDevelopmentBuild,
   }) : _opnameRepository = opnames,
        _isDevelopmentBuild = isDevelopmentBuild ?? !kReleaseMode;
@@ -119,6 +123,7 @@ class DevelopmentSeed {
   final StockPostingService _posting;
   final OpnameRepository _opnameRepository;
   final PurchaseRequestRepository _requests;
+  final DeliveryOrderRepository _deliveries;
   final bool _isDevelopmentBuild;
 
   static const _categoryNames = <String>[
@@ -256,6 +261,45 @@ class DevelopmentSeed {
       hasExpiry: false,
       openingQty: '40',
     ),
+    // Milestone 4 demo material. `DEN-0011` is deliberately short in the
+    // warehouse relative to what the rooms are missing, so the first Delivery
+    // Order raised against a seeded request *has* to be partial (G-D2) — and the
+    // second one completes it, which is what makes the automatic
+    // `processing → shipped` transition (G-D5) demonstrable on a fresh install.
+    _SeedItem(
+      sku: 'DEN-0011',
+      name: 'Cotton Roll',
+      categoryName: 'Alat Sekali Pakai',
+      unit: 'box',
+      minStockRoom: 8,
+      minStockBranch: 24,
+      hasExpiry: false,
+      // Three decimals, so the decimal shipment path is exercised end to end.
+      openingQty: '2.375',
+    ),
+    // Four batches spanning every expiry case a Delivery Order has to handle:
+    // one comfortably safe, one *nearer* expiry that FEFO must pick first, one
+    // inside the 30-day alert window that needs an explicit confirmation (G-E4),
+    // and one already expired that must never appear as a choice at all.
+    _SeedItem(
+      sku: 'DEN-0012',
+      name: 'Kasa Steril Roll',
+      categoryName: 'Alat Sekali Pakai',
+      unit: 'roll',
+      minStockRoom: 6,
+      minStockBranch: 18,
+      hasExpiry: true,
+      openingQty: '0',
+      batches: [
+        // FEFO order: KSR-NEAR (12 days) → KSR-SOON (25) → KSR-SAFE (300).
+        _SeedBatch(batchNo: 'KSR-SAFE', daysUntilExpiry: 300, qty: '10'),
+        _SeedBatch(batchNo: 'KSR-SOON', daysUntilExpiry: 25, qty: '4'),
+        _SeedBatch(batchNo: 'KSR-NEAR', daysUntilExpiry: 12, qty: '1.5'),
+        // Expired, and holding stock on purpose: G-E4 must block it from a
+        // shipment while an opname can still report it on the shelf (G-E7).
+        _SeedBatch(batchNo: 'KSR-EXP', daysUntilExpiry: -8, qty: '3'),
+      ],
+    ),
   ];
 
   /// Opening stock of the three dental rooms, including decimal quantities and one
@@ -314,6 +358,16 @@ class DevelopmentSeed {
     ),
     // Ruang Dental 3 — the room whose count is a week old.
     _SeedRoomStock(roomCode: 'R3', sku: 'DEN-0009', qty: '1'),
+    // Milestone 4: both rooms are well below par on the two shipment demo items,
+    // so the suggested request asks for more than the warehouse can send at once.
+    _SeedRoomStock(roomCode: 'R1', sku: 'DEN-0011', qty: '1'),
+    _SeedRoomStock(roomCode: 'R2', sku: 'DEN-0011', qty: '0.5'),
+    _SeedRoomStock(
+      roomCode: 'R1',
+      sku: 'DEN-0012',
+      batchNo: 'KSR-SAFE',
+      qty: '1',
+    ),
   ];
 
   /// The counts the seed files, so `Buat Purchase Request` has eligible citations
@@ -443,6 +497,14 @@ class DevelopmentSeed {
           locationId: warehouse.id,
           qty: Quantity.parse(batchSpec.qty),
           actorUserId: warehouseUser.id,
+          // An already-expired batch cannot be *received* — inbound refuses it
+          // (G-E4) — but it can perfectly well be sitting on the warehouse shelf,
+          // because it was in date when it arrived. The seed has one clock, so it
+          // cannot replay that history; it states the resulting balance through an
+          // adjustment instead, which is the path G-E4 does not block and O-7
+          // exists for. The point of the position is that a Delivery Order must
+          // refuse it while it is still visibly there.
+          alreadyExpired: batchSpec.daysUntilExpiry < 0,
         );
       }
     }
@@ -628,6 +690,59 @@ class DevelopmentSeed {
     return request.id;
   }
 
+  /// Prepares one Delivery Order against the branch's active request, for
+  /// demonstrating the shipment screens.
+  ///
+  /// **Deliberately not part of [run]**, for the same reason
+  /// [seedSubmittedPurchaseRequest] is not: creating a document moves the request
+  /// to `processing`, and a developer's first walk through *Buat PR → Kirim ke
+  /// Warehouse → Mulai Proses* would then find the work already done. This is
+  /// opt-in for when the delivery side is what needs demonstrating.
+  ///
+  /// The document is left in `preparing` **without allocations**, and it is not
+  /// shipped. Shipping it here would take stock out of the warehouse before anybody
+  /// looked at the FEFO screen, and the batch balances the demo exists to show are
+  /// exactly what the shipment would consume.
+  ///
+  /// Returns the Delivery Order id, or `null` when there is no request in a state a
+  /// shipment may be raised against (G-D1).
+  Future<String?> seedPreparingDeliveryOrder() async {
+    if (!_isDevelopmentBuild) {
+      throw StateError(
+        'Seed pengembangan tidak boleh dijalankan pada build produksi.',
+      );
+    }
+
+    final users = await _master.activeUsers();
+    final officers = users.where((user) => user.role == UserRole.warehouse);
+    final heads = users.where((user) => user.role == UserRole.kepalaCabang);
+    if (officers.isEmpty || heads.isEmpty) return null;
+
+    final branchId = heads.first.branchId;
+    if (branchId == null) return null;
+
+    final request = await _requests.activeRequestForBranch(branchId);
+    if (request == null) return null;
+    if (!DeliveryOrderStatePolicy.canCreateFrom(request.status)) return null;
+
+    // Idempotent by the same mechanism the rest of the seed uses: a second run
+    // finds the document it created last time and adds nothing.
+    final existing = await _deliveries.listByPurchaseRequest(request.id);
+    if (existing.isNotEmpty) return existing.first.id;
+
+    final order =
+        await CreateDeliveryOrderUseCase(
+          deliveries: _deliveries,
+          requests: _requests,
+          master: _master,
+        ).call(
+          actorUserId: officers.first.id,
+          purchaseRequestId: request.id,
+          note: 'Surat Jalan demo seed pengembangan',
+        );
+    return order.id;
+  }
+
   Future<MasterItem?> _findItemBySku(String sku) async {
     final items = await _master.activeItems();
     final match = items.where((item) => item.sku == sku);
@@ -643,6 +758,7 @@ class DevelopmentSeed {
     required String locationId,
     required Quantity qty,
     required String actorUserId,
+    bool alreadyExpired = false,
   }) async {
     if (!qty.isPositive) return;
 
@@ -651,6 +767,20 @@ class DevelopmentSeed {
       refDocId: refDocId,
     );
     if (existing.isNotEmpty) return;
+
+    if (alreadyExpired) {
+      await _posting.postOpnameAdjustment(
+        locationId: locationId,
+        itemId: itemId,
+        batchId: batchId,
+        countedQty: qty,
+        actorUserId: actorUserId,
+        refDocType: RefDocType.seed,
+        refDocId: refDocId,
+        note: 'Saldo awal seed pengembangan (batch kedaluwarsa di rak)',
+      );
+      return;
+    }
 
     await _posting.postInboundWarehouse(
       itemId: itemId,

@@ -198,8 +198,14 @@ final warehousePurchaseRequestStatusFilterProvider =
 /// user re-runs the query rather than serving the previous branch from cache. A
 /// role without a branch — warehouse, super admin — emits an empty list rather
 /// than every branch's requests.
+///
+/// `autoDispose` because this is a **screen** stream, and the same reason
+/// [purchaseRequestDetailProvider] is: a branch-scoped query left subscribed after
+/// its screen closed is a cache entry that outlives the session it was scoped for.
+/// Rebuilding on the next visit costs one query; keeping it warm risks serving one
+/// branch's list to whoever logs in next.
 final branchPurchaseRequestListProvider =
-    StreamProvider<List<PurchaseRequestSummary>>((ref) {
+    StreamProvider.autoDispose<List<PurchaseRequestSummary>>((ref) {
       final branchId = ref.watch(actingBranchIdProvider);
       if (branchId == null) {
         return Stream.value(const <PurchaseRequestSummary>[]);
@@ -265,8 +271,13 @@ final branchesProvider = FutureProvider<List<MasterBranch>>(
 /// Deliberately *not* branch-scoped: the whole job spans branches. What replaces
 /// the branch predicate is the status set — a `draft` is device-authoritative
 /// until submitted (G-Y2) and never appears here, whatever the filter says.
+///
+/// `autoDispose` for the reason above, and more sharply so: this is the *unscoped*
+/// read. A cross-branch query that stays subscribed after the warehouse screen
+/// closes is exactly the cache entry a later branch session must not be able to
+/// resolve.
 final warehousePurchaseRequestQueueProvider =
-    StreamProvider<List<PurchaseRequestSummary>>((ref) {
+    StreamProvider.autoDispose<List<PurchaseRequestSummary>>((ref) {
       // Through `actingRoleProvider`, so this provider and the detail one below rest
       // on the same single source rather than each reaching into the session its own
       // way.

@@ -148,6 +148,31 @@ class OpnameAdjustmentLine {
   final String? note;
 }
 
+/// One allocation to post when a Delivery Order ships (G-D3).
+///
+/// Carries only what the ledger needs: which physical position leaves the
+/// warehouse, how much, and a note the movement records. The document, the
+/// requested position it satisfies and the expiry audit behind it are the
+/// Delivery Order's business — the ledger records that stock moved, not why the
+/// batch was chosen.
+class ShipmentPostingLine {
+  const ShipmentPostingLine({
+    required this.lineId,
+    required this.itemId,
+    this.batchId,
+    required this.qty,
+    this.note,
+  });
+
+  /// The Delivery Order line this allocation came from, so a failure can name it.
+  final String lineId;
+
+  final String itemId;
+  final String? batchId;
+  final Quantity qty;
+  final String? note;
+}
+
 /// Outcome of one adjusted position.
 class OpnameAdjustmentResult {
   const OpnameAdjustmentResult({

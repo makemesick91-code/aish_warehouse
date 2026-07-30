@@ -281,6 +281,18 @@ class DriftMasterDataRepository implements MasterDataRepository {
   }
 
   @override
+  Future<List<MasterLocation>> activeWarehouseLocations() async =>
+      (await _dao.warehouseLocations())
+          .map(_toLocation)
+          .toList(growable: false);
+
+  @override
+  Future<List<MasterLocation>> historicalWarehouseLocations() async =>
+      (await _dao.historicalWarehouseLocations())
+          .map(_toLocation)
+          .toList(growable: false);
+
+  @override
   Future<MasterSummary> summary() async {
     final counts = await _dao.counts();
     return MasterSummary(

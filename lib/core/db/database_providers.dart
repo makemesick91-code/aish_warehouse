@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app_database.dart';
+import 'daos/delivery_order_dao.dart';
 import 'daos/inventory_dao.dart';
 import 'daos/master_data_dao.dart';
 import 'daos/opname_dao.dart';
@@ -31,4 +32,8 @@ final opnameDaoProvider = Provider<OpnameDao>(
 
 final purchaseRequestDaoProvider = Provider<PurchaseRequestDao>(
   (ref) => ref.watch(appDatabaseProvider).purchaseRequestDao,
+);
+
+final deliveryOrderDaoProvider = Provider<DeliveryOrderDao>(
+  (ref) => ref.watch(appDatabaseProvider).deliveryOrderDao,
 );

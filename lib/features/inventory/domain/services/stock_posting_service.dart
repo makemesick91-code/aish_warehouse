@@ -320,6 +320,153 @@ class StockPostingService {
     return movement;
   }
 
+  /// Posts every allocation of a Delivery Order as **one** unit of work
+  /// (G-D3, G-T4).
+  ///
+  /// This method opens no transaction of its own: the caller — the ship use case —
+  /// already owns one, and that is precisely the point. Writing the movements,
+  /// decreasing the warehouse, flipping the document to `shipped` and, when the
+  /// order is complete, moving the Purchase Request to `shipped` all have to commit
+  /// or roll back together, so a failure on the last allocation cannot leave the
+  /// first one's movement behind. Calling [postTransfer] per line would make that
+  /// impossible — it opens a transaction each time — which is why no such loop
+  /// exists anywhere.
+  ///
+  /// ### Why `to_location_id` is NULL
+  ///
+  /// A shipment takes goods **out of** the warehouse and does not put them
+  /// anywhere yet. The branch's own store must not gain the stock until Good
+  /// Receipt has checked it in (spec §2.5: GR posts `good_receipt`, Gudang Cabang
+  /// + `received_qty`, and only for the lines the branch accepted). Crediting the
+  /// branch here would mean a shipment that was rejected on arrival had already
+  /// been counted as branch stock, and the correction would have to be a movement
+  /// nobody asked for. So the goods are in transit: one leg out now, one leg in
+  /// later. `stock_movements` allows exactly this — its CHECK requires *one* of the
+  /// two locations, not both.
+  ///
+  /// Every allocation is validated before **any** of them is written: item and
+  /// batch consistency (G-E1/G-E2), expiry (G-E4) and sufficiency (G-D3). Only
+  /// then does the posting loop start, and each balance is re-read as it goes, so
+  /// two allocations drawing on the same batch cannot both see the opening
+  /// quantity. The closing assertion re-reads every touched balance and refuses to
+  /// let the transaction commit if any of them came out negative — the invariant
+  /// G-A2 states, verified rather than assumed, because `assert` would be compiled
+  /// out of a release build and this is exactly the check that must hold in
+  /// production.
+  Future<List<InventoryMovement>> postShipmentInTransaction({
+    required String fromLocationId,
+    required List<ShipmentPostingLine> lines,
+    required String actorUserId,
+    required String deliveryOrderId,
+  }) async {
+    if (lines.isEmpty) {
+      throw const ValidationFailure(
+        'Pengiriman tanpa baris tidak dapat diposting.',
+      );
+    }
+
+    final source = await _requireLocation(fromLocationId);
+    if (source.type != StockLocationType.warehouse) {
+      throw InvalidLocationFailure(
+        'Pengiriman hanya boleh dilakukan dari warehouse pusat, bukan dari '
+        '"${source.name}".',
+      );
+    }
+
+    // --- validate the whole document first -----------------------------------
+    for (final line in lines) {
+      _requirePositiveQty(line.qty);
+      final item = await _requireItem(line.itemId);
+      final batch = await _validateBatch(item: item, batchId: line.batchId);
+      // Expired stock is blocked from a shipment outright (G-E4). No
+      // confirmation and no note reach this point.
+      _rejectExpiredBatch(batch);
+    }
+
+    // Sufficiency is checked against the **total** each position draws, not
+    // per line: two allocations of 3 against a balance of 5 must fail, and
+    // checking them one at a time would let both pass.
+    final requestedByKey = <String, Quantity>{};
+    for (final line in lines) {
+      final key = _balanceKey(line.itemId, line.batchId);
+      requestedByKey[key] = (requestedByKey[key] ?? Quantity.zero()) + line.qty;
+    }
+    for (final line in lines) {
+      final key = _balanceKey(line.itemId, line.batchId);
+      final wanted = requestedByKey[key];
+      if (wanted == null) continue;
+      await _assertSufficientStock(
+        locationId: fromLocationId,
+        itemId: line.itemId,
+        batchId: line.batchId,
+        qty: wanted,
+      );
+      // Checked once per distinct position.
+      requestedByKey.remove(key);
+    }
+
+    // --- post ----------------------------------------------------------------
+    final movements = <InventoryMovement>[];
+    final touched = <String, ({String itemId, String? batchId})>{};
+    for (final line in lines) {
+      final movement = await _append(
+        MovementDraft(
+          id: _newId(),
+          itemId: line.itemId,
+          batchId: line.batchId,
+          fromLocationId: fromLocationId,
+          // In transit: the branch gains nothing until Good Receipt posts.
+          toLocationId: null,
+          qty: line.qty,
+          movementType: StockMovementType.shipment,
+          actorUserId: actorUserId,
+          refDocType: RefDocType.deliveryOrder,
+          refDocId: deliveryOrderId,
+          note: line.note,
+        ),
+      );
+      movements.add(movement);
+
+      await _decrease(
+        locationId: fromLocationId,
+        itemId: line.itemId,
+        batchId: line.batchId,
+        qty: line.qty,
+      );
+      touched[_balanceKey(line.itemId, line.batchId)] = (
+        itemId: line.itemId,
+        batchId: line.batchId,
+      );
+    }
+
+    // Post-condition of G-A2/G-D3, verified rather than assumed.
+    for (final position in touched.values) {
+      final remaining = await _inventory.balanceQty(
+        locationId: fromLocationId,
+        itemId: position.itemId,
+        batchId: position.batchId,
+      );
+      if (remaining.isNegative) {
+        throw InsufficientStockFailure(
+          'Saldo warehouse menjadi negatif setelah pengiriman '
+          '(${remaining.format()}). Pengiriman dibatalkan.',
+          itemId: position.itemId,
+          locationId: fromLocationId,
+          batchId: position.batchId,
+          available: Quantity.zero(),
+          requested: -remaining,
+        );
+      }
+    }
+
+    return movements;
+  }
+
+  /// The identity of one balance row, as a map key. `item|batch`, with an empty
+  /// batch segment for items without expiry.
+  static String _balanceKey(String itemId, String? batchId) =>
+      '$itemId|${batchId ?? ''}';
+
   /// Removes expired or damaged stock from the system (G-E7). A reason is
   /// mandatory because disposal is irreversible in the physical world.
   Future<InventoryMovement> postDisposal({

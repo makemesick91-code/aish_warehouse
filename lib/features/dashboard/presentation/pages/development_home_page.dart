@@ -282,6 +282,34 @@ class _SessionCard extends ConsumerWidget {
                 ),
               ),
             ],
+            // Delivery Order entry points, per role for the same reason: the
+            // warehouse prepares and ships, the branch only reads what is on its
+            // way (§27/§29).
+            if (session.value?.canProcessPurchaseRequest ?? false) ...[
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('homeWarehouseDeliveryOrders'),
+                  onPressed: () =>
+                      context.pushNamed(AppRoutes.warehouseDeliveryOrdersName),
+                  icon: const Icon(Icons.local_shipping_outlined),
+                  label: const Text('Pengiriman (Warehouse)'),
+                ),
+              ),
+            ],
+            if (session.value?.canManagePurchaseRequest ?? false) ...[
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('homeBranchDeliveries'),
+                  onPressed: () => context.pushNamed(AppRoutes.deliveriesName),
+                  icon: const Icon(Icons.move_to_inbox_outlined),
+                  label: const Text('Pengiriman Masuk'),
+                ),
+              ),
+            ],
           ],
         ),
       ),

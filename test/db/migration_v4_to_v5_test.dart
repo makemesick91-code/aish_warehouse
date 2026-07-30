@@ -67,6 +67,14 @@ void main() {
     'purchase_request_lines',
   ];
 
+  /// Everything schema v6 adds on top. A v4 database reopened today runs the
+  /// whole remaining chain, so these appear as well — listing them is what keeps
+  /// the exhaustive assertion above honest instead of loosening it.
+  const deliveryOrderTables = <String>[
+    'delivery_orders',
+    'delivery_order_lines',
+  ];
+
   const purchaseRequestIndexes = <String>[
     'idx_purchase_requests_branch_status',
     'idx_purchase_requests_requested_by_status',
@@ -270,7 +278,7 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 5);
+      expect(row.read<int>('user_version'), 6);
 
       await database.close();
     });
@@ -281,8 +289,13 @@ void main() {
 
       final tables = await objectNames(database, 'table');
       expect(tables, containsAll(purchaseRequestTables));
-      // And nothing else appeared: v5 adds three tables, no more.
-      expect(tables, {...v4Tables, ...purchaseRequestTables});
+      // And nothing else appeared beyond what the versions after v5 add: v5
+      // itself contributes exactly three tables.
+      expect(tables, {
+        ...v4Tables,
+        ...purchaseRequestTables,
+        ...deliveryOrderTables,
+      });
 
       await database.close();
     });
@@ -515,7 +528,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 5);
+      expect(version.read<int>('user_version'), 6);
 
       final tables = await objectNames(second, 'table');
       expect(tables, containsAll(purchaseRequestTables));
@@ -588,7 +601,7 @@ void main() {
       final version = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 5);
+      expect(version.read<int>('user_version'), 6);
 
       // `10` whole units became `10000` milli-units — scaled once, not twice. A
       // second application of the `from < 2` block would leave `10000000`.
@@ -640,7 +653,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 5);
+        expect(version.read<int>('user_version'), 6);
 
         // v4's rebuild must still have happened on the way through.
         final row = await database

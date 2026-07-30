@@ -321,6 +321,40 @@ class MasterDataDao extends DatabaseAccessor<AppDatabase>
     users,
   )..where((t) => t.id.equals(id) & t.deletedAt.isNull())).getSingleOrNull();
 
+  /// Every live central-warehouse location, ordered deterministically.
+  ///
+  /// A list rather than a single row, and that is the whole point:
+  /// [warehouseLocation] uses `getSingleOrNull`, which *throws* when two rows
+  /// exist. A shipment must not fail with a driver error in that case — it has to
+  /// say that the warehouse is ambiguous and refuse, because guessing which of
+  /// two warehouses stock left is not a decision code may make (G-D3). The
+  /// caller counts the result and produces the right failure for 0 and for >1.
+  Future<List<StockLocation>> warehouseLocations() =>
+      (select(stockLocations)
+            ..where(
+              (t) =>
+                  t.type.equalsValue(StockLocationType.warehouse) &
+                  t.deletedAt.isNull(),
+            )
+            ..orderBy([
+              (t) => OrderingTerm.asc(t.createdAt),
+              (t) => OrderingTerm.asc(t.id),
+            ]))
+          .get();
+
+  /// Central-warehouse locations **including archived ones**, for reading
+  /// documents that already posted against them (§7.2).
+  Future<List<StockLocation>> historicalWarehouseLocations() =>
+      (select(stockLocations)
+            ..where((t) => t.type.equalsValue(StockLocationType.warehouse))
+            ..orderBy([
+              // `deleted_at IS NULL` is 1 for a live row, so descending puts the
+              // live one first; `created_at` keeps the rest deterministic.
+              (t) => OrderingTerm.desc(t.deletedAt.isNull()),
+              (t) => OrderingTerm.asc(t.createdAt),
+            ]))
+          .get();
+
   Future<StockLocation?> warehouseLocation() =>
       (select(stockLocations)..where(
             (t) =>

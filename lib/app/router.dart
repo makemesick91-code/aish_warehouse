@@ -3,12 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/session/current_user_session.dart';
+import '../features/delivery/domain/services/delivery_order_access_policy.dart';
 import '../features/opname/domain/services/opname_access_policy.dart';
 import '../features/purchase_request/domain/services/purchase_request_access_policy.dart';
+import 'guards/delivery_order_route_guard.dart';
 import 'guards/opname_route_guard.dart';
 import 'guards/purchase_request_route_guard.dart';
 import 'routes.dart';
 import '../features/dashboard/presentation/pages/development_home_page.dart';
+import '../features/delivery/presentation/pages/branch_delivery_list_page.dart';
+import '../features/delivery/presentation/pages/delivery_order_create_page.dart';
+import '../features/delivery/presentation/pages/delivery_order_detail_page.dart';
+import '../features/delivery/presentation/pages/delivery_order_form_page.dart';
+import '../features/delivery/presentation/pages/delivery_waybill_page.dart';
+import '../features/delivery/presentation/pages/warehouse_delivery_order_list_page.dart';
 import '../features/opname/presentation/pages/opname_form_page.dart';
 import '../features/opname/presentation/pages/opname_list_page.dart';
 import '../features/opname/presentation/pages/opname_review_detail_page.dart';
@@ -104,6 +112,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return purchaseRequestSectionFor(
               PurchaseRequestRouteKind.branchList,
             ).isGranted
+            ? null
+            : AppRoutes.home;
+      }
+
+      // Delivery Order. Same shape again: the rule is
+      // [DeliveryOrderAccessPolicy]'s, and the redirect only asks the cheap
+      // section half of it. Whether a *document* may be opened is the guard's
+      // question, because only the database knows which branch a shipment is
+      // addressed to and whether it has actually been sent.
+      DeliveryAccess deliverySectionFor(DeliveryRouteKind kind) =>
+          DeliveryOrderAccessPolicy.forSection(user: session.user, kind: kind);
+
+      if (location.startsWith(AppRoutes.warehouseDeliveryOrders)) {
+        return deliverySectionFor(DeliveryRouteKind.warehouseList).isGranted
+            ? null
+            : AppRoutes.home;
+      }
+      if (location.startsWith(AppRoutes.deliveries)) {
+        return deliverySectionFor(DeliveryRouteKind.branchList).isGranted
             ? null
             : AppRoutes.home;
       }
@@ -224,6 +251,112 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      GoRoute(
+        path: AppRoutes.warehouseDeliveryOrders,
+        name: AppRoutes.warehouseDeliveryOrdersName,
+        builder: (context, state) => const DeliverySectionGuard(
+          kind: DeliveryRouteKind.warehouseList,
+          builder: _warehouseDeliveryList,
+        ),
+        routes: [
+          // Listed first: the literal `new` segment must win over the `:id`
+          // pattern, or `/warehouse/delivery-orders/new/{pr}` would be read as a
+          // document id followed by a stray segment.
+          GoRoute(
+            path: AppRoutes.warehouseDeliveryOrderNew,
+            name: AppRoutes.warehouseDeliveryOrderNewName,
+            builder: (context, state) {
+              final prId = state.pathParameters['purchaseRequestId']!;
+              return DeliverySectionGuard(
+                kind: DeliveryRouteKind.warehouseCreate,
+                builder: (_) =>
+                    DeliveryOrderCreatePage(purchaseRequestId: prId),
+              );
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.warehouseDeliveryOrderDetail,
+            name: AppRoutes.warehouseDeliveryOrderDetailName,
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return DeliveryOrderRouteGuard(
+                kind: DeliveryRouteKind.warehouseDocument,
+                doId: id,
+                builder: (_) =>
+                    DeliveryOrderDetailPage(doId: id, branchScoped: false),
+              );
+            },
+            routes: [
+              GoRoute(
+                path: AppRoutes.warehouseDeliveryOrderEdit,
+                name: AppRoutes.warehouseDeliveryOrderEditName,
+                builder: (context, state) {
+                  final id = state.pathParameters['id']!;
+                  // A distinct kind, not the same one as the detail route: the
+                  // editor additionally requires the document to still be
+                  // `preparing` (G-S2), and the policy is where that is decided.
+                  return DeliveryOrderRouteGuard(
+                    kind: DeliveryRouteKind.warehouseDraft,
+                    doId: id,
+                    builder: (_) => DeliveryOrderFormPage(doId: id),
+                  );
+                },
+              ),
+              GoRoute(
+                path: AppRoutes.warehouseDeliveryOrderWaybill,
+                name: AppRoutes.warehouseDeliveryOrderWaybillName,
+                builder: (context, state) {
+                  final id = state.pathParameters['id']!;
+                  return DeliveryOrderRouteGuard(
+                    kind: DeliveryRouteKind.warehouseWaybill,
+                    doId: id,
+                    builder: (_) =>
+                        DeliveryWaybillPage(doId: id, branchScoped: false),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+      GoRoute(
+        path: AppRoutes.deliveries,
+        name: AppRoutes.deliveriesName,
+        builder: (context, state) => const DeliverySectionGuard(
+          kind: DeliveryRouteKind.branchList,
+          builder: _branchDeliveryList,
+        ),
+        routes: [
+          GoRoute(
+            path: AppRoutes.deliveryDetail,
+            name: AppRoutes.deliveryDetailName,
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return DeliveryOrderRouteGuard(
+                kind: DeliveryRouteKind.branchDocument,
+                doId: id,
+                builder: (_) =>
+                    DeliveryOrderDetailPage(doId: id, branchScoped: true),
+              );
+            },
+            routes: [
+              GoRoute(
+                path: AppRoutes.deliveryWaybill,
+                name: AppRoutes.deliveryWaybillName,
+                builder: (context, state) {
+                  final id = state.pathParameters['id']!;
+                  return DeliveryOrderRouteGuard(
+                    kind: DeliveryRouteKind.branchWaybill,
+                    doId: id,
+                    builder: (_) =>
+                        DeliveryWaybillPage(doId: id, branchScoped: true),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
     ],
   );
 });
@@ -237,6 +370,12 @@ Widget _purchaseRequestWizard(BuildContext context) =>
 
 Widget _warehousePurchaseRequestList(BuildContext context) =>
     const WarehousePurchaseRequestListPage();
+
+Widget _warehouseDeliveryList(BuildContext context) =>
+    const WarehouseDeliveryOrderListPage();
+
+Widget _branchDeliveryList(BuildContext context) =>
+    const BranchDeliveryListPage();
 
 /// Bridges the session provider to GoRouter's `refreshListenable`, so switching
 /// role re-runs the redirect immediately instead of on the next navigation.

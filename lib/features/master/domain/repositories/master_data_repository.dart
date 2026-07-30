@@ -109,5 +109,17 @@ abstract interface class MasterDataRepository {
 
   Future<MasterLocation?> warehouseLocation();
 
+  /// Every live central-warehouse location.
+  ///
+  /// The Delivery Order path asks for the list rather than for "the" warehouse,
+  /// because it has to be able to tell "there is none" from "there are two". A
+  /// shipment posts against exactly one location and may not guess which
+  /// (G-D3); [warehouseLocation] cannot express the ambiguity — it throws on it.
+  Future<List<MasterLocation>> activeWarehouseLocations();
+
+  /// The same list including archived rows, for reading documents that already
+  /// posted against one of them (§7.2).
+  Future<List<MasterLocation>> historicalWarehouseLocations();
+
   Future<MasterSummary> summary();
 }
