@@ -266,6 +266,24 @@ abstract final class AppRoutes {
   static const String warehouseReturnDetail = ':id';
   static const String warehouseReturnDetailName = 'warehouseReturnDetail';
 
+  // --- Laporan (Milestone 10) -----------------------------------------------
+
+  /// The reporting module. Reached by **every** role — §3.1 gives report access to
+  /// all four — but what each finds inside differs entirely, and that difference is
+  /// [ReportAccessPolicy]'s rather than the router's (G-L1).
+  static const String reports = '/reports';
+  static const String reportsName = 'reports';
+
+  /// `/reports/export-history` — the Super Admin's audit trail (§43).
+  ///
+  /// A **top-level** path rather than a child of [reports], and the separation is
+  /// the point: the two have different audiences. Nesting it would put a Super
+  /// Admin-only screen behind a prefix every role may enter, and make the redirect
+  /// decide between them by role — the shared-prefix shape the Retur and Pemakaian
+  /// routes are also written to avoid.
+  static const String exportHistory = '/reports/export-history';
+  static const String exportHistoryName = 'exportHistory';
+
   // There is deliberately no `/akses-ditolak` route. A refused document route
   // renders `AccessDeniedPage` *in place*, keeping the URL the user typed:
   // redirecting to a dedicated path would tell them, by the address bar alone,

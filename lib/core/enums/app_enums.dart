@@ -865,3 +865,264 @@ abstract final class RefDocType {
   /// Only used by the development seed so opening balances stay idempotent.
   static const seed = 'SEED';
 }
+
+// --- Reporting & Export (Milestone 10, schema v12) ---------------------------
+
+/// Which report is being previewed or exported (§9).
+///
+/// The `dbValue` of each is what `export_logs.report_type` stores, and the values
+/// are the snake_case names the specification uses in G-L5's filename pattern —
+/// so the audit row, the file name and the enum can never drift apart.
+///
+/// ### Seven values are the specification's, four are this milestone's
+///
+/// §4.2 names `stok_lokasi`, `kartu_stok`, `rekap_opname`, `rekap_pr`,
+/// `rekap_gr`, `rekap_distribusi` and — through G-E8 — `kadaluarsa`. The other
+/// four are a **documented extension** rather than a rule the specification
+/// states:
+///
+/// * `rekap_do` — §4.2's Warehouse *Laporan* screen asks for *"rekap PR/DO per
+///   cabang & per periode"* in the same breath, so leaving the DO half out would
+///   contradict the screen the specification describes.
+/// * `rekap_pemakaian`, `rekap_pemusnahan`, `rekap_retur` — Pemakaian, Pemusnahan
+///   and Retur became first-class workflows in Milestones 7–9 and each posts its
+///   own `movement_type`. A reporting module that could not recap them would be
+///   unable to explain three of the eight ways stock moves.
+///
+/// None of them changes a stock rule: every one is a *view* over ledger rows and
+/// documents that already exist.
+///
+/// ### What this enum deliberately does not know
+///
+/// **Who may run it.** The access matrix is [ReportAccessPolicy]'s, per role and
+/// per scope, and putting a `allowedRoles` getter here would be a second copy of
+/// it that has to agree by hand. The helpers below answer only questions about the
+/// *shape* of a report — questions whose answer is the same for every role.
+enum ReportType {
+  /// Saldo per lokasi as of one date, derived from the ledger (G-L4).
+  stokLokasi('stok_lokasi'),
+
+  /// Mutasi one item at one location across a period, with a running balance.
+  kartuStok('kartu_stok'),
+
+  rekapOpname('rekap_opname'),
+
+  rekapPr('rekap_pr'),
+
+  /// Extension — see the class note.
+  rekapDo('rekap_do'),
+
+  rekapGr('rekap_gr'),
+
+  rekapDistribusi('rekap_distribusi'),
+
+  /// Extension — see the class note.
+  rekapPemakaian('rekap_pemakaian'),
+
+  /// Extension — see the class note.
+  rekapPemusnahan('rekap_pemusnahan'),
+
+  /// Extension — see the class note.
+  rekapRetur('rekap_retur'),
+
+  /// Sisa per batch urut ED terdekat (G-E8).
+  kadaluarsa('kadaluarsa');
+
+  const ReportType(this.dbValue);
+
+  final String dbValue;
+
+  /// Indonesian title, shown on screen and printed in every export header.
+  String get label => switch (this) {
+    ReportType.stokLokasi => 'Stok Saat Ini',
+    ReportType.kartuStok => 'Kartu Stok',
+    ReportType.rekapOpname => 'Rekap Stok Opname',
+    ReportType.rekapPr => 'Rekap Purchase Request',
+    ReportType.rekapDo => 'Rekap Delivery Order',
+    ReportType.rekapGr => 'Rekap Penerimaan dan Selisih GR',
+    ReportType.rekapDistribusi => 'Rekap Distribusi',
+    ReportType.rekapPemakaian => 'Rekap Pemakaian',
+    ReportType.rekapPemusnahan => 'Rekap Pemusnahan',
+    ReportType.rekapRetur => 'Rekap Retur',
+    ReportType.kadaluarsa => 'Laporan Kedaluwarsa',
+  };
+
+  /// Whether the report is meaningless without exactly one stock location.
+  ///
+  /// True for [kartuStok] alone: a stock card with a running balance is a
+  /// statement about *one shelf*. Summing two locations into one running balance
+  /// would produce a column of numbers that reconciles against nothing.
+  bool get requiresExactLocation => this == ReportType.kartuStok;
+
+  /// Whether the report is meaningless without exactly one item — again
+  /// [kartuStok] alone, for the same reason.
+  bool get requiresItem => this == ReportType.kartuStok;
+
+  /// Whether the report describes a *position* at one instant rather than what
+  /// happened over a period.
+  ///
+  /// [stokLokasi] and [kadaluarsa] are both "what is on the shelf as of this
+  /// date", so their period collapses to a single as-of date and the export log
+  /// stores `period_start == period_end` (§3.9).
+  bool get isAsOfReport =>
+      this == ReportType.stokLokasi || this == ReportType.kadaluarsa;
+
+  /// The complement of [isAsOfReport]: a report over a date range.
+  bool get isPeriodReport => !isAsOfReport;
+
+  /// Whether every quantity this report prints comes from `stock_movements`.
+  ///
+  /// True for the three stock reports. The recaps are *mixed*: their document
+  /// columns (requested qty, counted qty, status, actor) come from the document
+  /// tables, and every column describing a stock effect still comes from the
+  /// ledger (§3.6). So this is not "does it read the ledger" — they all do — but
+  /// "is the ledger the only source it reads".
+  bool get isLedgerPrimary =>
+      this == ReportType.stokLokasi ||
+      this == ReportType.kartuStok ||
+      this == ReportType.kadaluarsa;
+
+  /// Whether the report can be run over a whole branch — its store plus every
+  /// room — in one pass.
+  ///
+  /// False for [kartuStok] (see [requiresExactLocation]) and for every recap: a
+  /// recap is already scoped by the documents it reads, and `branch_all` is a
+  /// *location* scope with nothing to say about a Purchase Request.
+  bool get supportsBranchAll =>
+      this == ReportType.stokLokasi || this == ReportType.kadaluarsa;
+
+  /// Whether the report can span branches for a Warehouse account.
+  ///
+  /// True for the recaps and false for the three stock reports, and the asymmetry
+  /// is G-L1: a Petugas Warehouse reports on *documents* across every branch, but
+  /// their stock view is Warehouse Pusat. Reading a room's current balance is a
+  /// branch matter.
+  bool get supportsCrossBranch => !isLedgerPrimary;
+
+  static ReportType fromDbValue(String value) => values.firstWhere(
+    (type) => type.dbValue == value,
+    orElse: () =>
+        throw ArgumentError.value(value, 'value', 'Unknown ReportType'),
+  );
+}
+
+/// The file a report is exported as (§10).
+///
+/// Two values, and there will not quietly be a third: G-L5 names `.xlsx` and
+/// `.pdf`, and a CSV masquerading as a spreadsheet would lose the category
+/// subtotals G-L6 requires and the formatting an auditor reads.
+enum ReportFormat {
+  xlsx('xlsx'),
+  pdf('pdf');
+
+  const ReportFormat(this.dbValue);
+
+  final String dbValue;
+
+  String get label => switch (this) {
+    ReportFormat.xlsx => 'Excel',
+    ReportFormat.pdf => 'PDF',
+  };
+
+  /// The filename suffix, dot included.
+  String get fileExtension => switch (this) {
+    ReportFormat.xlsx => '.xlsx',
+    ReportFormat.pdf => '.pdf',
+  };
+
+  static ReportFormat fromDbValue(String value) => values.firstWhere(
+    (format) => format.dbValue == value,
+    orElse: () =>
+        throw ArgumentError.value(value, 'value', 'Unknown ReportFormat'),
+  );
+}
+
+/// How wide a report reaches (§11).
+///
+/// Persisted in `export_logs.scope_type`, and the reason it is a stored column
+/// rather than something derivable from `location_id`/`branch_id` is that three of
+/// the six carry neither: an audit row has to say *what was asked for*, not leave a
+/// reader to infer it from two NULLs.
+///
+/// ### `branch_all` never means "every branch"
+///
+/// The specification's vocabulary is `warehouse` / `branch_store` / `room` /
+/// `branch_all`, and the temptation with only those four is to write
+/// `branch_all` with `branch_id = NULL` and call it cross-branch. That is
+/// precisely the shape this enum refuses: a NULL would make an audit row
+/// ambiguous — was this one branch whose id was lost, or every branch? — and the
+/// database CHECK that pins `branch_all` to a non-NULL branch is what makes the
+/// question unanswerable-by-accident impossible. [crossBranch] and [allLocations]
+/// are therefore explicit values, and both are a documented extension rather than
+/// specification vocabulary.
+enum ReportScopeType {
+  /// Exactly one Warehouse Pusat location.
+  warehouse('warehouse'),
+
+  /// Exactly one Gudang Cabang location.
+  branchStore('branch_store'),
+
+  /// Exactly one Ruangan location.
+  room('room'),
+
+  /// One branch's store **and** every room in it. The rows stay grouped per
+  /// location — a branch total that netted a distribution between the store and a
+  /// room would hide where the stock actually is (§21).
+  branchAll('branch_all'),
+
+  /// Extension: document recaps across every branch, for a Petugas Warehouse.
+  /// Carries no location and no branch — it is not a place.
+  crossBranch('cross_branch'),
+
+  /// Extension: everything, everywhere, for a Super Admin.
+  allLocations('all_locations');
+
+  const ReportScopeType(this.dbValue);
+
+  final String dbValue;
+
+  String get label => switch (this) {
+    ReportScopeType.warehouse => 'Warehouse Pusat',
+    ReportScopeType.branchStore => 'Gudang Cabang',
+    ReportScopeType.room => 'Ruangan',
+    ReportScopeType.branchAll => 'Semua Lokasi Cabang',
+    ReportScopeType.crossBranch => 'Lintas Cabang',
+    ReportScopeType.allLocations => 'Semua Lokasi',
+  };
+
+  /// Whether the scope names exactly one stock location.
+  bool get requiresLocation =>
+      this == ReportScopeType.warehouse ||
+      this == ReportScopeType.branchStore ||
+      this == ReportScopeType.room;
+
+  /// Whether the scope names exactly one branch.
+  ///
+  /// [warehouse] is deliberately excluded: Warehouse Pusat belongs to no branch
+  /// (`stock_locations` CHECKs it), so an export log naming both would describe a
+  /// location that cannot exist.
+  bool get requiresBranch =>
+      this == ReportScopeType.branchStore ||
+      this == ReportScopeType.room ||
+      this == ReportScopeType.branchAll;
+
+  /// The stock location type this scope's location must be, or `null` when the
+  /// scope names no single location.
+  ///
+  /// SQLite cannot enforce this — the CHECK on `export_logs` can only see its own
+  /// columns — so the use cases revalidate it against `stock_locations.type`.
+  StockLocationType? get requiredLocationType => switch (this) {
+    ReportScopeType.warehouse => StockLocationType.warehouse,
+    ReportScopeType.branchStore => StockLocationType.branchStore,
+    ReportScopeType.room => StockLocationType.room,
+    ReportScopeType.branchAll ||
+    ReportScopeType.crossBranch ||
+    ReportScopeType.allLocations => null,
+  };
+
+  static ReportScopeType fromDbValue(String value) => values.firstWhere(
+    (scope) => scope.dbValue == value,
+    orElse: () =>
+        throw ArgumentError.value(value, 'value', 'Unknown ReportScopeType'),
+  );
+}

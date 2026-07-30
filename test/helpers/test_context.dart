@@ -82,8 +82,16 @@ import 'package:aish_warehouse/features/purchase_request/domain/use_cases/remove
 import 'package:aish_warehouse/features/purchase_request/domain/use_cases/replace_purchase_request_opnames_use_case.dart';
 import 'package:aish_warehouse/features/purchase_request/domain/use_cases/submit_purchase_request_use_case.dart';
 import 'package:aish_warehouse/features/purchase_request/domain/use_cases/update_purchase_request_use_case.dart';
+import 'package:aish_warehouse/features/reports/data/repositories/drift_reporting_repository.dart';
+import 'package:aish_warehouse/features/reports/domain/gateways/report_gateways.dart';
+import 'package:aish_warehouse/features/reports/domain/repositories/reporting_repository.dart';
+import 'package:aish_warehouse/features/reports/domain/use_cases/build_report_preview_use_case.dart';
+import 'package:aish_warehouse/features/reports/domain/use_cases/export_history_use_cases.dart';
+import 'package:aish_warehouse/features/reports/domain/use_cases/export_report_use_case.dart';
 import 'package:drift/drift.dart' show Variable;
 import 'package:drift/native.dart';
+
+import 'report_fakes.dart';
 
 /// In-memory wiring of the whole inventory stack. Tests never touch a device
 /// database file.
@@ -100,6 +108,7 @@ class TestContext {
     required this.disposals,
     required this.consumptions,
     required this.goodsReturns,
+    required this.reporting,
     required this.posting,
     required this.clock,
   });
@@ -124,8 +133,10 @@ class TestContext {
       database.goodsReturnDao,
       clock: clock,
     );
+    final reporting = DriftReportingRepository(database.reportingDao);
     return TestContext._(
       database: database,
+      reporting: reporting,
       master: master,
       inventory: inventory,
       opnames: opnames,
@@ -157,6 +168,7 @@ class TestContext {
   final DisposalRepository disposals;
   final ConsumptionRepository consumptions;
   final GoodsReturnRepository goodsReturns;
+  final ReportingRepository reporting;
   final StockPostingService posting;
 
   /// The injected UTC clock, or `null` when the real one is in use.
@@ -670,6 +682,135 @@ class TestContext {
               : postingWithClock(effectiveClock)),
       clock: effectiveClock,
     );
+  }
+
+  // --- Laporan & Ekspor (Milestone 10) --------------------------------------
+  //
+  // Every factory takes an optional clock, and on this module it decides more than
+  // a timestamp: the cutoff chooses which movements are counted, which batches read
+  // as expired and what `export_logs.data_cutoff_at` claims the data is as of (§19).
+  //
+  // The export use case additionally takes fakes for the three things a unit test
+  // cannot do — render, write, share. Passing real ones would make every export test
+  // depend on a platform channel; passing fakes is what lets the failure-ordering
+  // rules of §36 be asserted directly.
+
+  BuildReportPreviewUseCase buildReportPreview({DateTime Function()? clock}) =>
+      BuildReportPreviewUseCase(
+        reporting: reporting,
+        master: master,
+        clock: clock ?? this.clock,
+      );
+
+  /// The export use case, wired to fakes by default.
+  ///
+  /// Every collaborator is injectable so a test can make exactly one of them fail
+  /// and assert what survives — which is the whole of §36's failure table.
+  ExportReportUseCase exportReport({
+    DateTime Function()? clock,
+    String Function()? idGenerator,
+    ReportExcelExporter? excelExporter,
+    ReportPdfExporter? pdfExporter,
+    ReportFileStore? fileStore,
+    ReportShareGateway? shareGateway,
+    ReportingRepository? reportingRepository,
+  }) => ExportReportUseCase(
+    reporting: reportingRepository ?? reporting,
+    master: master,
+    excelExporter: excelExporter ?? const FakeExcelReportExporter(),
+    pdfExporter: pdfExporter ?? const FakePdfReportExporter(),
+    fileStore: fileStore ?? InMemoryReportFileStore(),
+    shareGateway: shareGateway ?? FakeReportShareGateway(),
+    clock: clock ?? this.clock,
+    idGenerator: idGenerator,
+  );
+
+  WatchExportHistoryUseCase get watchExportHistory =>
+      WatchExportHistoryUseCase(reporting: reporting);
+
+  GetExportLogDetailUseCase get getExportLogDetail =>
+      GetExportLogDetailUseCase(reporting: reporting);
+
+  /// Rewrites `created_at` / `updated_at` on every ledger row to [instantUtc].
+  ///
+  /// Deliberately raw SQL, and for the same reason [archive] and
+  /// [corruptByDeleting] are: the production API **cannot** reach this state.
+  /// `stock_movements.created_at` comes from the table's own `clientDefault`
+  /// (`nowUtc`), not from [StockPostingService]'s injected clock, so a fixture that
+  /// wants movements dated last week has no supported way to ask for them.
+  ///
+  /// This is not corruption — it is what a sync payload carrying a branch's offline
+  /// work from three days ago produces, and it is exactly the shape the reporting
+  /// period boundary has to be tested against: a report whose cutoff sits before,
+  /// inside or after the movements it is folding. Nothing in `lib/` can do this.
+  Future<void> backdateMovements(DateTime instantUtc) async {
+    final stamp = instantUtc.toUtc().toIso8601String();
+    await database.customStatement(
+      'UPDATE stock_movements SET created_at = ?, updated_at = ?;',
+      [stamp, stamp],
+    );
+  }
+
+  /// The same, for one movement — so a fixture can spread a ledger across days.
+  Future<void> backdateMovement(String movementId, DateTime instantUtc) async {
+    final stamp = instantUtc.toUtc().toIso8601String();
+    await database.customStatement(
+      'UPDATE stock_movements SET created_at = ?, updated_at = ? WHERE id = ?;',
+      [stamp, stamp, movementId],
+    );
+  }
+
+  /// Marks every ledger row with one sync status, so a header assertion about
+  /// *"18 tersinkron · 2 pending"* has something deterministic to read (G-L3).
+  Future<void> markMovementsSynced() => database.customStatement(
+    "UPDATE stock_movements SET sync_status = 'synced';",
+  );
+
+  /// Raw `export_logs` rows, read straight from SQL.
+  ///
+  /// Bypasses every Dart layer for the reason the other raw readers here exist: an
+  /// assertion about what the audit contains must not be satisfiable by a cached
+  /// repository read.
+  Future<List<Map<String, Object?>>> exportLogRows() async {
+    final rows = await database
+        .customSelect(
+          'SELECT id, report_type, format, scope_type, location_id, '
+          'category_id, branch_id, item_id, period_start, period_end, '
+          'exported_by, file_name, data_cutoff_at, sync_summary, row_count, '
+          'sync_status, created_at, deleted_at FROM export_logs;',
+        )
+        .get();
+    return rows
+        .map(
+          (row) => <String, Object?>{
+            'id': row.read<String>('id'),
+            'report_type': row.read<String>('report_type'),
+            'format': row.read<String>('format'),
+            'scope_type': row.read<String>('scope_type'),
+            'location_id': row.read<String?>('location_id'),
+            'category_id': row.read<String?>('category_id'),
+            'branch_id': row.read<String?>('branch_id'),
+            'item_id': row.read<String?>('item_id'),
+            'period_start': row.read<String>('period_start'),
+            'period_end': row.read<String>('period_end'),
+            'exported_by': row.read<String>('exported_by'),
+            'file_name': row.read<String>('file_name'),
+            'data_cutoff_at': row.read<String>('data_cutoff_at'),
+            'sync_summary': row.read<String>('sync_summary'),
+            'row_count': row.read<int>('row_count'),
+            'sync_status': row.read<String>('sync_status'),
+            'created_at': row.read<String>('created_at'),
+            'deleted_at': row.read<String?>('deleted_at'),
+          },
+        )
+        .toList(growable: false);
+  }
+
+  Future<int> exportLogCount() async {
+    final row = await database
+        .customSelect('SELECT COUNT(*) AS c FROM export_logs;')
+        .getSingle();
+    return row.read<int>('c');
   }
 
   StockPostingService postingWithClock(DateTime Function() clock) =>

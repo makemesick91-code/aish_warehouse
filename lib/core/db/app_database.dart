@@ -13,6 +13,7 @@ import 'daos/inventory_dao.dart';
 import 'daos/master_data_dao.dart';
 import 'daos/opname_dao.dart';
 import 'daos/purchase_request_dao.dart';
+import 'daos/reporting_dao.dart';
 import 'tables/base_columns.dart';
 import 'tables/consumption_tables.dart';
 import 'tables/delivery_tables.dart';
@@ -24,6 +25,7 @@ import 'tables/inventory_tables.dart';
 import 'tables/master_tables.dart';
 import 'tables/opname_tables.dart';
 import 'tables/purchase_request_tables.dart';
+import 'tables/reporting_tables.dart';
 
 part 'app_database.g.dart';
 
@@ -55,6 +57,7 @@ part 'app_database.g.dart';
     ConsumptionLines,
     GoodsReturns,
     GoodsReturnLines,
+    ExportLogs,
   ],
   daos: [
     MasterDataDao,
@@ -67,6 +70,7 @@ part 'app_database.g.dart';
     DisposalDao,
     ConsumptionDao,
     GoodsReturnDao,
+    ReportingDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -88,8 +92,9 @@ class AppDatabase extends _$AppDatabase {
   /// * v9 — Milestone 7, Pemusnahan (`disposals`, `disposal_lines`).
   /// * v10 — Milestone 8, Pemakaian (`consumptions`, `consumption_lines`).
   /// * v11 — Milestone 9, Retur Barang (`goods_returns`, `goods_return_lines`).
+  /// * v12 — Milestone 10, Reporting export audit (`export_logs`).
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -363,6 +368,36 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(goodsReturns);
         await m.createTable(goodsReturnLines);
         for (final statement in _v11GoodsReturnIndexes) {
+          await customStatement(statement);
+        }
+      }
+      if (from < 12) {
+        // Milestone 10, purely additive in the sense the `from < 3` block
+        // established: one new table and its indexes, and not one statement touching
+        // an existing column.
+        //
+        // This is the first milestone whose table posts to nothing at all. An export
+        // log is a record that a *file was produced*; it changes no balance, no
+        // document status and no master row, so there is no stock for this step to
+        // migrate and no workflow table for it to look at.
+        //
+        // In particular this step writes **no export log for anything already on the
+        // device**. That absence is the load-bearing one here: a migration that
+        // invented rows would be asserting that a named person exported a named
+        // report, on a date, and shared a file that never existed — and every one of
+        // those rows would then be indistinguishable from a real one in the Super
+        // Admin's audit screen. The table comes up empty, which is the honest
+        // outcome: before v12 nothing could export, so nothing did.
+        //
+        // It also has to leave `stock_opnames` alone for the second reason the
+        // `from < 5` block spells out: the `from < 4` block reads the *current* Dart
+        // definition of that table through `alterTable`, so a v12 that changed its
+        // shape would make a v3 → v12 upgrade land on the v12 shape at step 4 and
+        // then apply steps 5 to 12 on top. `export_logs` only references
+        // `stock_locations`, `item_categories`, `branches`, `items` and `users` by
+        // foreign key, so that trap stays shut.
+        await m.createTable(exportLogs);
+        for (final statement in _v12ExportLogIndexes) {
           await customStatement(statement);
         }
       }
@@ -758,5 +793,45 @@ class AppDatabase extends _$AppDatabase {
         'ON goods_return_lines (gr_line_id);',
     'CREATE UNIQUE INDEX IF NOT EXISTS idx_goods_return_lines_unique '
         'ON goods_return_lines (goods_return_id, gr_line_id);',
+  ];
+
+  /// The export audit indexes **exactly as schema v12 defined them**.
+  ///
+  /// Frozen as literal SQL for the reason [_v3OpnameIndexes] spells out: a migration
+  /// step must keep doing what it did the day it shipped, so this list must not be
+  /// derived from `allSchemaEntities` — that getter always describes the current
+  /// schema, and a v13 index added to this table would silently change what the
+  /// `from < 12` block creates.
+  ///
+  /// Not one of them is unique, and that is the whole design rather than an
+  /// oversight. Every other document table in this schema carries at least one
+  /// unique index because a document is a *thing* that must exist once; an export log
+  /// is an *event*, and the same person exporting the same report twice in the same
+  /// minute produced two files and must produce two rows. A unique index on any
+  /// combination of these columns would silently collapse the second export out of
+  /// the audit — the one outcome an audit trail may never have.
+  ///
+  /// Every index is `(column, created_at)` rather than `(column)` alone, because
+  /// every history screen sorts newest-first within whatever it filtered by. The
+  /// bare `created_at` index serves the unfiltered Super Admin list.
+  static const List<String> _v12ExportLogIndexes = [
+    'CREATE INDEX IF NOT EXISTS idx_export_logs_actor '
+        'ON export_logs (exported_by, created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_export_logs_type '
+        'ON export_logs (report_type, created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_export_logs_format '
+        'ON export_logs (format, created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_export_logs_scope '
+        'ON export_logs (scope_type, created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_export_logs_branch '
+        'ON export_logs (branch_id, created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_export_logs_location '
+        'ON export_logs (location_id, created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_export_logs_category '
+        'ON export_logs (category_id, created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_export_logs_item '
+        'ON export_logs (item_id, created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_export_logs_created_at '
+        'ON export_logs (created_at);',
   ];
 }

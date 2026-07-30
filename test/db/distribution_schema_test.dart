@@ -76,15 +76,15 @@ void main() {
   }
 
   group('struktur tabel', () {
-    test('schemaVersion adalah 11', () async {
+    test('schemaVersion adalah 12', () async {
       // The *current* version, not the one this milestone introduced: a fresh
       // database is always built at head, and pinning the number here is what makes
       // a forgotten `schemaVersion` bump fail the suite.
       final row = await context.database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 11);
-      expect(context.database.schemaVersion, 11);
+      expect(row.read<int>('user_version'), 12);
+      expect(context.database.schemaVersion, 12);
     });
 
     test('dua tabel Distribusi tersedia', () async {

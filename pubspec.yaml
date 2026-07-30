@@ -43,6 +43,32 @@ dependencies:
   path_provider: ^2.1.6
   intl: ^0.20.3
 
+  # --- Reporting & Export (Milestone 10) ------------------------------------
+  #
+  # Three capabilities the reporting module cannot fake, and one package each:
+  #
+  # * `excel` writes a real `.xlsx` (a ZIP of OOXML parts) in pure Dart, so the
+  #   exporter tests can read the workbook back and assert on its cells rather
+  #   than on a byte blob. There is deliberately no second spreadsheet package.
+  # * `pdf` renders a real PDF in pure Dart with built-in Helvetica metrics, so
+  #   nothing has to be fetched at runtime — G-L3 is offline-first. `printing`
+  #   is deliberately **not** added: it only adds a platform print/preview
+  #   dialog, and this module shares files through the share sheet instead.
+  #   Pinned to `^3.12.0` rather than `^3.13.0`: 3.13 moved to `xml ^7`, which
+  #   `excel` cannot take yet, and the two must share one `xml`. This is a
+  #   version constraint, not an override — there is no `dependency_overrides`
+  #   block anywhere in this file.
+  # * `share_plus` opens the platform share sheet §4.3 asks for. It is the only
+  #   platform channel this module touches, and it is reached exclusively
+  #   through `ReportShareGateway` so tests never invoke it for real.
+  #
+  # `path_provider` was already a dependency; the reporting file store reuses it
+  # for the app-private directory files are written to, which is why no storage
+  # permission is requested anywhere.
+  excel: ^4.0.6
+  pdf: ^3.12.0
+  share_plus: ^13.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

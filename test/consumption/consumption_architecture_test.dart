@@ -730,7 +730,7 @@ void main() {
 
     test('schema version dinaikkan ke 10 dan index dibekukan', () {
       final code = readCodeOnly('lib/core/db/app_database.dart');
-      expect(code, contains('int get schemaVersion => 11;'));
+      expect(code, contains('int get schemaVersion => 12;'));
       expect(code, contains('if (from < 10)'));
       expect(code, contains('_v10ConsumptionIndexes'));
       // Frozen as literal SQL rather than derived from `allSchemaEntities`, which always

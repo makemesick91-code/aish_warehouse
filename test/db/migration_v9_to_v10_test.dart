@@ -415,7 +415,7 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 11);
+      expect(row.read<int>('user_version'), 12);
 
       await database.close();
     });
@@ -426,8 +426,15 @@ void main() {
 
       final tables = await objectNames(database, 'table');
       expect(tables, containsAll(consumptionTables));
-      // Exhaustive: v10 adds two tables, no more.
-      expect(tables, {...v9Tables, ...consumptionTables, ...goodsReturnTables});
+      // Exhaustive: v10 adds two tables, no more. The later milestones' tables are
+      // here because opening an older database migrates it all the way to the
+      // current schema rather than stopping at the step under test.
+      expect(tables, {
+        ...v9Tables,
+        ...consumptionTables,
+        ...goodsReturnTables,
+        'export_logs',
+      });
 
       await database.close();
     });
@@ -650,7 +657,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 11);
+      expect(version.read<int>('user_version'), 12);
       expect(
         await objectNames(second, 'table'),
         containsAll(consumptionTables),
@@ -802,7 +809,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 11);
+        expect(version.read<int>('user_version'), 12);
 
         final tables = await objectNames(database, 'table');
         expect(tables, containsAll(consumptionTables));

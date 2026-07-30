@@ -12,6 +12,7 @@ import '../features/distribution/domain/services/distribution_access_policy.dart
 import '../features/good_receipt/domain/services/good_receipt_access_policy.dart';
 import '../features/opname/domain/services/opname_access_policy.dart';
 import '../features/purchase_request/domain/services/purchase_request_access_policy.dart';
+import '../features/reports/domain/services/report_access_policy.dart';
 import 'guards/consumption_route_guard.dart';
 import 'guards/goods_return_route_guard.dart';
 import 'guards/delivery_order_route_guard.dart';
@@ -20,6 +21,7 @@ import 'guards/distribution_route_guard.dart';
 import 'guards/good_receipt_route_guard.dart';
 import 'guards/opname_route_guard.dart';
 import 'guards/purchase_request_route_guard.dart';
+import 'guards/reporting_route_guard.dart';
 import 'routes.dart';
 import '../features/dashboard/presentation/pages/development_home_page.dart';
 import '../features/consumption/presentation/pages/branch_consumption_list_page.dart';
@@ -56,6 +58,8 @@ import '../features/purchase_request/presentation/pages/purchase_request_list_pa
 import '../features/purchase_request/presentation/pages/purchase_request_wizard_page.dart';
 import '../features/purchase_request/presentation/pages/warehouse_purchase_request_detail_page.dart';
 import '../features/purchase_request/presentation/pages/warehouse_purchase_request_list_page.dart';
+import '../features/reports/presentation/pages/export_history_page.dart';
+import '../features/reports/presentation/pages/report_page.dart';
 
 /// Root router.
 ///
@@ -272,6 +276,31 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ? null
             : AppRoutes.home;
       }
+
+      // Laporan. The audit trail is tested first because `/reports` is its prefix —
+      // the one place in this router where two reporting paths do share one, and
+      // getting the order wrong would let every role through to the Super Admin's
+      // screen on the strength of the shorter match.
+      //
+      // The rule is [ReportAccessPolicy]'s, as everywhere above: restating
+      // "super admin only" here would be a second copy that has to agree with the
+      // guard's by hand.
+      if (location.startsWith(AppRoutes.exportHistory)) {
+        return ReportAccessPolicy.forSection(
+              user: session.user,
+              kind: ReportRouteKind.exportHistory,
+            ).isGranted
+            ? null
+            : AppRoutes.reports;
+      }
+      if (location.startsWith(AppRoutes.reports)) {
+        return ReportAccessPolicy.forSection(
+              user: session.user,
+              kind: ReportRouteKind.reports,
+            ).isGranted
+            ? null
+            : AppRoutes.home;
+      }
       return null;
     },
     routes: <RouteBase>[
@@ -279,6 +308,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.home,
         name: AppRoutes.homeName,
         builder: (context, state) => const DevelopmentHomePage(),
+      ),
+      // Declared before `/reports`, so the literal `export-history` segment is
+      // never matched as part of the reporting section's own path.
+      GoRoute(
+        path: AppRoutes.exportHistory,
+        name: AppRoutes.exportHistoryName,
+        builder: (context, state) => const ReportingSectionGuard(
+          kind: ReportRouteKind.exportHistory,
+          builder: _exportHistoryPage,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.reports,
+        name: AppRoutes.reportsName,
+        builder: (context, state) => const ReportingSectionGuard(
+          kind: ReportRouteKind.reports,
+          builder: _reportPage,
+        ),
       ),
       GoRoute(
         path: AppRoutes.opname,
@@ -894,6 +941,10 @@ Widget _warehouseGoodsReturnList(BuildContext context) =>
     const WarehouseGoodsReturnListPage();
 
 // Top-level builders so the section guards above can stay `const`.
+Widget _reportPage(BuildContext context) => const ReportPage();
+
+Widget _exportHistoryPage(BuildContext context) => const ExportHistoryPage();
+
 Widget _purchaseRequestList(BuildContext context) =>
     const PurchaseRequestListPage();
 

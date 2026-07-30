@@ -658,7 +658,7 @@ void main() {
   group('schema', () {
     test('schemaVersion 11 dan index migrasi dibekukan', () {
       final source = readLibrarySource(database);
-      expect(source, contains('int get schemaVersion => 11;'));
+      expect(source, contains('int get schemaVersion => 12;'));
       expect(source, contains('_v11GoodsReturnIndexes'));
       expect(source, contains('if (from < 11)'));
       expect(source, contains('await m.createTable(goodsReturns);'));

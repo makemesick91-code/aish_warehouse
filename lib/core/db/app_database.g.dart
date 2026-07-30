@@ -18271,6 +18271,1120 @@ class GoodsReturnLinesCompanion extends UpdateCompanion<GoodsReturnLineRow> {
   }
 }
 
+class $ExportLogsTable extends ExportLogs
+    with TableInfo<$ExportLogsTable, ExportLogRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExportLogsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>($ExportLogsTable.$convertersyncStatus);
+  @override
+  late final GeneratedColumnWithTypeConverter<ReportType, String> reportType =
+      GeneratedColumn<String>(
+        'report_type',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<ReportType>($ExportLogsTable.$converterreportType);
+  @override
+  late final GeneratedColumnWithTypeConverter<ReportFormat, String> format =
+      GeneratedColumn<String>(
+        'format',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<ReportFormat>($ExportLogsTable.$converterformat);
+  @override
+  late final GeneratedColumnWithTypeConverter<ReportScopeType, String>
+  scopeType = GeneratedColumn<String>(
+    'scope_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  ).withConverter<ReportScopeType>($ExportLogsTable.$converterscopeType);
+  static const VerificationMeta _locationIdMeta = const VerificationMeta(
+    'locationId',
+  );
+  @override
+  late final GeneratedColumn<String> locationId = GeneratedColumn<String>(
+    'location_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_locations (id)',
+    ),
+  );
+  static const VerificationMeta _categoryIdMeta = const VerificationMeta(
+    'categoryId',
+  );
+  @override
+  late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
+    'category_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES item_categories (id)',
+    ),
+  );
+  static const VerificationMeta _branchIdMeta = const VerificationMeta(
+    'branchId',
+  );
+  @override
+  late final GeneratedColumn<String> branchId = GeneratedColumn<String>(
+    'branch_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES branches (id)',
+    ),
+  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+    'item_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES items (id)',
+    ),
+  );
+  static const VerificationMeta _periodStartMeta = const VerificationMeta(
+    'periodStart',
+  );
+  @override
+  late final GeneratedColumn<DateTime> periodStart = GeneratedColumn<DateTime>(
+    'period_start',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _periodEndMeta = const VerificationMeta(
+    'periodEnd',
+  );
+  @override
+  late final GeneratedColumn<DateTime> periodEnd = GeneratedColumn<DateTime>(
+    'period_end',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _exportedByMeta = const VerificationMeta(
+    'exportedBy',
+  );
+  @override
+  late final GeneratedColumn<String> exportedBy = GeneratedColumn<String>(
+    'exported_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _fileNameMeta = const VerificationMeta(
+    'fileName',
+  );
+  @override
+  late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
+    'file_name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 255,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dataCutoffAtMeta = const VerificationMeta(
+    'dataCutoffAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> dataCutoffAt = GeneratedColumn<DateTime>(
+    'data_cutoff_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _syncSummaryMeta = const VerificationMeta(
+    'syncSummary',
+  );
+  @override
+  late final GeneratedColumn<String> syncSummary = GeneratedColumn<String>(
+    'sync_summary',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rowCountMeta = const VerificationMeta(
+    'rowCount',
+  );
+  @override
+  late final GeneratedColumn<int> rowCount = GeneratedColumn<int>(
+    'row_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    reportType,
+    format,
+    scopeType,
+    locationId,
+    categoryId,
+    branchId,
+    itemId,
+    periodStart,
+    periodEnd,
+    exportedBy,
+    fileName,
+    dataCutoffAt,
+    syncSummary,
+    rowCount,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'export_logs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ExportLogRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('location_id')) {
+      context.handle(
+        _locationIdMeta,
+        locationId.isAcceptableOrUnknown(data['location_id']!, _locationIdMeta),
+      );
+    }
+    if (data.containsKey('category_id')) {
+      context.handle(
+        _categoryIdMeta,
+        categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
+      );
+    }
+    if (data.containsKey('branch_id')) {
+      context.handle(
+        _branchIdMeta,
+        branchId.isAcceptableOrUnknown(data['branch_id']!, _branchIdMeta),
+      );
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    }
+    if (data.containsKey('period_start')) {
+      context.handle(
+        _periodStartMeta,
+        periodStart.isAcceptableOrUnknown(
+          data['period_start']!,
+          _periodStartMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_periodStartMeta);
+    }
+    if (data.containsKey('period_end')) {
+      context.handle(
+        _periodEndMeta,
+        periodEnd.isAcceptableOrUnknown(data['period_end']!, _periodEndMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_periodEndMeta);
+    }
+    if (data.containsKey('exported_by')) {
+      context.handle(
+        _exportedByMeta,
+        exportedBy.isAcceptableOrUnknown(data['exported_by']!, _exportedByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_exportedByMeta);
+    }
+    if (data.containsKey('file_name')) {
+      context.handle(
+        _fileNameMeta,
+        fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileNameMeta);
+    }
+    if (data.containsKey('data_cutoff_at')) {
+      context.handle(
+        _dataCutoffAtMeta,
+        dataCutoffAt.isAcceptableOrUnknown(
+          data['data_cutoff_at']!,
+          _dataCutoffAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_dataCutoffAtMeta);
+    }
+    if (data.containsKey('sync_summary')) {
+      context.handle(
+        _syncSummaryMeta,
+        syncSummary.isAcceptableOrUnknown(
+          data['sync_summary']!,
+          _syncSummaryMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_syncSummaryMeta);
+    }
+    if (data.containsKey('row_count')) {
+      context.handle(
+        _rowCountMeta,
+        rowCount.isAcceptableOrUnknown(data['row_count']!, _rowCountMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_rowCountMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ExportLogRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExportLogRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $ExportLogsTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      reportType: $ExportLogsTable.$converterreportType.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}report_type'],
+        )!,
+      ),
+      format: $ExportLogsTable.$converterformat.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}format'],
+        )!,
+      ),
+      scopeType: $ExportLogsTable.$converterscopeType.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}scope_type'],
+        )!,
+      ),
+      locationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location_id'],
+      ),
+      categoryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category_id'],
+      ),
+      branchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}branch_id'],
+      ),
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}item_id'],
+      ),
+      periodStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}period_start'],
+      )!,
+      periodEnd: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}period_end'],
+      )!,
+      exportedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}exported_by'],
+      )!,
+      fileName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_name'],
+      )!,
+      dataCutoffAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}data_cutoff_at'],
+      )!,
+      syncSummary: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_summary'],
+      )!,
+      rowCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}row_count'],
+      )!,
+    );
+  }
+
+  @override
+  $ExportLogsTable createAlias(String alias) {
+    return $ExportLogsTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+  static TypeConverter<ReportType, String> $converterreportType =
+      const ReportTypeConverter();
+  static TypeConverter<ReportFormat, String> $converterformat =
+      const ReportFormatConverter();
+  static TypeConverter<ReportScopeType, String> $converterscopeType =
+      const ReportScopeTypeConverter();
+}
+
+class ExportLogRow extends DataClass implements Insertable<ExportLogRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+
+  /// Which report. Stored as the enum's `dbValue`, so the audit string and G-L5's
+  /// filename token are the same token.
+  final ReportType reportType;
+  final ReportFormat format;
+  final ReportScopeType scopeType;
+
+  /// The single stock location, for the three single-location scopes. NULL for
+  /// `branch_all`, `cross_branch` and `all_locations` — see the class note.
+  final String? locationId;
+
+  /// The category filter that was applied, or NULL when the report was run across
+  /// every category and grouped with subtotals instead (G-L6).
+  final String? categoryId;
+  final String? branchId;
+
+  /// The item a Kartu Stok was run for. NULL on every other report, and NULL is
+  /// also legitimate on a `stok_lokasi` run without an item filter.
+  final String? itemId;
+
+  /// Civil dates (T-8), carried as UTC midnights and never converted. For an as-of
+  /// report both hold the same date (§3.9) — an audit row that left `period_start`
+  /// NULL would make "as of one day" and "range whose start was lost" the same row.
+  final DateTime periodStart;
+  final DateTime periodEnd;
+
+  /// Who ran it (G-L2). Never nullable: an export with no actor is not an audit
+  /// record.
+  final String exportedBy;
+
+  /// The canonical name the file was written and shared under (G-L5). Not a path.
+  final String fileName;
+
+  /// UTC instant the report snapshot was taken — the "data per" of G-L3.
+  final DateTime dataCutoffAt;
+
+  /// Human-readable sync snapshot, e.g. *"18 tersinkron · 2 pending · 0 konflik"*.
+  /// Non-blank: a header that printed nothing here would be a header that did not
+  /// answer G-L3.
+  final String syncSummary;
+
+  /// Data rows in the exported file. Zero is legitimate — an empty report still
+  /// produces a valid file carrying its header and *"Tidak ada data"* (§52), and
+  /// an export that found nothing is exactly the kind of thing an audit should
+  /// record rather than swallow.
+  final int rowCount;
+  const ExportLogRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.reportType,
+    required this.format,
+    required this.scopeType,
+    this.locationId,
+    this.categoryId,
+    this.branchId,
+    this.itemId,
+    required this.periodStart,
+    required this.periodEnd,
+    required this.exportedBy,
+    required this.fileName,
+    required this.dataCutoffAt,
+    required this.syncSummary,
+    required this.rowCount,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $ExportLogsTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    {
+      map['report_type'] = Variable<String>(
+        $ExportLogsTable.$converterreportType.toSql(reportType),
+      );
+    }
+    {
+      map['format'] = Variable<String>(
+        $ExportLogsTable.$converterformat.toSql(format),
+      );
+    }
+    {
+      map['scope_type'] = Variable<String>(
+        $ExportLogsTable.$converterscopeType.toSql(scopeType),
+      );
+    }
+    if (!nullToAbsent || locationId != null) {
+      map['location_id'] = Variable<String>(locationId);
+    }
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<String>(categoryId);
+    }
+    if (!nullToAbsent || branchId != null) {
+      map['branch_id'] = Variable<String>(branchId);
+    }
+    if (!nullToAbsent || itemId != null) {
+      map['item_id'] = Variable<String>(itemId);
+    }
+    map['period_start'] = Variable<DateTime>(periodStart);
+    map['period_end'] = Variable<DateTime>(periodEnd);
+    map['exported_by'] = Variable<String>(exportedBy);
+    map['file_name'] = Variable<String>(fileName);
+    map['data_cutoff_at'] = Variable<DateTime>(dataCutoffAt);
+    map['sync_summary'] = Variable<String>(syncSummary);
+    map['row_count'] = Variable<int>(rowCount);
+    return map;
+  }
+
+  ExportLogsCompanion toCompanion(bool nullToAbsent) {
+    return ExportLogsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      reportType: Value(reportType),
+      format: Value(format),
+      scopeType: Value(scopeType),
+      locationId: locationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(locationId),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
+      branchId: branchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(branchId),
+      itemId: itemId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(itemId),
+      periodStart: Value(periodStart),
+      periodEnd: Value(periodEnd),
+      exportedBy: Value(exportedBy),
+      fileName: Value(fileName),
+      dataCutoffAt: Value(dataCutoffAt),
+      syncSummary: Value(syncSummary),
+      rowCount: Value(rowCount),
+    );
+  }
+
+  factory ExportLogRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExportLogRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      reportType: serializer.fromJson<ReportType>(json['reportType']),
+      format: serializer.fromJson<ReportFormat>(json['format']),
+      scopeType: serializer.fromJson<ReportScopeType>(json['scopeType']),
+      locationId: serializer.fromJson<String?>(json['locationId']),
+      categoryId: serializer.fromJson<String?>(json['categoryId']),
+      branchId: serializer.fromJson<String?>(json['branchId']),
+      itemId: serializer.fromJson<String?>(json['itemId']),
+      periodStart: serializer.fromJson<DateTime>(json['periodStart']),
+      periodEnd: serializer.fromJson<DateTime>(json['periodEnd']),
+      exportedBy: serializer.fromJson<String>(json['exportedBy']),
+      fileName: serializer.fromJson<String>(json['fileName']),
+      dataCutoffAt: serializer.fromJson<DateTime>(json['dataCutoffAt']),
+      syncSummary: serializer.fromJson<String>(json['syncSummary']),
+      rowCount: serializer.fromJson<int>(json['rowCount']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'reportType': serializer.toJson<ReportType>(reportType),
+      'format': serializer.toJson<ReportFormat>(format),
+      'scopeType': serializer.toJson<ReportScopeType>(scopeType),
+      'locationId': serializer.toJson<String?>(locationId),
+      'categoryId': serializer.toJson<String?>(categoryId),
+      'branchId': serializer.toJson<String?>(branchId),
+      'itemId': serializer.toJson<String?>(itemId),
+      'periodStart': serializer.toJson<DateTime>(periodStart),
+      'periodEnd': serializer.toJson<DateTime>(periodEnd),
+      'exportedBy': serializer.toJson<String>(exportedBy),
+      'fileName': serializer.toJson<String>(fileName),
+      'dataCutoffAt': serializer.toJson<DateTime>(dataCutoffAt),
+      'syncSummary': serializer.toJson<String>(syncSummary),
+      'rowCount': serializer.toJson<int>(rowCount),
+    };
+  }
+
+  ExportLogRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    ReportType? reportType,
+    ReportFormat? format,
+    ReportScopeType? scopeType,
+    Value<String?> locationId = const Value.absent(),
+    Value<String?> categoryId = const Value.absent(),
+    Value<String?> branchId = const Value.absent(),
+    Value<String?> itemId = const Value.absent(),
+    DateTime? periodStart,
+    DateTime? periodEnd,
+    String? exportedBy,
+    String? fileName,
+    DateTime? dataCutoffAt,
+    String? syncSummary,
+    int? rowCount,
+  }) => ExportLogRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    reportType: reportType ?? this.reportType,
+    format: format ?? this.format,
+    scopeType: scopeType ?? this.scopeType,
+    locationId: locationId.present ? locationId.value : this.locationId,
+    categoryId: categoryId.present ? categoryId.value : this.categoryId,
+    branchId: branchId.present ? branchId.value : this.branchId,
+    itemId: itemId.present ? itemId.value : this.itemId,
+    periodStart: periodStart ?? this.periodStart,
+    periodEnd: periodEnd ?? this.periodEnd,
+    exportedBy: exportedBy ?? this.exportedBy,
+    fileName: fileName ?? this.fileName,
+    dataCutoffAt: dataCutoffAt ?? this.dataCutoffAt,
+    syncSummary: syncSummary ?? this.syncSummary,
+    rowCount: rowCount ?? this.rowCount,
+  );
+  ExportLogRow copyWithCompanion(ExportLogsCompanion data) {
+    return ExportLogRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      reportType: data.reportType.present
+          ? data.reportType.value
+          : this.reportType,
+      format: data.format.present ? data.format.value : this.format,
+      scopeType: data.scopeType.present ? data.scopeType.value : this.scopeType,
+      locationId: data.locationId.present
+          ? data.locationId.value
+          : this.locationId,
+      categoryId: data.categoryId.present
+          ? data.categoryId.value
+          : this.categoryId,
+      branchId: data.branchId.present ? data.branchId.value : this.branchId,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      periodStart: data.periodStart.present
+          ? data.periodStart.value
+          : this.periodStart,
+      periodEnd: data.periodEnd.present ? data.periodEnd.value : this.periodEnd,
+      exportedBy: data.exportedBy.present
+          ? data.exportedBy.value
+          : this.exportedBy,
+      fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      dataCutoffAt: data.dataCutoffAt.present
+          ? data.dataCutoffAt.value
+          : this.dataCutoffAt,
+      syncSummary: data.syncSummary.present
+          ? data.syncSummary.value
+          : this.syncSummary,
+      rowCount: data.rowCount.present ? data.rowCount.value : this.rowCount,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExportLogRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('reportType: $reportType, ')
+          ..write('format: $format, ')
+          ..write('scopeType: $scopeType, ')
+          ..write('locationId: $locationId, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('branchId: $branchId, ')
+          ..write('itemId: $itemId, ')
+          ..write('periodStart: $periodStart, ')
+          ..write('periodEnd: $periodEnd, ')
+          ..write('exportedBy: $exportedBy, ')
+          ..write('fileName: $fileName, ')
+          ..write('dataCutoffAt: $dataCutoffAt, ')
+          ..write('syncSummary: $syncSummary, ')
+          ..write('rowCount: $rowCount')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    reportType,
+    format,
+    scopeType,
+    locationId,
+    categoryId,
+    branchId,
+    itemId,
+    periodStart,
+    periodEnd,
+    exportedBy,
+    fileName,
+    dataCutoffAt,
+    syncSummary,
+    rowCount,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExportLogRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.reportType == this.reportType &&
+          other.format == this.format &&
+          other.scopeType == this.scopeType &&
+          other.locationId == this.locationId &&
+          other.categoryId == this.categoryId &&
+          other.branchId == this.branchId &&
+          other.itemId == this.itemId &&
+          other.periodStart == this.periodStart &&
+          other.periodEnd == this.periodEnd &&
+          other.exportedBy == this.exportedBy &&
+          other.fileName == this.fileName &&
+          other.dataCutoffAt == this.dataCutoffAt &&
+          other.syncSummary == this.syncSummary &&
+          other.rowCount == this.rowCount);
+}
+
+class ExportLogsCompanion extends UpdateCompanion<ExportLogRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<ReportType> reportType;
+  final Value<ReportFormat> format;
+  final Value<ReportScopeType> scopeType;
+  final Value<String?> locationId;
+  final Value<String?> categoryId;
+  final Value<String?> branchId;
+  final Value<String?> itemId;
+  final Value<DateTime> periodStart;
+  final Value<DateTime> periodEnd;
+  final Value<String> exportedBy;
+  final Value<String> fileName;
+  final Value<DateTime> dataCutoffAt;
+  final Value<String> syncSummary;
+  final Value<int> rowCount;
+  final Value<int> rowid;
+  const ExportLogsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.reportType = const Value.absent(),
+    this.format = const Value.absent(),
+    this.scopeType = const Value.absent(),
+    this.locationId = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.branchId = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.periodStart = const Value.absent(),
+    this.periodEnd = const Value.absent(),
+    this.exportedBy = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.dataCutoffAt = const Value.absent(),
+    this.syncSummary = const Value.absent(),
+    this.rowCount = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ExportLogsCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required ReportType reportType,
+    required ReportFormat format,
+    required ReportScopeType scopeType,
+    this.locationId = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.branchId = const Value.absent(),
+    this.itemId = const Value.absent(),
+    required DateTime periodStart,
+    required DateTime periodEnd,
+    required String exportedBy,
+    required String fileName,
+    required DateTime dataCutoffAt,
+    required String syncSummary,
+    required int rowCount,
+    this.rowid = const Value.absent(),
+  }) : reportType = Value(reportType),
+       format = Value(format),
+       scopeType = Value(scopeType),
+       periodStart = Value(periodStart),
+       periodEnd = Value(periodEnd),
+       exportedBy = Value(exportedBy),
+       fileName = Value(fileName),
+       dataCutoffAt = Value(dataCutoffAt),
+       syncSummary = Value(syncSummary),
+       rowCount = Value(rowCount);
+  static Insertable<ExportLogRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? reportType,
+    Expression<String>? format,
+    Expression<String>? scopeType,
+    Expression<String>? locationId,
+    Expression<String>? categoryId,
+    Expression<String>? branchId,
+    Expression<String>? itemId,
+    Expression<DateTime>? periodStart,
+    Expression<DateTime>? periodEnd,
+    Expression<String>? exportedBy,
+    Expression<String>? fileName,
+    Expression<DateTime>? dataCutoffAt,
+    Expression<String>? syncSummary,
+    Expression<int>? rowCount,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (reportType != null) 'report_type': reportType,
+      if (format != null) 'format': format,
+      if (scopeType != null) 'scope_type': scopeType,
+      if (locationId != null) 'location_id': locationId,
+      if (categoryId != null) 'category_id': categoryId,
+      if (branchId != null) 'branch_id': branchId,
+      if (itemId != null) 'item_id': itemId,
+      if (periodStart != null) 'period_start': periodStart,
+      if (periodEnd != null) 'period_end': periodEnd,
+      if (exportedBy != null) 'exported_by': exportedBy,
+      if (fileName != null) 'file_name': fileName,
+      if (dataCutoffAt != null) 'data_cutoff_at': dataCutoffAt,
+      if (syncSummary != null) 'sync_summary': syncSummary,
+      if (rowCount != null) 'row_count': rowCount,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ExportLogsCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<ReportType>? reportType,
+    Value<ReportFormat>? format,
+    Value<ReportScopeType>? scopeType,
+    Value<String?>? locationId,
+    Value<String?>? categoryId,
+    Value<String?>? branchId,
+    Value<String?>? itemId,
+    Value<DateTime>? periodStart,
+    Value<DateTime>? periodEnd,
+    Value<String>? exportedBy,
+    Value<String>? fileName,
+    Value<DateTime>? dataCutoffAt,
+    Value<String>? syncSummary,
+    Value<int>? rowCount,
+    Value<int>? rowid,
+  }) {
+    return ExportLogsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      reportType: reportType ?? this.reportType,
+      format: format ?? this.format,
+      scopeType: scopeType ?? this.scopeType,
+      locationId: locationId ?? this.locationId,
+      categoryId: categoryId ?? this.categoryId,
+      branchId: branchId ?? this.branchId,
+      itemId: itemId ?? this.itemId,
+      periodStart: periodStart ?? this.periodStart,
+      periodEnd: periodEnd ?? this.periodEnd,
+      exportedBy: exportedBy ?? this.exportedBy,
+      fileName: fileName ?? this.fileName,
+      dataCutoffAt: dataCutoffAt ?? this.dataCutoffAt,
+      syncSummary: syncSummary ?? this.syncSummary,
+      rowCount: rowCount ?? this.rowCount,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $ExportLogsTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (reportType.present) {
+      map['report_type'] = Variable<String>(
+        $ExportLogsTable.$converterreportType.toSql(reportType.value),
+      );
+    }
+    if (format.present) {
+      map['format'] = Variable<String>(
+        $ExportLogsTable.$converterformat.toSql(format.value),
+      );
+    }
+    if (scopeType.present) {
+      map['scope_type'] = Variable<String>(
+        $ExportLogsTable.$converterscopeType.toSql(scopeType.value),
+      );
+    }
+    if (locationId.present) {
+      map['location_id'] = Variable<String>(locationId.value);
+    }
+    if (categoryId.present) {
+      map['category_id'] = Variable<String>(categoryId.value);
+    }
+    if (branchId.present) {
+      map['branch_id'] = Variable<String>(branchId.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (periodStart.present) {
+      map['period_start'] = Variable<DateTime>(periodStart.value);
+    }
+    if (periodEnd.present) {
+      map['period_end'] = Variable<DateTime>(periodEnd.value);
+    }
+    if (exportedBy.present) {
+      map['exported_by'] = Variable<String>(exportedBy.value);
+    }
+    if (fileName.present) {
+      map['file_name'] = Variable<String>(fileName.value);
+    }
+    if (dataCutoffAt.present) {
+      map['data_cutoff_at'] = Variable<DateTime>(dataCutoffAt.value);
+    }
+    if (syncSummary.present) {
+      map['sync_summary'] = Variable<String>(syncSummary.value);
+    }
+    if (rowCount.present) {
+      map['row_count'] = Variable<int>(rowCount.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExportLogsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('reportType: $reportType, ')
+          ..write('format: $format, ')
+          ..write('scopeType: $scopeType, ')
+          ..write('locationId: $locationId, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('branchId: $branchId, ')
+          ..write('itemId: $itemId, ')
+          ..write('periodStart: $periodStart, ')
+          ..write('periodEnd: $periodEnd, ')
+          ..write('exportedBy: $exportedBy, ')
+          ..write('fileName: $fileName, ')
+          ..write('dataCutoffAt: $dataCutoffAt, ')
+          ..write('syncSummary: $syncSummary, ')
+          ..write('rowCount: $rowCount, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   late final $BranchesTable branches = $BranchesTable(this);
@@ -18313,6 +19427,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $GoodsReturnLinesTable goodsReturnLines = $GoodsReturnLinesTable(
     this,
   );
+  late final $ExportLogsTable exportLogs = $ExportLogsTable(this);
   late final Index idxStockBalancesBatched = Index(
     'idx_stock_balances_batched',
     'CREATE UNIQUE INDEX idx_stock_balances_batched ON stock_balances (location_id, item_id, batch_id) WHERE batch_id IS NOT NULL',
@@ -18689,6 +19804,42 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_goods_return_lines_unique',
     'CREATE UNIQUE INDEX idx_goods_return_lines_unique ON goods_return_lines (goods_return_id, gr_line_id)',
   );
+  late final Index idxExportLogsActor = Index(
+    'idx_export_logs_actor',
+    'CREATE INDEX idx_export_logs_actor ON export_logs (exported_by, created_at)',
+  );
+  late final Index idxExportLogsType = Index(
+    'idx_export_logs_type',
+    'CREATE INDEX idx_export_logs_type ON export_logs (report_type, created_at)',
+  );
+  late final Index idxExportLogsFormat = Index(
+    'idx_export_logs_format',
+    'CREATE INDEX idx_export_logs_format ON export_logs (format, created_at)',
+  );
+  late final Index idxExportLogsScope = Index(
+    'idx_export_logs_scope',
+    'CREATE INDEX idx_export_logs_scope ON export_logs (scope_type, created_at)',
+  );
+  late final Index idxExportLogsBranch = Index(
+    'idx_export_logs_branch',
+    'CREATE INDEX idx_export_logs_branch ON export_logs (branch_id, created_at)',
+  );
+  late final Index idxExportLogsLocation = Index(
+    'idx_export_logs_location',
+    'CREATE INDEX idx_export_logs_location ON export_logs (location_id, created_at)',
+  );
+  late final Index idxExportLogsCategory = Index(
+    'idx_export_logs_category',
+    'CREATE INDEX idx_export_logs_category ON export_logs (category_id, created_at)',
+  );
+  late final Index idxExportLogsItem = Index(
+    'idx_export_logs_item',
+    'CREATE INDEX idx_export_logs_item ON export_logs (item_id, created_at)',
+  );
+  late final Index idxExportLogsCreatedAt = Index(
+    'idx_export_logs_created_at',
+    'CREATE INDEX idx_export_logs_created_at ON export_logs (created_at)',
+  );
   late final MasterDataDao masterDataDao = MasterDataDao(this as AppDatabase);
   late final InventoryDao inventoryDao = InventoryDao(this as AppDatabase);
   late final OpnameDao opnameDao = OpnameDao(this as AppDatabase);
@@ -18711,6 +19862,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final GoodsReturnDao goodsReturnDao = GoodsReturnDao(
     this as AppDatabase,
   );
+  late final ReportingDao reportingDao = ReportingDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -18742,6 +19894,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     consumptionLines,
     goodsReturns,
     goodsReturnLines,
+    exportLogs,
     idxStockBalancesBatched,
     idxStockBalancesUnbatched,
     idxStockMovementsItem,
@@ -18836,6 +19989,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxGoodsReturnLinesBatch,
     idxGoodsReturnLinesGrLineUnique,
     idxGoodsReturnLinesUnique,
+    idxExportLogsActor,
+    idxExportLogsType,
+    idxExportLogsFormat,
+    idxExportLogsScope,
+    idxExportLogsBranch,
+    idxExportLogsLocation,
+    idxExportLogsCategory,
+    idxExportLogsItem,
+    idxExportLogsCreatedAt,
   ];
   @override
   DriftDatabaseOptions get options =>

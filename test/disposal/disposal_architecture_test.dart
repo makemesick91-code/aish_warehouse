@@ -594,7 +594,7 @@ void main() {
 
       expect(code, contains('_v9DisposalIndexes'));
       expect(code, contains('if (from < 9)'));
-      expect(code, contains('int get schemaVersion => 11;'));
+      expect(code, contains('int get schemaVersion => 12;'));
       expect(
         code.contains('allSchemaEntities'),
         isFalse,

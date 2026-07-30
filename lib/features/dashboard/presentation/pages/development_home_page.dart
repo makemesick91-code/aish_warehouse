@@ -16,6 +16,7 @@ import '../../../good_receipt/presentation/widgets/good_receipt_dashboard_cards.
 import '../../../consumption/presentation/widgets/consumption_dashboard_cards.dart';
 import '../../../disposal/presentation/widgets/disposal_dashboard_cards.dart';
 import '../../../distribution/presentation/widgets/distribution_dashboard_cards.dart';
+import '../../../reports/presentation/widgets/reporting_dashboard_cards.dart';
 import '../providers/development_home_providers.dart';
 
 /// Development screen that proves the foundation works end to end: the local
@@ -461,6 +462,17 @@ class _SessionCard extends ConsumerWidget {
                 ),
               ),
             ],
+            // Milestone 10. Unconditional, and that is the point: §3.1 gives report
+            // access to every role, and what each finds inside is
+            // `ReportAccessPolicy`'s to decide rather than this shell's. The two
+            // cards below are the ones that *are* conditional — one on the role,
+            // one on there being anything to show.
+            const SizedBox(height: AppSpacing.sm),
+            const ReportingDashboardCard(),
+            const SizedBox(height: AppSpacing.sm),
+            const RecentOwnExportsCard(),
+            const SizedBox(height: AppSpacing.sm),
+            const ExportAuditSummaryCard(),
           ],
         ),
       ),

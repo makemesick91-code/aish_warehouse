@@ -2438,3 +2438,222 @@ final class InvalidGoodsReturnTimestampFailure extends AppFailure {
   final String laterLabel;
   final DateTime laterUtc;
 }
+
+// --- Reporting & Export (Milestone 10) ---------------------------------------
+
+/// The acting user's role does not reach the report they asked for (G-L1).
+///
+/// Deliberately says nothing about *which* rule fired — not the role, not the
+/// scope, not whether the location exists. A refusal that explained itself would
+/// let anyone with the app map the clinic group's locations by trying scopes until
+/// the message changed.
+final class ReportAccessDeniedFailure extends AppFailure {
+  const ReportAccessDeniedFailure(
+    super.message, {
+    required this.reportType,
+    this.scopeType,
+  });
+
+  final ReportType reportType;
+  final ReportScopeType? scopeType;
+}
+
+/// A report type this build does not produce for this actor at all.
+final class UnsupportedReportTypeFailure extends AppFailure {
+  const UnsupportedReportTypeFailure(super.message, {required this.reportType});
+
+  final ReportType reportType;
+}
+
+/// The scope is not one this report can be run at — `branch_all` on a Kartu Stok,
+/// `cross_branch` on a current-stock report (§17).
+final class InvalidReportScopeFailure extends AppFailure {
+  const InvalidReportScopeFailure(
+    super.message, {
+    required this.reportType,
+    required this.scopeType,
+  });
+
+  final ReportType reportType;
+  final ReportScopeType scopeType;
+}
+
+/// `period_start` is after `period_end`, compared as civil dates rather than as
+/// text (§15).
+final class InvalidReportPeriodFailure extends AppFailure {
+  const InvalidReportPeriodFailure(
+    super.message, {
+    required this.periodStart,
+    required this.periodEnd,
+  });
+
+  final DateTime periodStart;
+  final DateTime periodEnd;
+}
+
+/// The scope names exactly one location and none was given.
+final class ReportLocationRequiredFailure extends AppFailure {
+  const ReportLocationRequiredFailure(
+    super.message, {
+    required this.reportType,
+    required this.scopeType,
+  });
+
+  final ReportType reportType;
+  final ReportScopeType scopeType;
+}
+
+/// A location outside the actor's scope, or of the wrong type for the scope.
+///
+/// One failure for both, for the reason [ReportAccessDeniedFailure] gives: telling
+/// "belongs to another branch" from "is not a room" apart is a way to enumerate.
+final class ReportLocationAccessDeniedFailure extends AppFailure {
+  const ReportLocationAccessDeniedFailure(
+    super.message, {
+    required this.locationId,
+  });
+
+  final String locationId;
+}
+
+/// A Kartu Stok without an item — the one report that is meaningless without one.
+final class ReportItemRequiredFailure extends AppFailure {
+  const ReportItemRequiredFailure(super.message, {required this.reportType});
+
+  final ReportType reportType;
+}
+
+final class ReportCategoryNotFoundFailure extends AppFailure {
+  const ReportCategoryNotFoundFailure(
+    super.message, {
+    required this.categoryId,
+  });
+
+  final String categoryId;
+}
+
+final class ReportItemNotFoundFailure extends AppFailure {
+  const ReportItemNotFoundFailure(super.message, {required this.itemId});
+
+  final String itemId;
+}
+
+final class ReportLocationNotFoundFailure extends AppFailure {
+  const ReportLocationNotFoundFailure(
+    super.message, {
+    required this.locationId,
+  });
+
+  final String locationId;
+}
+
+/// A ledger row the scope query listed did not come back from the detailed read
+/// (§35).
+///
+/// This is the one integrity condition that **blocks** rather than degrades. Every
+/// other missing reference produces a fallback label and a warning, because the
+/// quantity is still known; a missing *movement* means the quantity itself is gone,
+/// and a report that silently totalled less would be worse than no report.
+final class ReportLedgerIntegrityFailure extends AppFailure {
+  const ReportLedgerIntegrityFailure(
+    super.message, {
+    required this.expectedMovementIds,
+    required this.loadedMovementIds,
+  });
+
+  final Set<String> expectedMovementIds;
+  final Set<String> loadedMovementIds;
+
+  Set<String> get missingMovementIds =>
+      expectedMovementIds.difference(loadedMovementIds);
+}
+
+/// A document line the recap query listed did not come back with its document.
+final class ReportDocumentIntegrityFailure extends AppFailure {
+  const ReportDocumentIntegrityFailure(
+    super.message, {
+    required this.reportType,
+    required this.missingDocumentIds,
+  });
+
+  final ReportType reportType;
+  final Set<String> missingDocumentIds;
+}
+
+/// The report could not be assembled at all — the catch-all above the typed
+/// builders, so a bug surfaces as one Indonesian sentence rather than a stack trace.
+final class ReportGenerationFailure extends AppFailure {
+  const ReportGenerationFailure(super.message, {required this.reportType});
+
+  final ReportType reportType;
+}
+
+final class ReportExcelGenerationFailure extends AppFailure {
+  const ReportExcelGenerationFailure(super.message, {required this.reportType});
+
+  final ReportType reportType;
+}
+
+final class ReportPdfGenerationFailure extends AppFailure {
+  const ReportPdfGenerationFailure(super.message, {required this.reportType});
+
+  final ReportType reportType;
+}
+
+/// The bytes were produced but could not be written to disk.
+///
+/// No export log is written when this fires: §36's ordering is *file first, log
+/// second*, so a failure here leaves nothing to audit.
+final class ReportFileWriteFailure extends AppFailure {
+  const ReportFileWriteFailure(super.message, {required this.fileName});
+
+  /// The canonical file name only — never a path. An internal directory has no
+  /// business in a message a nurse reads (§52).
+  final String fileName;
+}
+
+/// The file was written but `export_logs` could not record it.
+///
+/// The export is treated as **failed**: the file is deleted best-effort and the
+/// share sheet is not opened, because an export nobody can audit is exactly what
+/// G-L2 exists to prevent (§3.17).
+final class ReportAuditWriteFailure extends AppFailure {
+  const ReportAuditWriteFailure(super.message, {required this.fileName});
+
+  final String fileName;
+}
+
+/// The share sheet could not be opened.
+///
+/// Non-destructive by design: the file exists and the audit row exists, so this
+/// reports a failed *hand-off*, not a failed export (§36).
+final class ReportShareFailure extends AppFailure {
+  const ReportShareFailure(super.message, {required this.fileName});
+
+  final String fileName;
+}
+
+/// A file name that would escape the export directory or is not addressable.
+///
+/// It should be unreachable — [ReportFileNamePolicy] builds every name from
+/// sanitized tokens — and exists so that "unreachable" is enforced rather than
+/// assumed (§37).
+final class InvalidReportFileNameFailure extends AppFailure {
+  const InvalidReportFileNameFailure(super.message, {required this.fileName});
+
+  final String fileName;
+}
+
+/// Reserved: an export refused because it would contain nothing.
+///
+/// **Deliberately not thrown anywhere in this milestone.** §52 decides that an
+/// empty report is a legitimate answer — the file is produced with its header and
+/// *"Tidak ada data"*, and the export is logged, because "we looked and there was
+/// nothing" is a fact an audit should record. The type exists so a future rule that
+/// genuinely needs to refuse one has somewhere to land, and the reasoning above is
+/// here so nobody wires it up by assuming it was an oversight.
+final class EmptyReportExportFailure extends AppFailure {
+  const EmptyReportExportFailure(super.message, {required this.reportType});
+
+  final ReportType reportType;
+}

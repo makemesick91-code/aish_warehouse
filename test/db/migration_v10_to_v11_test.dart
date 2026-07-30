@@ -497,7 +497,7 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 11);
+      expect(row.read<int>('user_version'), 12);
 
       await database.close();
     });
@@ -508,8 +508,10 @@ void main() {
 
       final tables = await objectNames(database, 'table');
       expect(tables, containsAll(goodsReturnTables));
-      // Exhaustive: v11 adds two tables, no more.
-      expect(tables, {...v10Tables, ...goodsReturnTables});
+      // Exhaustive: v11 adds two tables, no more. `export_logs` is v12's, and it
+      // is here because opening an older database migrates it all the way to the
+      // current schema rather than stopping at the step under test.
+      expect(tables, {...v10Tables, ...goodsReturnTables, 'export_logs'});
 
       await database.close();
     });
@@ -766,7 +768,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 11);
+      expect(version.read<int>('user_version'), 12);
       expect(
         await objectNames(second, 'table'),
         containsAll(goodsReturnTables),
@@ -972,7 +974,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 11);
+        expect(version.read<int>('user_version'), 12);
 
         final tables = await objectNames(database, 'table');
         expect(tables, containsAll(goodsReturnTables));
@@ -1139,6 +1141,7 @@ void main() {
       for (final table in const [
         'goods_returns',
         'goods_return_lines',
+        'export_logs',
         'consumptions',
         'consumption_lines',
         'disposals',

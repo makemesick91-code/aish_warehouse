@@ -70,7 +70,9 @@ void main() {
   ) async {
     await pumpApp(tester);
 
-    await tester.tap(find.text('Jalankan Seed Pengembangan'));
+    await tester.tap(
+      await reveal(tester, find.text('Jalankan Seed Pengembangan')),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Belum ada data'), findsNothing);
@@ -89,7 +91,9 @@ void main() {
     WidgetTester tester,
   ) async {
     await pumpApp(tester);
-    await tester.tap(find.text('Jalankan Seed Pengembangan'));
+    await tester.tap(
+      await reveal(tester, find.text('Jalankan Seed Pengembangan')),
+    );
     await tester.pumpAndSettle();
 
     // Decimal balances render as typed, whole ones without a decimal tail.

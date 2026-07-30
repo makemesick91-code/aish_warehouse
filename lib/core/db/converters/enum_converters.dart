@@ -140,6 +140,36 @@ class GoodsReturnStatusConverter
   String toSql(GoodsReturnStatus value) => value.dbValue;
 }
 
+class ReportTypeConverter extends TypeConverter<ReportType, String> {
+  const ReportTypeConverter();
+
+  @override
+  ReportType fromSql(String fromDb) => ReportType.fromDbValue(fromDb);
+
+  @override
+  String toSql(ReportType value) => value.dbValue;
+}
+
+class ReportFormatConverter extends TypeConverter<ReportFormat, String> {
+  const ReportFormatConverter();
+
+  @override
+  ReportFormat fromSql(String fromDb) => ReportFormat.fromDbValue(fromDb);
+
+  @override
+  String toSql(ReportFormat value) => value.dbValue;
+}
+
+class ReportScopeTypeConverter extends TypeConverter<ReportScopeType, String> {
+  const ReportScopeTypeConverter();
+
+  @override
+  ReportScopeType fromSql(String fromDb) => ReportScopeType.fromDbValue(fromDb);
+
+  @override
+  String toSql(ReportScopeType value) => value.dbValue;
+}
+
 class StockMovementTypeConverter
     extends TypeConverter<StockMovementType, String> {
   const StockMovementTypeConverter();

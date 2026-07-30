@@ -103,12 +103,12 @@ void main() {
   }
 
   group('struktur tabel', () {
-    test('schemaVersion adalah 11', () async {
+    test('schemaVersion adalah 12', () async {
       final row = await context.database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 11);
-      expect(context.database.schemaVersion, 11);
+      expect(row.read<int>('user_version'), 12);
+      expect(context.database.schemaVersion, 12);
     });
 
     test('dua tabel Pemakaian tersedia', () async {

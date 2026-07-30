@@ -489,7 +489,7 @@ void main() {
 
       expect(code, contains('_v8DistributionIndexes'));
       expect(code, contains('if (from < 8)'));
-      expect(code, contains('int get schemaVersion => 11;'));
+      expect(code, contains('int get schemaVersion => 12;'));
       expect(
         code.contains('allSchemaEntities'),
         isFalse,
@@ -580,11 +580,25 @@ void main() {
       }
     });
 
-    test('tidak ada tabel laporan atau export_logs pada milestone ini', () {
+    test('tabel laporan tetap terpisah dari tabel Distribusi', () {
+      // This guard was written for Milestone 6, when it read *"no reporting table
+      // on this milestone"* — a scope-creep check, and the right one at the time.
+      // Milestone 10 added `export_logs` deliberately (G-L2), so the assertion is
+      // narrowed rather than deleted: what still must not happen is the audit table
+      // growing into the Distribusi tables, or a distribution column appearing on
+      // it. `distribution_tables.dart` names neither, and `reporting_tables.dart`
+      // names no distribution.
       for (final file in dartFilesUnder('lib/core/db/tables')) {
         final source = readLibrarySource(file);
-        expect(source.contains('class ExportLogs'), isFalse, reason: file);
         expect(source.contains('class Reports'), isFalse, reason: file);
+        if (file.endsWith('distribution_tables.dart')) {
+          expect(source.contains('class ExportLogs'), isFalse, reason: file);
+          expect(source.contains('export_logs'), isFalse, reason: file);
+        }
+        if (file.endsWith('reporting_tables.dart')) {
+          expect(source.contains('class Distributions'), isFalse, reason: file);
+          expect(source.contains('distribution_id'), isFalse, reason: file);
+        }
       }
     });
 

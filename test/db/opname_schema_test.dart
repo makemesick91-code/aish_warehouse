@@ -105,6 +105,7 @@ void main() {
         'consumption_lines',
         'goods_returns',
         'goods_return_lines',
+        'export_logs',
       });
     });
 
