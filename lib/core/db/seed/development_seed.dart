@@ -4,7 +4,15 @@ import '../../../features/inventory/domain/repositories/inventory_repository.dar
 import '../../../features/inventory/domain/services/stock_posting_service.dart';
 import '../../../features/master/domain/models/master_models.dart';
 import '../../../features/master/domain/repositories/master_data_repository.dart';
+import '../../../features/opname/domain/repositories/opname_repository.dart';
+import '../../../features/opname/domain/use_cases/create_stock_opname_use_case.dart';
+import '../../../features/opname/domain/use_cases/submit_stock_opname_use_case.dart';
+import '../../../features/purchase_request/domain/repositories/purchase_request_repository.dart';
+import '../../../features/purchase_request/domain/services/purchase_request_opname_eligibility_policy.dart';
+import '../../../features/purchase_request/domain/use_cases/create_purchase_request_use_case.dart';
+import '../../../features/purchase_request/domain/use_cases/submit_purchase_request_use_case.dart';
 import '../../enums/app_enums.dart';
+import '../../errors/failures.dart';
 import '../../quantity/quantity.dart';
 import '../../time/app_time_zone.dart';
 import '../../time/date_only.dart';
@@ -55,10 +63,19 @@ class _SeedBatch {
   final String qty;
 }
 
-/// Opening stock placed into "Ruang Dental 1", so a Stok Opname has something
-/// to count from the first run (Milestone 2).
+/// Opening stock placed into one dental room, so a Stok Opname has something to
+/// count from the first run (Milestone 2) and a Purchase Request has a real
+/// deficiency to propose (Milestone 3).
 class _SeedRoomStock {
-  const _SeedRoomStock({required this.sku, this.batchNo, required this.qty});
+  const _SeedRoomStock({
+    required this.roomCode,
+    required this.sku,
+    this.batchNo,
+    required this.qty,
+  });
+
+  /// `R1`, `R2` or `R3`.
+  final String roomCode;
 
   final String sku;
 
@@ -66,6 +83,17 @@ class _SeedRoomStock {
   final String? batchNo;
 
   final String qty;
+}
+
+/// One Stok Opname the seed files so a Purchase Request has something to cite.
+///
+/// [weeksAgo] is what makes the G-P1 window demonstrable on a fresh install: 0 and
+/// 1 are eligible, and 3 is deliberately too old to be chosen.
+class _SeedOpname {
+  const _SeedOpname({required this.roomCode, required this.weeksAgo});
+
+  final String roomCode;
+  final int weeksAgo;
 }
 
 /// Idempotent development seed.
@@ -80,12 +108,17 @@ class DevelopmentSeed {
     required this._master,
     required this._inventory,
     required this._posting,
+    required OpnameRepository opnames,
+    required this._requests,
     bool? isDevelopmentBuild,
-  }) : _isDevelopmentBuild = isDevelopmentBuild ?? !kReleaseMode;
+  }) : _opnameRepository = opnames,
+       _isDevelopmentBuild = isDevelopmentBuild ?? !kReleaseMode;
 
   final MasterDataRepository _master;
   final InventoryRepository _inventory;
   final StockPostingService _posting;
+  final OpnameRepository _opnameRepository;
+  final PurchaseRequestRepository _requests;
   final bool _isDevelopmentBuild;
 
   static const _categoryNames = <String>[
@@ -225,15 +258,75 @@ class DevelopmentSeed {
     ),
   ];
 
-  /// Opening stock of Ruang Dental 1, including decimal quantities and one
-  /// expired batch, so the first Stok Opname has a realistic sheet to count.
+  /// Opening stock of the three dental rooms, including decimal quantities and one
+  /// expired batch, so the first Stok Opname has a realistic sheet to count and
+  /// the first Purchase Request has a realistic deficiency to propose.
+  ///
+  /// The quantities are chosen against the par levels above so the demo exercises
+  /// every branch of the suggestion formula (§14):
+  ///
+  /// * `DEN-0004` (par 5/room): R1 holds `4.5`, R2 holds `3` → deficiencies of
+  ///   `0.5` and `2`, summed to a **decimal suggestion of `2.5 box`**.
+  /// * `DEN-0005` (par 50/room): R1 holds `120`, comfortably above par → a
+  ///   **zero-suggestion** position, which is what a manual request has to be made
+  ///   against.
+  /// * `DEN-0007` (par 10/room, batch-tracked): R2 holds two batches of `2` each,
+  ///   so the batches must be **summed to `4` before** the par comparison, or the
+  ///   suggestion would come out as `8 + 8` instead of `6`.
+  /// * `DEN-0009` (par 4/room): R3 holds `1`, so the previous week's count of a
+  ///   third room contributes as well.
   static const _roomStock = <_SeedRoomStock>[
-    _SeedRoomStock(sku: 'DEN-0004', qty: '4.5'),
-    _SeedRoomStock(sku: 'DEN-0005', qty: '120'),
-    _SeedRoomStock(sku: 'DEN-0009', qty: '6'),
-    _SeedRoomStock(sku: 'DEN-0001', batchNo: 'KMP-2402', qty: '3'),
-    _SeedRoomStock(sku: 'DEN-0007', batchNo: 'LID-2407', qty: '12.5'),
-    _SeedRoomStock(sku: 'DEN-0008', batchNo: 'CHX-2301', qty: '0.5'),
+    // Ruang Dental 1 — the sheet Milestone 2's form demonstrates.
+    _SeedRoomStock(roomCode: 'R1', sku: 'DEN-0004', qty: '4.5'),
+    _SeedRoomStock(roomCode: 'R1', sku: 'DEN-0005', qty: '120'),
+    _SeedRoomStock(roomCode: 'R1', sku: 'DEN-0009', qty: '6'),
+    _SeedRoomStock(
+      roomCode: 'R1',
+      sku: 'DEN-0001',
+      batchNo: 'KMP-2402',
+      qty: '3',
+    ),
+    _SeedRoomStock(
+      roomCode: 'R1',
+      sku: 'DEN-0007',
+      batchNo: 'LID-2407',
+      qty: '12.5',
+    ),
+    _SeedRoomStock(
+      roomCode: 'R1',
+      sku: 'DEN-0008',
+      batchNo: 'CHX-2301',
+      qty: '0.5',
+    ),
+    // Ruang Dental 2 — below par on two items, one of them across two batches.
+    _SeedRoomStock(roomCode: 'R2', sku: 'DEN-0004', qty: '3'),
+    _SeedRoomStock(
+      roomCode: 'R2',
+      sku: 'DEN-0007',
+      batchNo: 'LID-2407',
+      qty: '2',
+    ),
+    _SeedRoomStock(
+      roomCode: 'R2',
+      sku: 'DEN-0007',
+      batchNo: 'LID-2412',
+      qty: '2',
+    ),
+    // Ruang Dental 3 — the room whose count is a week old.
+    _SeedRoomStock(roomCode: 'R3', sku: 'DEN-0009', qty: '1'),
+  ];
+
+  /// The counts the seed files, so `Buat Purchase Request` has eligible citations
+  /// on a fresh install and the two-week window of G-P1 is visible.
+  ///
+  /// Two current-week counts from **different rooms**, one from the **previous**
+  /// week, and one from three weeks ago that must *not* appear in the picker.
+  static const _opnames = <_SeedOpname>[
+    _SeedOpname(roomCode: 'R1', weeksAgo: 0),
+    _SeedOpname(roomCode: 'R2', weeksAgo: 0),
+    _SeedOpname(roomCode: 'R3', weeksAgo: 1),
+    // Deliberately outside the window: the picker must not offer it.
+    _SeedOpname(roomCode: 'R1', weeksAgo: 3),
   ];
 
   /// True when master data already exists, used by the UI to decide between the
@@ -266,7 +359,6 @@ class DevelopmentSeed {
       branchId: branch.id,
     );
 
-    MasterLocation? firstRoomLocation;
     for (final roomSpec in const [
       ('R1', 'Ruang Dental 1'),
       ('R2', 'Ruang Dental 2'),
@@ -277,13 +369,12 @@ class DevelopmentSeed {
         code: roomSpec.$1,
         name: roomSpec.$2,
       );
-      final location = await _master.ensureLocation(
+      await _master.ensureLocation(
         type: StockLocationType.room,
         name: room.name,
         branchId: branch.id,
         roomId: room.id,
       );
-      firstRoomLocation ??= location;
     }
 
     await _master.ensureUser(
@@ -356,14 +447,13 @@ class DevelopmentSeed {
       }
     }
 
-    await _seedRoomStock(
-      roomLocation: firstRoomLocation!,
-      actorUserId: warehouseUser.id,
-    );
+    await _seedRoomStock(actorUserId: warehouseUser.id);
+    await _seedOpnames();
   }
 
-  /// Places opening stock in Ruang Dental 1 so Stok Opname has something to
-  /// count on a fresh install.
+  /// Places opening stock in the three dental rooms so Stok Opname has something
+  /// to count on a fresh install, and Purchase Request has a deficiency to
+  /// propose.
   ///
   /// Posted through [StockPostingService.postOpnameAdjustment] rather than a
   /// transfer from the warehouse: a transfer refuses expired batches (G-E4),
@@ -371,12 +461,10 @@ class DevelopmentSeed {
   /// the case an opname has to be able to surface (G-E7). The adjustment path
   /// is the one that accepts it, and it writes a real ledger movement either
   /// way, so `stock_balances` is still never touched directly.
-  Future<void> _seedRoomStock({
-    required MasterLocation roomLocation,
-    required String actorUserId,
-  }) async {
+  Future<void> _seedRoomStock({required String actorUserId}) async {
     for (final spec in _roomStock) {
-      final refDocId = 'seed-room-${spec.sku}-${spec.batchNo ?? 'nobatch'}';
+      final refDocId =
+          'seed-room-${spec.roomCode}-${spec.sku}-${spec.batchNo ?? 'nobatch'}';
       final existing = await _inventory.movementsByRef(
         refDocType: RefDocType.seed,
         refDocId: refDocId,
@@ -385,6 +473,9 @@ class DevelopmentSeed {
 
       final item = await _findItemBySku(spec.sku);
       if (item == null) continue;
+
+      final roomLocation = await _roomLocationByCode(spec.roomCode);
+      if (roomLocation == null) continue;
 
       String? batchId;
       if (spec.batchNo != null) {
@@ -405,6 +496,136 @@ class DevelopmentSeed {
         note: 'Saldo awal ruangan seed pengembangan',
       );
     }
+  }
+
+  /// The stock location of one dental room, by room code.
+  Future<MasterLocation?> _roomLocationByCode(String roomCode) async {
+    final rooms = await _master.activeRooms();
+    final match = rooms.where((room) => room.code == roomCode);
+    if (match.isEmpty) return null;
+    return _master.activeRoomLocation(match.first.id);
+  }
+
+  /// Files the Stok Opname documents a Purchase Request can cite (§28).
+  ///
+  /// Each count is created through the real use case with an **injected clock**, so
+  /// the ISO period it lands in is the operational week [_SeedOpname.weeksAgo] weeks
+  /// back rather than whatever week the seed happens to run in. That is what makes
+  /// the G-P1 window demonstrable: two counts inside it, one at its edge, and one
+  /// outside it that the picker must refuse to offer.
+  ///
+  /// Idempotent by the same mechanism the rest of the seed uses — G-O1 already
+  /// permits one live count per room per week, so a second run is refused by
+  /// [StockOpnameAlreadyExistsFailure] and skipped rather than duplicated.
+  ///
+  /// `counted_qty` is left equal to the snapshotted `system_qty`, which is what the
+  /// create use case fills in. That keeps every line difference-free, so G-O3 asks
+  /// for no explanatory notes and the submit goes through unattended — and it is
+  /// also the honest reading of a seeded count: nobody physically walked the shelf.
+  Future<void> _seedOpnames() async {
+    final users = await _master.activeUsers();
+    final nurses = users.where((user) => user.role == UserRole.perawat);
+    if (nurses.isEmpty) return;
+    final nurse = nurses.first;
+
+    final rooms = await _master.activeRooms();
+
+    for (final spec in _opnames) {
+      final match = rooms.where((room) => room.code == spec.roomCode);
+      if (match.isEmpty) continue;
+
+      // A clock pinned [weeksAgo] operational weeks back. `AppTimeZone` resolves
+      // the ISO week from it, so the document is filed under the right period
+      // without the seed doing any week arithmetic of its own (T-3).
+      DateTime clock() => DateOnly.addDays(
+        AppTimeZone.operationalDate(DateTime.now().toUtc()),
+        -7 * spec.weeksAgo,
+      ).add(const Duration(hours: 4));
+
+      try {
+        final opname = await CreateStockOpnameUseCase(
+          opnames: _opnameRepository,
+          master: _master,
+          inventory: _inventory,
+          clock: clock,
+        ).call(actorUserId: nurse.id, roomId: match.first.id);
+
+        await SubmitStockOpnameUseCase(
+          opnames: _opnameRepository,
+          master: _master,
+          clock: clock,
+        ).call(actorUserId: nurse.id, opnameId: opname.id);
+      } on StockOpnameAlreadyExistsFailure {
+        // Already seeded, or the room was genuinely counted this week. Either way
+        // there is nothing to add.
+        continue;
+      } on EmptyStockOpnameFailure {
+        // The room holds no stock at all, so there is no sheet to submit. Not an
+        // error: it just means this room has nothing to cite yet.
+        continue;
+      }
+    }
+  }
+
+  /// Sends one Purchase Request, for demonstrating the warehouse queue.
+  ///
+  /// **Deliberately not part of [run].** A seeded `submitted` request would occupy
+  /// the branch's single active-order slot (G-P4), so the very first thing a
+  /// developer tries — *Buat Purchase Request* → *Kirim ke Warehouse* — would be
+  /// refused on a fresh install. This is opt-in for when the warehouse side is what
+  /// needs demonstrating.
+  ///
+  /// Returns the request id, or `null` when there is nothing eligible to cite or
+  /// the branch already has an active order.
+  Future<String?> seedSubmittedPurchaseRequest() async {
+    if (!_isDevelopmentBuild) {
+      throw StateError(
+        'Seed pengembangan tidak boleh dijalankan pada build produksi.',
+      );
+    }
+
+    final users = await _master.activeUsers();
+    final heads = users.where((user) => user.role == UserRole.kepalaCabang);
+    if (heads.isEmpty) return null;
+    final head = heads.first;
+    final branchId = head.branchId;
+    if (branchId == null) return null;
+
+    if (await _requests.activeRequestForBranch(branchId) != null) return null;
+
+    final eligible = await _requests.eligibleOpnames(
+      branchId: branchId,
+      periods:
+          PurchaseRequestOpnameEligibilityPolicy.eligiblePeriods(
+                DateTime.now().toUtc(),
+              )
+              .map((week) => (year: week.year, week: week.week))
+              .toList(growable: false),
+    );
+    if (eligible.isEmpty) return null;
+
+    final request =
+        await CreatePurchaseRequestUseCase(
+          requests: _requests,
+          master: _master,
+        ).call(
+          actorUserId: head.id,
+          selectedOpnameIds: eligible
+              .map((reference) => reference.opnameId)
+              .toList(growable: false),
+          neededDate: DateOnly.addDays(
+            AppTimeZone.operationalDate(DateTime.now().toUtc()),
+            7,
+          ),
+          note: 'Permintaan demo seed pengembangan',
+        );
+
+    await SubmitPurchaseRequestUseCase(
+      requests: _requests,
+      master: _master,
+    ).call(actorUserId: head.id, prId: request.id);
+
+    return request.id;
   }
 
   Future<MasterItem?> _findItemBySku(String sku) async {

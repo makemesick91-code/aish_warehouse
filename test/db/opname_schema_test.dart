@@ -69,7 +69,7 @@ void main() {
   }
 
   group('struktur tabel', () {
-    test('semua tabel schema v3 tersedia', () async {
+    test('semua tabel schema v5 tersedia', () async {
       final rows = await context.database
           .customSelect(
             "SELECT name FROM sqlite_master WHERE type = 'table' "
@@ -90,6 +90,9 @@ void main() {
         'stock_movements',
         'stock_opnames',
         'stock_opname_lines',
+        'purchase_requests',
+        'purchase_request_opnames',
+        'purchase_request_lines',
       });
     });
 

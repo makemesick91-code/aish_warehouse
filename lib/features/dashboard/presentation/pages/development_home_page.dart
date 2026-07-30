@@ -202,6 +202,11 @@ class _SessionCard extends ConsumerWidget {
 
                 return DropdownButtonFormField<String>(
                   initialValue: session.value?.userId,
+                  // Names and role labels are user data, and Indonesian role labels
+                  // are long ("Petugas Warehouse"). Without `isExpanded` the button
+                  // sizes to its content and overflows the field on a narrow screen;
+                  // without the ellipsis the selected item still would.
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'Bertindak sebagai',
                   ),
@@ -212,6 +217,8 @@ class _SessionCard extends ConsumerWidget {
                         child: Text(
                           '${user.fullName} · '
                           '${CurrentUserSession(user).roleLabel}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                   ],
@@ -245,6 +252,36 @@ class _SessionCard extends ConsumerWidget {
                 ],
               ],
             ),
+            // Purchase Request entry points. Offered per role rather than to
+            // everybody, so the development home mirrors the navigation map of
+            // spec §4.2 instead of listing every screen to every user.
+            if (session.value?.canManagePurchaseRequest ?? false) ...[
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('homePurchaseRequests'),
+                  onPressed: () =>
+                      context.pushNamed(AppRoutes.purchaseRequestsName),
+                  icon: const Icon(Icons.receipt_long_outlined),
+                  label: const Text('Purchase Request'),
+                ),
+              ),
+            ],
+            if (session.value?.canProcessPurchaseRequest ?? false) ...[
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('homeWarehousePurchaseRequests'),
+                  onPressed: () => context.pushNamed(
+                    AppRoutes.warehousePurchaseRequestsName,
+                  ),
+                  icon: const Icon(Icons.inbox_outlined),
+                  label: const Text('PR Masuk (Warehouse)'),
+                ),
+              ),
+            ],
           ],
         ),
       ),

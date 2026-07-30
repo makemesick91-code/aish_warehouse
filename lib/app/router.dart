@@ -1,16 +1,24 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/session/current_user_session.dart';
 import '../features/opname/domain/services/opname_access_policy.dart';
+import '../features/purchase_request/domain/services/purchase_request_access_policy.dart';
 import 'guards/opname_route_guard.dart';
+import 'guards/purchase_request_route_guard.dart';
 import 'routes.dart';
 import '../features/dashboard/presentation/pages/development_home_page.dart';
 import '../features/opname/presentation/pages/opname_form_page.dart';
 import '../features/opname/presentation/pages/opname_list_page.dart';
 import '../features/opname/presentation/pages/opname_review_detail_page.dart';
 import '../features/opname/presentation/pages/opname_review_list_page.dart';
+import '../features/purchase_request/presentation/pages/purchase_request_detail_page.dart';
+import '../features/purchase_request/presentation/pages/purchase_request_form_page.dart';
+import '../features/purchase_request/presentation/pages/purchase_request_list_page.dart';
+import '../features/purchase_request/presentation/pages/purchase_request_wizard_page.dart';
+import '../features/purchase_request/presentation/pages/warehouse_purchase_request_detail_page.dart';
+import '../features/purchase_request/presentation/pages/warehouse_purchase_request_list_page.dart';
 
 /// Root router.
 ///
@@ -69,6 +77,36 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ? null
             : AppRoutes.home;
       }
+
+      // Purchase Request. The rule is [PurchaseRequestAccessPolicy]'s, exactly as
+      // above: restating "warehouse only" or "kepala cabang only" here would be a
+      // second copy that has to agree with the guard's by hand.
+      //
+      // The warehouse branch is tested first because its path is a different
+      // prefix (`/warehouse/…`), not a nested one — checking `/purchase-requests`
+      // first would still not match it, but relying on that is one route rename
+      // away from being wrong.
+      PurchaseRequestAccess purchaseRequestSectionFor(
+        PurchaseRequestRouteKind kind,
+      ) => PurchaseRequestAccessPolicy.forSection(
+        user: session.user,
+        kind: kind,
+      );
+
+      if (location.startsWith(AppRoutes.warehousePurchaseRequests)) {
+        return purchaseRequestSectionFor(
+              PurchaseRequestRouteKind.warehouseQueue,
+            ).isGranted
+            ? null
+            : AppRoutes.home;
+      }
+      if (location.startsWith(AppRoutes.purchaseRequests)) {
+        return purchaseRequestSectionFor(
+              PurchaseRequestRouteKind.branchList,
+            ).isGranted
+            ? null
+            : AppRoutes.home;
+      }
       return null;
     },
     routes: <RouteBase>[
@@ -116,9 +154,89 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      GoRoute(
+        path: AppRoutes.purchaseRequests,
+        name: AppRoutes.purchaseRequestsName,
+        builder: (context, state) => const PurchaseRequestSectionGuard(
+          kind: PurchaseRequestRouteKind.branchList,
+          builder: _purchaseRequestList,
+        ),
+        routes: [
+          // Listed first: a literal segment must win over the `:id` pattern.
+          GoRoute(
+            path: AppRoutes.purchaseRequestNew,
+            name: AppRoutes.purchaseRequestNewName,
+            builder: (context, state) => const PurchaseRequestSectionGuard(
+              kind: PurchaseRequestRouteKind.branchCreate,
+              builder: _purchaseRequestWizard,
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.purchaseRequestDetail,
+            name: AppRoutes.purchaseRequestDetailName,
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return PurchaseRequestRouteGuard(
+                kind: PurchaseRequestRouteKind.branchDocument,
+                prId: id,
+                builder: (_) => PurchaseRequestDetailPage(prId: id),
+              );
+            },
+            routes: [
+              GoRoute(
+                path: AppRoutes.purchaseRequestEdit,
+                name: AppRoutes.purchaseRequestEditName,
+                builder: (context, state) {
+                  final id = state.pathParameters['id']!;
+                  // A distinct kind, not the same one as the detail route: the
+                  // editor additionally requires the document to still be a draft
+                  // (G-P5), and the policy is where that is decided.
+                  return PurchaseRequestRouteGuard(
+                    kind: PurchaseRequestRouteKind.branchDraft,
+                    prId: id,
+                    builder: (_) => PurchaseRequestFormPage(prId: id),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+      GoRoute(
+        path: AppRoutes.warehousePurchaseRequests,
+        name: AppRoutes.warehousePurchaseRequestsName,
+        builder: (context, state) => const PurchaseRequestSectionGuard(
+          kind: PurchaseRequestRouteKind.warehouseQueue,
+          builder: _warehousePurchaseRequestList,
+        ),
+        routes: [
+          GoRoute(
+            path: AppRoutes.warehousePurchaseRequestDetail,
+            name: AppRoutes.warehousePurchaseRequestDetailName,
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return PurchaseRequestRouteGuard(
+                kind: PurchaseRequestRouteKind.warehouseDocument,
+                prId: id,
+                builder: (_) => WarehousePurchaseRequestDetailPage(prId: id),
+              );
+            },
+          ),
+        ],
+      ),
     ],
   );
 });
+
+// Top-level builders so the section guards above can stay `const`.
+Widget _purchaseRequestList(BuildContext context) =>
+    const PurchaseRequestListPage();
+
+Widget _purchaseRequestWizard(BuildContext context) =>
+    const PurchaseRequestWizardPage();
+
+Widget _warehousePurchaseRequestList(BuildContext context) =>
+    const WarehousePurchaseRequestListPage();
 
 /// Bridges the session provider to GoRouter's `refreshListenable`, so switching
 /// role re-runs the redirect immediately instead of on the next navigation.

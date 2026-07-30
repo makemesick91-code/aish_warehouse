@@ -19,6 +19,18 @@ enum UserRole {
   /// `users.branch_id` to be set.
   bool get requiresBranch => this == perawat || this == kepalaCabang;
 
+  /// Indonesian label, for error messages and the session card.
+  ///
+  /// Here rather than in each caller because the same four words were being
+  /// spelled out in the session, in the opname guards and in the Purchase Request
+  /// guards — three copies of a mapping that has one right answer.
+  String get label => switch (this) {
+    perawat => 'Perawat',
+    kepalaCabang => 'Kepala Cabang',
+    warehouse => 'Petugas Warehouse',
+    superAdmin => 'Super Admin',
+  };
+
   static UserRole fromDbValue(String value) => values.firstWhere(
     (role) => role.dbValue == value,
     orElse: () => throw ArgumentError.value(value, 'value', 'Unknown UserRole'),
@@ -135,6 +147,87 @@ enum StockOpnameStatus {
     (status) => status.dbValue == value,
     orElse: () =>
         throw ArgumentError.value(value, 'value', 'Unknown StockOpnameStatus'),
+  );
+}
+
+/// Lifecycle of a Purchase Request (schema v5, spec §2.3/§3.2).
+///
+/// ```
+/// draft ──▶ submitted ──▶ processing ──▶ shipped ──▶ closed
+///       └─▶ cancelled  └─▶ cancelled   └─▶ rejected
+/// ```
+///
+/// The enum carries the whole vocabulary the database and the sync backend will
+/// ever store, including the two states Milestone 3 does not open: `shipped` and
+/// `closed` belong to Delivery Order and Good Receipt. They are values here so a
+/// row written by a later version — or by the server — round-trips through this
+/// converter instead of throwing, but no use case and no button in this
+/// milestone can produce them. Which transitions are permitted, and which of
+/// them a *user* may trigger, is [PurchaseRequestStatePolicy]'s to decide; this
+/// enum only answers questions about a single status.
+enum PurchaseRequestStatus {
+  draft('draft'),
+  submitted('submitted'),
+  processing('processing'),
+  shipped('shipped'),
+  closed('closed'),
+  rejected('rejected'),
+  cancelled('cancelled');
+
+  const PurchaseRequestStatus(this.dbValue);
+
+  final String dbValue;
+
+  bool get isDraft => this == draft;
+
+  bool get isSubmitted => this == submitted;
+
+  bool get isProcessing => this == processing;
+
+  bool get isShipped => this == shipped;
+
+  bool get isClosed => this == closed;
+
+  bool get isRejected => this == rejected;
+
+  bool get isCancelled => this == cancelled;
+
+  /// G-P4 — the two states that occupy a branch's single active order slot.
+  bool get isActiveOrder => this == submitted || this == processing;
+
+  /// Read-only permanently (G-S2).
+  ///
+  /// `shipped` is deliberately **not** final: the goods are on their way but the
+  /// document is still waiting for every Good Receipt before it becomes
+  /// `closed`.
+  bool get isFinal => this == closed || this == rejected || this == cancelled;
+
+  /// G-P5 — only a draft may be edited at all. A submitted PR is corrected by
+  /// cancelling it and creating a new one, never by editing.
+  bool get isEditable => this == draft;
+
+  /// G-P5/G-S3 — cancellation is only possible before the warehouse starts
+  /// working on the order.
+  bool get canCancel => this == draft || this == submitted;
+
+  /// Indonesian label for chips and document timelines (§4.3).
+  String get label => switch (this) {
+    draft => 'Draft',
+    submitted => 'Menunggu Diproses',
+    processing => 'Sedang Diproses',
+    shipped => 'Dikirim',
+    closed => 'Selesai',
+    rejected => 'Ditolak',
+    cancelled => 'Dibatalkan',
+  };
+
+  static PurchaseRequestStatus fromDbValue(String value) => values.firstWhere(
+    (status) => status.dbValue == value,
+    orElse: () => throw ArgumentError.value(
+      value,
+      'value',
+      'Unknown PurchaseRequestStatus',
+    ),
   );
 }
 

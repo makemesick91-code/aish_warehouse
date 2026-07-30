@@ -181,7 +181,7 @@ class ReviewStockOpnameUseCase {
       // operator compares characters instead of moments (§8.1).
       final reviewedAt = _clock().toUtc();
       DocumentTimestampPolicy.requireReviewNotBeforeSubmit(
-        opnameId: opnameId,
+        documentId: opnameId,
         submittedAtUtc: opname.submittedAt,
         reviewedAtUtc: reviewedAt,
       );

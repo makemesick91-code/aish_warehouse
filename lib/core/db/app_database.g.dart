@@ -7183,6 +7183,2295 @@ class StockOpnameLinesCompanion extends UpdateCompanion<StockOpnameLineRow> {
   }
 }
 
+class $PurchaseRequestsTable extends PurchaseRequests
+    with TableInfo<$PurchaseRequestsTable, PurchaseRequestRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PurchaseRequestsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>($PurchaseRequestsTable.$convertersyncStatus);
+  static const VerificationMeta _docNumberMeta = const VerificationMeta(
+    'docNumber',
+  );
+  @override
+  late final GeneratedColumn<String> docNumber = GeneratedColumn<String>(
+    'doc_number',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _branchIdMeta = const VerificationMeta(
+    'branchId',
+  );
+  @override
+  late final GeneratedColumn<String> branchId = GeneratedColumn<String>(
+    'branch_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES branches (id)',
+    ),
+  );
+  static const VerificationMeta _requestedByMeta = const VerificationMeta(
+    'requestedBy',
+  );
+  @override
+  late final GeneratedColumn<String> requestedBy = GeneratedColumn<String>(
+    'requested_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<PurchaseRequestStatus, String>
+  status =
+      GeneratedColumn<String>(
+        'status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => PurchaseRequestStatus.draft.dbValue,
+      ).withConverter<PurchaseRequestStatus>(
+        $PurchaseRequestsTable.$converterstatus,
+      );
+  static const VerificationMeta _neededDateMeta = const VerificationMeta(
+    'neededDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> neededDate = GeneratedColumn<DateTime>(
+    'needed_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _submittedAtMeta = const VerificationMeta(
+    'submittedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> submittedAt = GeneratedColumn<DateTime>(
+    'submitted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _processingAtMeta = const VerificationMeta(
+    'processingAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> processingAt = GeneratedColumn<DateTime>(
+    'processing_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _processedByMeta = const VerificationMeta(
+    'processedBy',
+  );
+  @override
+  late final GeneratedColumn<String> processedBy = GeneratedColumn<String>(
+    'processed_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _cancelledAtMeta = const VerificationMeta(
+    'cancelledAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> cancelledAt = GeneratedColumn<DateTime>(
+    'cancelled_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _cancelledByMeta = const VerificationMeta(
+    'cancelledBy',
+  );
+  @override
+  late final GeneratedColumn<String> cancelledBy = GeneratedColumn<String>(
+    'cancelled_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _cancelReasonMeta = const VerificationMeta(
+    'cancelReason',
+  );
+  @override
+  late final GeneratedColumn<String> cancelReason = GeneratedColumn<String>(
+    'cancel_reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _rejectedAtMeta = const VerificationMeta(
+    'rejectedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> rejectedAt = GeneratedColumn<DateTime>(
+    'rejected_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _rejectedByMeta = const VerificationMeta(
+    'rejectedBy',
+  );
+  @override
+  late final GeneratedColumn<String> rejectedBy = GeneratedColumn<String>(
+    'rejected_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _rejectReasonMeta = const VerificationMeta(
+    'rejectReason',
+  );
+  @override
+  late final GeneratedColumn<String> rejectReason = GeneratedColumn<String>(
+    'reject_reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    docNumber,
+    branchId,
+    requestedBy,
+    status,
+    neededDate,
+    note,
+    submittedAt,
+    processingAt,
+    processedBy,
+    cancelledAt,
+    cancelledBy,
+    cancelReason,
+    rejectedAt,
+    rejectedBy,
+    rejectReason,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'purchase_requests';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PurchaseRequestRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('doc_number')) {
+      context.handle(
+        _docNumberMeta,
+        docNumber.isAcceptableOrUnknown(data['doc_number']!, _docNumberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_docNumberMeta);
+    }
+    if (data.containsKey('branch_id')) {
+      context.handle(
+        _branchIdMeta,
+        branchId.isAcceptableOrUnknown(data['branch_id']!, _branchIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_branchIdMeta);
+    }
+    if (data.containsKey('requested_by')) {
+      context.handle(
+        _requestedByMeta,
+        requestedBy.isAcceptableOrUnknown(
+          data['requested_by']!,
+          _requestedByMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_requestedByMeta);
+    }
+    if (data.containsKey('needed_date')) {
+      context.handle(
+        _neededDateMeta,
+        neededDate.isAcceptableOrUnknown(data['needed_date']!, _neededDateMeta),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('submitted_at')) {
+      context.handle(
+        _submittedAtMeta,
+        submittedAt.isAcceptableOrUnknown(
+          data['submitted_at']!,
+          _submittedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('processing_at')) {
+      context.handle(
+        _processingAtMeta,
+        processingAt.isAcceptableOrUnknown(
+          data['processing_at']!,
+          _processingAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('processed_by')) {
+      context.handle(
+        _processedByMeta,
+        processedBy.isAcceptableOrUnknown(
+          data['processed_by']!,
+          _processedByMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cancelled_at')) {
+      context.handle(
+        _cancelledAtMeta,
+        cancelledAt.isAcceptableOrUnknown(
+          data['cancelled_at']!,
+          _cancelledAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cancelled_by')) {
+      context.handle(
+        _cancelledByMeta,
+        cancelledBy.isAcceptableOrUnknown(
+          data['cancelled_by']!,
+          _cancelledByMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cancel_reason')) {
+      context.handle(
+        _cancelReasonMeta,
+        cancelReason.isAcceptableOrUnknown(
+          data['cancel_reason']!,
+          _cancelReasonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('rejected_at')) {
+      context.handle(
+        _rejectedAtMeta,
+        rejectedAt.isAcceptableOrUnknown(data['rejected_at']!, _rejectedAtMeta),
+      );
+    }
+    if (data.containsKey('rejected_by')) {
+      context.handle(
+        _rejectedByMeta,
+        rejectedBy.isAcceptableOrUnknown(data['rejected_by']!, _rejectedByMeta),
+      );
+    }
+    if (data.containsKey('reject_reason')) {
+      context.handle(
+        _rejectReasonMeta,
+        rejectReason.isAcceptableOrUnknown(
+          data['reject_reason']!,
+          _rejectReasonMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PurchaseRequestRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PurchaseRequestRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $PurchaseRequestsTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      docNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}doc_number'],
+      )!,
+      branchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}branch_id'],
+      )!,
+      requestedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}requested_by'],
+      )!,
+      status: $PurchaseRequestsTable.$converterstatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}status'],
+        )!,
+      ),
+      neededDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}needed_date'],
+      ),
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      submittedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}submitted_at'],
+      ),
+      processingAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}processing_at'],
+      ),
+      processedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}processed_by'],
+      ),
+      cancelledAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}cancelled_at'],
+      ),
+      cancelledBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cancelled_by'],
+      ),
+      cancelReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cancel_reason'],
+      ),
+      rejectedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}rejected_at'],
+      ),
+      rejectedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rejected_by'],
+      ),
+      rejectReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reject_reason'],
+      ),
+    );
+  }
+
+  @override
+  $PurchaseRequestsTable createAlias(String alias) {
+    return $PurchaseRequestsTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+  static TypeConverter<PurchaseRequestStatus, String> $converterstatus =
+      const PurchaseRequestStatusConverter();
+}
+
+class PurchaseRequestRow extends DataClass
+    implements Insertable<PurchaseRequestRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+
+  /// Temporary local number `TMP-PR-{uuid}` until a sync backend assigns the
+  /// final `PR-{cabang}-{yyyyMMdd}-{seq}` on submit (G-Y4). Minting a
+  /// server-shaped number offline would collide across devices.
+  final String docNumber;
+  final String branchId;
+
+  /// The Kepala Cabang who raised the request.
+  final String requestedBy;
+  final PurchaseRequestStatus status;
+
+  /// Target arrival date — a **civil date** (T-8), stored as UTC midnight and
+  /// never timezone converted.
+  final DateTime? neededDate;
+  final String? note;
+  final DateTime? submittedAt;
+  final DateTime? processingAt;
+
+  /// The warehouse officer who took the order on.
+  final String? processedBy;
+  final DateTime? cancelledAt;
+
+  /// The Kepala Cabang who withdrew the request — normally, and legitimately,
+  /// the same person as [requestedBy].
+  final String? cancelledBy;
+
+  /// Why the request was withdrawn. Mandatory for a cancelled document: the
+  /// detail screen shows it (§24.4) and an audit trail that records only
+  /// "cancelled" explains nothing.
+  final String? cancelReason;
+  final DateTime? rejectedAt;
+  final String? rejectedBy;
+
+  /// Mandatory when rejected (spec §3.2: "rejected (oleh warehouse, wajib
+  /// alasan)").
+  final String? rejectReason;
+  const PurchaseRequestRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.docNumber,
+    required this.branchId,
+    required this.requestedBy,
+    required this.status,
+    this.neededDate,
+    this.note,
+    this.submittedAt,
+    this.processingAt,
+    this.processedBy,
+    this.cancelledAt,
+    this.cancelledBy,
+    this.cancelReason,
+    this.rejectedAt,
+    this.rejectedBy,
+    this.rejectReason,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $PurchaseRequestsTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    map['doc_number'] = Variable<String>(docNumber);
+    map['branch_id'] = Variable<String>(branchId);
+    map['requested_by'] = Variable<String>(requestedBy);
+    {
+      map['status'] = Variable<String>(
+        $PurchaseRequestsTable.$converterstatus.toSql(status),
+      );
+    }
+    if (!nullToAbsent || neededDate != null) {
+      map['needed_date'] = Variable<DateTime>(neededDate);
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    if (!nullToAbsent || submittedAt != null) {
+      map['submitted_at'] = Variable<DateTime>(submittedAt);
+    }
+    if (!nullToAbsent || processingAt != null) {
+      map['processing_at'] = Variable<DateTime>(processingAt);
+    }
+    if (!nullToAbsent || processedBy != null) {
+      map['processed_by'] = Variable<String>(processedBy);
+    }
+    if (!nullToAbsent || cancelledAt != null) {
+      map['cancelled_at'] = Variable<DateTime>(cancelledAt);
+    }
+    if (!nullToAbsent || cancelledBy != null) {
+      map['cancelled_by'] = Variable<String>(cancelledBy);
+    }
+    if (!nullToAbsent || cancelReason != null) {
+      map['cancel_reason'] = Variable<String>(cancelReason);
+    }
+    if (!nullToAbsent || rejectedAt != null) {
+      map['rejected_at'] = Variable<DateTime>(rejectedAt);
+    }
+    if (!nullToAbsent || rejectedBy != null) {
+      map['rejected_by'] = Variable<String>(rejectedBy);
+    }
+    if (!nullToAbsent || rejectReason != null) {
+      map['reject_reason'] = Variable<String>(rejectReason);
+    }
+    return map;
+  }
+
+  PurchaseRequestsCompanion toCompanion(bool nullToAbsent) {
+    return PurchaseRequestsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      docNumber: Value(docNumber),
+      branchId: Value(branchId),
+      requestedBy: Value(requestedBy),
+      status: Value(status),
+      neededDate: neededDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(neededDate),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      submittedAt: submittedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(submittedAt),
+      processingAt: processingAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(processingAt),
+      processedBy: processedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(processedBy),
+      cancelledAt: cancelledAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cancelledAt),
+      cancelledBy: cancelledBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cancelledBy),
+      cancelReason: cancelReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cancelReason),
+      rejectedAt: rejectedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rejectedAt),
+      rejectedBy: rejectedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rejectedBy),
+      rejectReason: rejectReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rejectReason),
+    );
+  }
+
+  factory PurchaseRequestRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PurchaseRequestRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      docNumber: serializer.fromJson<String>(json['docNumber']),
+      branchId: serializer.fromJson<String>(json['branchId']),
+      requestedBy: serializer.fromJson<String>(json['requestedBy']),
+      status: serializer.fromJson<PurchaseRequestStatus>(json['status']),
+      neededDate: serializer.fromJson<DateTime?>(json['neededDate']),
+      note: serializer.fromJson<String?>(json['note']),
+      submittedAt: serializer.fromJson<DateTime?>(json['submittedAt']),
+      processingAt: serializer.fromJson<DateTime?>(json['processingAt']),
+      processedBy: serializer.fromJson<String?>(json['processedBy']),
+      cancelledAt: serializer.fromJson<DateTime?>(json['cancelledAt']),
+      cancelledBy: serializer.fromJson<String?>(json['cancelledBy']),
+      cancelReason: serializer.fromJson<String?>(json['cancelReason']),
+      rejectedAt: serializer.fromJson<DateTime?>(json['rejectedAt']),
+      rejectedBy: serializer.fromJson<String?>(json['rejectedBy']),
+      rejectReason: serializer.fromJson<String?>(json['rejectReason']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'docNumber': serializer.toJson<String>(docNumber),
+      'branchId': serializer.toJson<String>(branchId),
+      'requestedBy': serializer.toJson<String>(requestedBy),
+      'status': serializer.toJson<PurchaseRequestStatus>(status),
+      'neededDate': serializer.toJson<DateTime?>(neededDate),
+      'note': serializer.toJson<String?>(note),
+      'submittedAt': serializer.toJson<DateTime?>(submittedAt),
+      'processingAt': serializer.toJson<DateTime?>(processingAt),
+      'processedBy': serializer.toJson<String?>(processedBy),
+      'cancelledAt': serializer.toJson<DateTime?>(cancelledAt),
+      'cancelledBy': serializer.toJson<String?>(cancelledBy),
+      'cancelReason': serializer.toJson<String?>(cancelReason),
+      'rejectedAt': serializer.toJson<DateTime?>(rejectedAt),
+      'rejectedBy': serializer.toJson<String?>(rejectedBy),
+      'rejectReason': serializer.toJson<String?>(rejectReason),
+    };
+  }
+
+  PurchaseRequestRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    String? docNumber,
+    String? branchId,
+    String? requestedBy,
+    PurchaseRequestStatus? status,
+    Value<DateTime?> neededDate = const Value.absent(),
+    Value<String?> note = const Value.absent(),
+    Value<DateTime?> submittedAt = const Value.absent(),
+    Value<DateTime?> processingAt = const Value.absent(),
+    Value<String?> processedBy = const Value.absent(),
+    Value<DateTime?> cancelledAt = const Value.absent(),
+    Value<String?> cancelledBy = const Value.absent(),
+    Value<String?> cancelReason = const Value.absent(),
+    Value<DateTime?> rejectedAt = const Value.absent(),
+    Value<String?> rejectedBy = const Value.absent(),
+    Value<String?> rejectReason = const Value.absent(),
+  }) => PurchaseRequestRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    docNumber: docNumber ?? this.docNumber,
+    branchId: branchId ?? this.branchId,
+    requestedBy: requestedBy ?? this.requestedBy,
+    status: status ?? this.status,
+    neededDate: neededDate.present ? neededDate.value : this.neededDate,
+    note: note.present ? note.value : this.note,
+    submittedAt: submittedAt.present ? submittedAt.value : this.submittedAt,
+    processingAt: processingAt.present ? processingAt.value : this.processingAt,
+    processedBy: processedBy.present ? processedBy.value : this.processedBy,
+    cancelledAt: cancelledAt.present ? cancelledAt.value : this.cancelledAt,
+    cancelledBy: cancelledBy.present ? cancelledBy.value : this.cancelledBy,
+    cancelReason: cancelReason.present ? cancelReason.value : this.cancelReason,
+    rejectedAt: rejectedAt.present ? rejectedAt.value : this.rejectedAt,
+    rejectedBy: rejectedBy.present ? rejectedBy.value : this.rejectedBy,
+    rejectReason: rejectReason.present ? rejectReason.value : this.rejectReason,
+  );
+  PurchaseRequestRow copyWithCompanion(PurchaseRequestsCompanion data) {
+    return PurchaseRequestRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      docNumber: data.docNumber.present ? data.docNumber.value : this.docNumber,
+      branchId: data.branchId.present ? data.branchId.value : this.branchId,
+      requestedBy: data.requestedBy.present
+          ? data.requestedBy.value
+          : this.requestedBy,
+      status: data.status.present ? data.status.value : this.status,
+      neededDate: data.neededDate.present
+          ? data.neededDate.value
+          : this.neededDate,
+      note: data.note.present ? data.note.value : this.note,
+      submittedAt: data.submittedAt.present
+          ? data.submittedAt.value
+          : this.submittedAt,
+      processingAt: data.processingAt.present
+          ? data.processingAt.value
+          : this.processingAt,
+      processedBy: data.processedBy.present
+          ? data.processedBy.value
+          : this.processedBy,
+      cancelledAt: data.cancelledAt.present
+          ? data.cancelledAt.value
+          : this.cancelledAt,
+      cancelledBy: data.cancelledBy.present
+          ? data.cancelledBy.value
+          : this.cancelledBy,
+      cancelReason: data.cancelReason.present
+          ? data.cancelReason.value
+          : this.cancelReason,
+      rejectedAt: data.rejectedAt.present
+          ? data.rejectedAt.value
+          : this.rejectedAt,
+      rejectedBy: data.rejectedBy.present
+          ? data.rejectedBy.value
+          : this.rejectedBy,
+      rejectReason: data.rejectReason.present
+          ? data.rejectReason.value
+          : this.rejectReason,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PurchaseRequestRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('docNumber: $docNumber, ')
+          ..write('branchId: $branchId, ')
+          ..write('requestedBy: $requestedBy, ')
+          ..write('status: $status, ')
+          ..write('neededDate: $neededDate, ')
+          ..write('note: $note, ')
+          ..write('submittedAt: $submittedAt, ')
+          ..write('processingAt: $processingAt, ')
+          ..write('processedBy: $processedBy, ')
+          ..write('cancelledAt: $cancelledAt, ')
+          ..write('cancelledBy: $cancelledBy, ')
+          ..write('cancelReason: $cancelReason, ')
+          ..write('rejectedAt: $rejectedAt, ')
+          ..write('rejectedBy: $rejectedBy, ')
+          ..write('rejectReason: $rejectReason')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    docNumber,
+    branchId,
+    requestedBy,
+    status,
+    neededDate,
+    note,
+    submittedAt,
+    processingAt,
+    processedBy,
+    cancelledAt,
+    cancelledBy,
+    cancelReason,
+    rejectedAt,
+    rejectedBy,
+    rejectReason,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PurchaseRequestRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.docNumber == this.docNumber &&
+          other.branchId == this.branchId &&
+          other.requestedBy == this.requestedBy &&
+          other.status == this.status &&
+          other.neededDate == this.neededDate &&
+          other.note == this.note &&
+          other.submittedAt == this.submittedAt &&
+          other.processingAt == this.processingAt &&
+          other.processedBy == this.processedBy &&
+          other.cancelledAt == this.cancelledAt &&
+          other.cancelledBy == this.cancelledBy &&
+          other.cancelReason == this.cancelReason &&
+          other.rejectedAt == this.rejectedAt &&
+          other.rejectedBy == this.rejectedBy &&
+          other.rejectReason == this.rejectReason);
+}
+
+class PurchaseRequestsCompanion extends UpdateCompanion<PurchaseRequestRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<String> docNumber;
+  final Value<String> branchId;
+  final Value<String> requestedBy;
+  final Value<PurchaseRequestStatus> status;
+  final Value<DateTime?> neededDate;
+  final Value<String?> note;
+  final Value<DateTime?> submittedAt;
+  final Value<DateTime?> processingAt;
+  final Value<String?> processedBy;
+  final Value<DateTime?> cancelledAt;
+  final Value<String?> cancelledBy;
+  final Value<String?> cancelReason;
+  final Value<DateTime?> rejectedAt;
+  final Value<String?> rejectedBy;
+  final Value<String?> rejectReason;
+  final Value<int> rowid;
+  const PurchaseRequestsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.docNumber = const Value.absent(),
+    this.branchId = const Value.absent(),
+    this.requestedBy = const Value.absent(),
+    this.status = const Value.absent(),
+    this.neededDate = const Value.absent(),
+    this.note = const Value.absent(),
+    this.submittedAt = const Value.absent(),
+    this.processingAt = const Value.absent(),
+    this.processedBy = const Value.absent(),
+    this.cancelledAt = const Value.absent(),
+    this.cancelledBy = const Value.absent(),
+    this.cancelReason = const Value.absent(),
+    this.rejectedAt = const Value.absent(),
+    this.rejectedBy = const Value.absent(),
+    this.rejectReason = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PurchaseRequestsCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String docNumber,
+    required String branchId,
+    required String requestedBy,
+    this.status = const Value.absent(),
+    this.neededDate = const Value.absent(),
+    this.note = const Value.absent(),
+    this.submittedAt = const Value.absent(),
+    this.processingAt = const Value.absent(),
+    this.processedBy = const Value.absent(),
+    this.cancelledAt = const Value.absent(),
+    this.cancelledBy = const Value.absent(),
+    this.cancelReason = const Value.absent(),
+    this.rejectedAt = const Value.absent(),
+    this.rejectedBy = const Value.absent(),
+    this.rejectReason = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : docNumber = Value(docNumber),
+       branchId = Value(branchId),
+       requestedBy = Value(requestedBy);
+  static Insertable<PurchaseRequestRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? docNumber,
+    Expression<String>? branchId,
+    Expression<String>? requestedBy,
+    Expression<String>? status,
+    Expression<DateTime>? neededDate,
+    Expression<String>? note,
+    Expression<DateTime>? submittedAt,
+    Expression<DateTime>? processingAt,
+    Expression<String>? processedBy,
+    Expression<DateTime>? cancelledAt,
+    Expression<String>? cancelledBy,
+    Expression<String>? cancelReason,
+    Expression<DateTime>? rejectedAt,
+    Expression<String>? rejectedBy,
+    Expression<String>? rejectReason,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (docNumber != null) 'doc_number': docNumber,
+      if (branchId != null) 'branch_id': branchId,
+      if (requestedBy != null) 'requested_by': requestedBy,
+      if (status != null) 'status': status,
+      if (neededDate != null) 'needed_date': neededDate,
+      if (note != null) 'note': note,
+      if (submittedAt != null) 'submitted_at': submittedAt,
+      if (processingAt != null) 'processing_at': processingAt,
+      if (processedBy != null) 'processed_by': processedBy,
+      if (cancelledAt != null) 'cancelled_at': cancelledAt,
+      if (cancelledBy != null) 'cancelled_by': cancelledBy,
+      if (cancelReason != null) 'cancel_reason': cancelReason,
+      if (rejectedAt != null) 'rejected_at': rejectedAt,
+      if (rejectedBy != null) 'rejected_by': rejectedBy,
+      if (rejectReason != null) 'reject_reason': rejectReason,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PurchaseRequestsCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<String>? docNumber,
+    Value<String>? branchId,
+    Value<String>? requestedBy,
+    Value<PurchaseRequestStatus>? status,
+    Value<DateTime?>? neededDate,
+    Value<String?>? note,
+    Value<DateTime?>? submittedAt,
+    Value<DateTime?>? processingAt,
+    Value<String?>? processedBy,
+    Value<DateTime?>? cancelledAt,
+    Value<String?>? cancelledBy,
+    Value<String?>? cancelReason,
+    Value<DateTime?>? rejectedAt,
+    Value<String?>? rejectedBy,
+    Value<String?>? rejectReason,
+    Value<int>? rowid,
+  }) {
+    return PurchaseRequestsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      docNumber: docNumber ?? this.docNumber,
+      branchId: branchId ?? this.branchId,
+      requestedBy: requestedBy ?? this.requestedBy,
+      status: status ?? this.status,
+      neededDate: neededDate ?? this.neededDate,
+      note: note ?? this.note,
+      submittedAt: submittedAt ?? this.submittedAt,
+      processingAt: processingAt ?? this.processingAt,
+      processedBy: processedBy ?? this.processedBy,
+      cancelledAt: cancelledAt ?? this.cancelledAt,
+      cancelledBy: cancelledBy ?? this.cancelledBy,
+      cancelReason: cancelReason ?? this.cancelReason,
+      rejectedAt: rejectedAt ?? this.rejectedAt,
+      rejectedBy: rejectedBy ?? this.rejectedBy,
+      rejectReason: rejectReason ?? this.rejectReason,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $PurchaseRequestsTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (docNumber.present) {
+      map['doc_number'] = Variable<String>(docNumber.value);
+    }
+    if (branchId.present) {
+      map['branch_id'] = Variable<String>(branchId.value);
+    }
+    if (requestedBy.present) {
+      map['requested_by'] = Variable<String>(requestedBy.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(
+        $PurchaseRequestsTable.$converterstatus.toSql(status.value),
+      );
+    }
+    if (neededDate.present) {
+      map['needed_date'] = Variable<DateTime>(neededDate.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (submittedAt.present) {
+      map['submitted_at'] = Variable<DateTime>(submittedAt.value);
+    }
+    if (processingAt.present) {
+      map['processing_at'] = Variable<DateTime>(processingAt.value);
+    }
+    if (processedBy.present) {
+      map['processed_by'] = Variable<String>(processedBy.value);
+    }
+    if (cancelledAt.present) {
+      map['cancelled_at'] = Variable<DateTime>(cancelledAt.value);
+    }
+    if (cancelledBy.present) {
+      map['cancelled_by'] = Variable<String>(cancelledBy.value);
+    }
+    if (cancelReason.present) {
+      map['cancel_reason'] = Variable<String>(cancelReason.value);
+    }
+    if (rejectedAt.present) {
+      map['rejected_at'] = Variable<DateTime>(rejectedAt.value);
+    }
+    if (rejectedBy.present) {
+      map['rejected_by'] = Variable<String>(rejectedBy.value);
+    }
+    if (rejectReason.present) {
+      map['reject_reason'] = Variable<String>(rejectReason.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PurchaseRequestsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('docNumber: $docNumber, ')
+          ..write('branchId: $branchId, ')
+          ..write('requestedBy: $requestedBy, ')
+          ..write('status: $status, ')
+          ..write('neededDate: $neededDate, ')
+          ..write('note: $note, ')
+          ..write('submittedAt: $submittedAt, ')
+          ..write('processingAt: $processingAt, ')
+          ..write('processedBy: $processedBy, ')
+          ..write('cancelledAt: $cancelledAt, ')
+          ..write('cancelledBy: $cancelledBy, ')
+          ..write('cancelReason: $cancelReason, ')
+          ..write('rejectedAt: $rejectedAt, ')
+          ..write('rejectedBy: $rejectedBy, ')
+          ..write('rejectReason: $rejectReason, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PurchaseRequestOpnamesTable extends PurchaseRequestOpnames
+    with TableInfo<$PurchaseRequestOpnamesTable, PurchaseRequestOpnameRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PurchaseRequestOpnamesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>(
+        $PurchaseRequestOpnamesTable.$convertersyncStatus,
+      );
+  static const VerificationMeta _prIdMeta = const VerificationMeta('prId');
+  @override
+  late final GeneratedColumn<String> prId = GeneratedColumn<String>(
+    'pr_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES purchase_requests (id)',
+    ),
+  );
+  static const VerificationMeta _opnameIdMeta = const VerificationMeta(
+    'opnameId',
+  );
+  @override
+  late final GeneratedColumn<String> opnameId = GeneratedColumn<String>(
+    'opname_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_opnames (id)',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    prId,
+    opnameId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'purchase_request_opnames';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PurchaseRequestOpnameRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('pr_id')) {
+      context.handle(
+        _prIdMeta,
+        prId.isAcceptableOrUnknown(data['pr_id']!, _prIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_prIdMeta);
+    }
+    if (data.containsKey('opname_id')) {
+      context.handle(
+        _opnameIdMeta,
+        opnameId.isAcceptableOrUnknown(data['opname_id']!, _opnameIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_opnameIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PurchaseRequestOpnameRow map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PurchaseRequestOpnameRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $PurchaseRequestOpnamesTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      prId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pr_id'],
+      )!,
+      opnameId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}opname_id'],
+      )!,
+    );
+  }
+
+  @override
+  $PurchaseRequestOpnamesTable createAlias(String alias) {
+    return $PurchaseRequestOpnamesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+}
+
+class PurchaseRequestOpnameRow extends DataClass
+    implements Insertable<PurchaseRequestOpnameRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+  final String prId;
+  final String opnameId;
+  const PurchaseRequestOpnameRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.prId,
+    required this.opnameId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $PurchaseRequestOpnamesTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    map['pr_id'] = Variable<String>(prId);
+    map['opname_id'] = Variable<String>(opnameId);
+    return map;
+  }
+
+  PurchaseRequestOpnamesCompanion toCompanion(bool nullToAbsent) {
+    return PurchaseRequestOpnamesCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      prId: Value(prId),
+      opnameId: Value(opnameId),
+    );
+  }
+
+  factory PurchaseRequestOpnameRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PurchaseRequestOpnameRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      prId: serializer.fromJson<String>(json['prId']),
+      opnameId: serializer.fromJson<String>(json['opnameId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'prId': serializer.toJson<String>(prId),
+      'opnameId': serializer.toJson<String>(opnameId),
+    };
+  }
+
+  PurchaseRequestOpnameRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    String? prId,
+    String? opnameId,
+  }) => PurchaseRequestOpnameRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    prId: prId ?? this.prId,
+    opnameId: opnameId ?? this.opnameId,
+  );
+  PurchaseRequestOpnameRow copyWithCompanion(
+    PurchaseRequestOpnamesCompanion data,
+  ) {
+    return PurchaseRequestOpnameRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      prId: data.prId.present ? data.prId.value : this.prId,
+      opnameId: data.opnameId.present ? data.opnameId.value : this.opnameId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PurchaseRequestOpnameRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('prId: $prId, ')
+          ..write('opnameId: $opnameId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    prId,
+    opnameId,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PurchaseRequestOpnameRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.prId == this.prId &&
+          other.opnameId == this.opnameId);
+}
+
+class PurchaseRequestOpnamesCompanion
+    extends UpdateCompanion<PurchaseRequestOpnameRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<String> prId;
+  final Value<String> opnameId;
+  final Value<int> rowid;
+  const PurchaseRequestOpnamesCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.prId = const Value.absent(),
+    this.opnameId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PurchaseRequestOpnamesCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String prId,
+    required String opnameId,
+    this.rowid = const Value.absent(),
+  }) : prId = Value(prId),
+       opnameId = Value(opnameId);
+  static Insertable<PurchaseRequestOpnameRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? prId,
+    Expression<String>? opnameId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (prId != null) 'pr_id': prId,
+      if (opnameId != null) 'opname_id': opnameId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PurchaseRequestOpnamesCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<String>? prId,
+    Value<String>? opnameId,
+    Value<int>? rowid,
+  }) {
+    return PurchaseRequestOpnamesCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      prId: prId ?? this.prId,
+      opnameId: opnameId ?? this.opnameId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $PurchaseRequestOpnamesTable.$convertersyncStatus.toSql(
+          syncStatus.value,
+        ),
+      );
+    }
+    if (prId.present) {
+      map['pr_id'] = Variable<String>(prId.value);
+    }
+    if (opnameId.present) {
+      map['opname_id'] = Variable<String>(opnameId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PurchaseRequestOpnamesCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('prId: $prId, ')
+          ..write('opnameId: $opnameId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PurchaseRequestLinesTable extends PurchaseRequestLines
+    with TableInfo<$PurchaseRequestLinesTable, PurchaseRequestLineRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PurchaseRequestLinesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>(
+        $PurchaseRequestLinesTable.$convertersyncStatus,
+      );
+  static const VerificationMeta _prIdMeta = const VerificationMeta('prId');
+  @override
+  late final GeneratedColumn<String> prId = GeneratedColumn<String>(
+    'pr_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES purchase_requests (id)',
+    ),
+  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+    'item_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES items (id)',
+    ),
+  );
+  static const VerificationMeta _suggestedQtyMeta = const VerificationMeta(
+    'suggestedQty',
+  );
+  @override
+  late final GeneratedColumn<int> suggestedQty = GeneratedColumn<int>(
+    'suggested_qty',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _requestedQtyMeta = const VerificationMeta(
+    'requestedQty',
+  );
+  @override
+  late final GeneratedColumn<int> requestedQty = GeneratedColumn<int>(
+    'requested_qty',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    prId,
+    itemId,
+    suggestedQty,
+    requestedQty,
+    note,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'purchase_request_lines';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PurchaseRequestLineRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('pr_id')) {
+      context.handle(
+        _prIdMeta,
+        prId.isAcceptableOrUnknown(data['pr_id']!, _prIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_prIdMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('suggested_qty')) {
+      context.handle(
+        _suggestedQtyMeta,
+        suggestedQty.isAcceptableOrUnknown(
+          data['suggested_qty']!,
+          _suggestedQtyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_suggestedQtyMeta);
+    }
+    if (data.containsKey('requested_qty')) {
+      context.handle(
+        _requestedQtyMeta,
+        requestedQty.isAcceptableOrUnknown(
+          data['requested_qty']!,
+          _requestedQtyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_requestedQtyMeta);
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PurchaseRequestLineRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PurchaseRequestLineRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $PurchaseRequestLinesTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      prId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pr_id'],
+      )!,
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}item_id'],
+      )!,
+      suggestedQty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}suggested_qty'],
+      )!,
+      requestedQty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}requested_qty'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+    );
+  }
+
+  @override
+  $PurchaseRequestLinesTable createAlias(String alias) {
+    return $PurchaseRequestLinesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+}
+
+class PurchaseRequestLineRow extends DataClass
+    implements Insertable<PurchaseRequestLineRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+  final String prId;
+  final String itemId;
+
+  /// `max(0, min_stock_room − counted_qty)` aggregated over the linked opnames'
+  /// rooms. Zero for a line the branch head added by hand.
+  final int suggestedQty;
+
+  /// What the branch head actually asks for. Strictly positive (G-P2).
+  final int requestedQty;
+
+  /// Justification. Mandatory when the request exceeds 150 % of the suggestion,
+  /// or when there is no suggestion at all to exceed (G-P3) — enforced over the
+  /// whole document at submit time rather than by a CHECK, because a draft must
+  /// be saveable while the reason is still being typed.
+  final String? note;
+  const PurchaseRequestLineRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.prId,
+    required this.itemId,
+    required this.suggestedQty,
+    required this.requestedQty,
+    this.note,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $PurchaseRequestLinesTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    map['pr_id'] = Variable<String>(prId);
+    map['item_id'] = Variable<String>(itemId);
+    map['suggested_qty'] = Variable<int>(suggestedQty);
+    map['requested_qty'] = Variable<int>(requestedQty);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    return map;
+  }
+
+  PurchaseRequestLinesCompanion toCompanion(bool nullToAbsent) {
+    return PurchaseRequestLinesCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      prId: Value(prId),
+      itemId: Value(itemId),
+      suggestedQty: Value(suggestedQty),
+      requestedQty: Value(requestedQty),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+    );
+  }
+
+  factory PurchaseRequestLineRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PurchaseRequestLineRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      prId: serializer.fromJson<String>(json['prId']),
+      itemId: serializer.fromJson<String>(json['itemId']),
+      suggestedQty: serializer.fromJson<int>(json['suggestedQty']),
+      requestedQty: serializer.fromJson<int>(json['requestedQty']),
+      note: serializer.fromJson<String?>(json['note']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'prId': serializer.toJson<String>(prId),
+      'itemId': serializer.toJson<String>(itemId),
+      'suggestedQty': serializer.toJson<int>(suggestedQty),
+      'requestedQty': serializer.toJson<int>(requestedQty),
+      'note': serializer.toJson<String?>(note),
+    };
+  }
+
+  PurchaseRequestLineRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    String? prId,
+    String? itemId,
+    int? suggestedQty,
+    int? requestedQty,
+    Value<String?> note = const Value.absent(),
+  }) => PurchaseRequestLineRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    prId: prId ?? this.prId,
+    itemId: itemId ?? this.itemId,
+    suggestedQty: suggestedQty ?? this.suggestedQty,
+    requestedQty: requestedQty ?? this.requestedQty,
+    note: note.present ? note.value : this.note,
+  );
+  PurchaseRequestLineRow copyWithCompanion(PurchaseRequestLinesCompanion data) {
+    return PurchaseRequestLineRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      prId: data.prId.present ? data.prId.value : this.prId,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      suggestedQty: data.suggestedQty.present
+          ? data.suggestedQty.value
+          : this.suggestedQty,
+      requestedQty: data.requestedQty.present
+          ? data.requestedQty.value
+          : this.requestedQty,
+      note: data.note.present ? data.note.value : this.note,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PurchaseRequestLineRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('prId: $prId, ')
+          ..write('itemId: $itemId, ')
+          ..write('suggestedQty: $suggestedQty, ')
+          ..write('requestedQty: $requestedQty, ')
+          ..write('note: $note')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    prId,
+    itemId,
+    suggestedQty,
+    requestedQty,
+    note,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PurchaseRequestLineRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.prId == this.prId &&
+          other.itemId == this.itemId &&
+          other.suggestedQty == this.suggestedQty &&
+          other.requestedQty == this.requestedQty &&
+          other.note == this.note);
+}
+
+class PurchaseRequestLinesCompanion
+    extends UpdateCompanion<PurchaseRequestLineRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<String> prId;
+  final Value<String> itemId;
+  final Value<int> suggestedQty;
+  final Value<int> requestedQty;
+  final Value<String?> note;
+  final Value<int> rowid;
+  const PurchaseRequestLinesCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.prId = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.suggestedQty = const Value.absent(),
+    this.requestedQty = const Value.absent(),
+    this.note = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PurchaseRequestLinesCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String prId,
+    required String itemId,
+    required int suggestedQty,
+    required int requestedQty,
+    this.note = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : prId = Value(prId),
+       itemId = Value(itemId),
+       suggestedQty = Value(suggestedQty),
+       requestedQty = Value(requestedQty);
+  static Insertable<PurchaseRequestLineRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? prId,
+    Expression<String>? itemId,
+    Expression<int>? suggestedQty,
+    Expression<int>? requestedQty,
+    Expression<String>? note,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (prId != null) 'pr_id': prId,
+      if (itemId != null) 'item_id': itemId,
+      if (suggestedQty != null) 'suggested_qty': suggestedQty,
+      if (requestedQty != null) 'requested_qty': requestedQty,
+      if (note != null) 'note': note,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PurchaseRequestLinesCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<String>? prId,
+    Value<String>? itemId,
+    Value<int>? suggestedQty,
+    Value<int>? requestedQty,
+    Value<String?>? note,
+    Value<int>? rowid,
+  }) {
+    return PurchaseRequestLinesCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      prId: prId ?? this.prId,
+      itemId: itemId ?? this.itemId,
+      suggestedQty: suggestedQty ?? this.suggestedQty,
+      requestedQty: requestedQty ?? this.requestedQty,
+      note: note ?? this.note,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $PurchaseRequestLinesTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (prId.present) {
+      map['pr_id'] = Variable<String>(prId.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (suggestedQty.present) {
+      map['suggested_qty'] = Variable<int>(suggestedQty.value);
+    }
+    if (requestedQty.present) {
+      map['requested_qty'] = Variable<int>(requestedQty.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PurchaseRequestLinesCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('prId: $prId, ')
+          ..write('itemId: $itemId, ')
+          ..write('suggestedQty: $suggestedQty, ')
+          ..write('requestedQty: $requestedQty, ')
+          ..write('note: $note, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   late final $BranchesTable branches = $BranchesTable(this);
@@ -7198,6 +9487,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $StockOpnameLinesTable stockOpnameLines = $StockOpnameLinesTable(
     this,
   );
+  late final $PurchaseRequestsTable purchaseRequests = $PurchaseRequestsTable(
+    this,
+  );
+  late final $PurchaseRequestOpnamesTable purchaseRequestOpnames =
+      $PurchaseRequestOpnamesTable(this);
+  late final $PurchaseRequestLinesTable purchaseRequestLines =
+      $PurchaseRequestLinesTable(this);
   late final Index idxStockBalancesBatched = Index(
     'idx_stock_balances_batched',
     'CREATE UNIQUE INDEX idx_stock_balances_batched ON stock_balances (location_id, item_id, batch_id) WHERE batch_id IS NOT NULL',
@@ -7246,9 +9542,60 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_stock_opname_lines_unbatched',
     'CREATE UNIQUE INDEX idx_stock_opname_lines_unbatched ON stock_opname_lines (opname_id, item_id) WHERE batch_id IS NULL AND deleted_at IS NULL',
   );
+  late final Index idxPurchaseRequestsBranchStatus = Index(
+    'idx_purchase_requests_branch_status',
+    'CREATE INDEX idx_purchase_requests_branch_status ON purchase_requests (branch_id, status)',
+  );
+  late final Index idxPurchaseRequestsRequestedByStatus = Index(
+    'idx_purchase_requests_requested_by_status',
+    'CREATE INDEX idx_purchase_requests_requested_by_status ON purchase_requests (requested_by, status)',
+  );
+  late final Index idxPurchaseRequestsCreatedAt = Index(
+    'idx_purchase_requests_created_at',
+    'CREATE INDEX idx_purchase_requests_created_at ON purchase_requests (created_at)',
+  );
+  late final Index idxPurchaseRequestsNeededDate = Index(
+    'idx_purchase_requests_needed_date',
+    'CREATE INDEX idx_purchase_requests_needed_date ON purchase_requests (needed_date)',
+  );
+  late final Index idxPurchaseRequestsActiveBranch = Index(
+    'idx_purchase_requests_active_branch',
+    'CREATE UNIQUE INDEX idx_purchase_requests_active_branch ON purchase_requests (branch_id) WHERE status IN (\'submitted\', \'processing\') AND deleted_at IS NULL',
+  );
+  late final Index idxPurchaseRequestsDocNumber = Index(
+    'idx_purchase_requests_doc_number',
+    'CREATE UNIQUE INDEX idx_purchase_requests_doc_number ON purchase_requests (doc_number) WHERE deleted_at IS NULL',
+  );
+  late final Index idxPurchaseRequestOpnamesPr = Index(
+    'idx_purchase_request_opnames_pr',
+    'CREATE INDEX idx_purchase_request_opnames_pr ON purchase_request_opnames (pr_id)',
+  );
+  late final Index idxPurchaseRequestOpnamesOpname = Index(
+    'idx_purchase_request_opnames_opname',
+    'CREATE INDEX idx_purchase_request_opnames_opname ON purchase_request_opnames (opname_id)',
+  );
+  late final Index idxPurchaseRequestOpnamesUnique = Index(
+    'idx_purchase_request_opnames_unique',
+    'CREATE UNIQUE INDEX idx_purchase_request_opnames_unique ON purchase_request_opnames (pr_id, opname_id) WHERE deleted_at IS NULL',
+  );
+  late final Index idxPurchaseRequestLinesPr = Index(
+    'idx_purchase_request_lines_pr',
+    'CREATE INDEX idx_purchase_request_lines_pr ON purchase_request_lines (pr_id)',
+  );
+  late final Index idxPurchaseRequestLinesItem = Index(
+    'idx_purchase_request_lines_item',
+    'CREATE INDEX idx_purchase_request_lines_item ON purchase_request_lines (item_id)',
+  );
+  late final Index idxPurchaseRequestLinesItemUnique = Index(
+    'idx_purchase_request_lines_item_unique',
+    'CREATE UNIQUE INDEX idx_purchase_request_lines_item_unique ON purchase_request_lines (pr_id, item_id) WHERE deleted_at IS NULL',
+  );
   late final MasterDataDao masterDataDao = MasterDataDao(this as AppDatabase);
   late final InventoryDao inventoryDao = InventoryDao(this as AppDatabase);
   late final OpnameDao opnameDao = OpnameDao(this as AppDatabase);
+  late final PurchaseRequestDao purchaseRequestDao = PurchaseRequestDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -7265,6 +9612,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     stockMovements,
     stockOpnames,
     stockOpnameLines,
+    purchaseRequests,
+    purchaseRequestOpnames,
+    purchaseRequestLines,
     idxStockBalancesBatched,
     idxStockBalancesUnbatched,
     idxStockMovementsItem,
@@ -7277,6 +9627,18 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxStockOpnameLinesItem,
     idxStockOpnameLinesBatched,
     idxStockOpnameLinesUnbatched,
+    idxPurchaseRequestsBranchStatus,
+    idxPurchaseRequestsRequestedByStatus,
+    idxPurchaseRequestsCreatedAt,
+    idxPurchaseRequestsNeededDate,
+    idxPurchaseRequestsActiveBranch,
+    idxPurchaseRequestsDocNumber,
+    idxPurchaseRequestOpnamesPr,
+    idxPurchaseRequestOpnamesOpname,
+    idxPurchaseRequestOpnamesUnique,
+    idxPurchaseRequestLinesPr,
+    idxPurchaseRequestLinesItem,
+    idxPurchaseRequestLinesItemUnique,
   ];
   @override
   DriftDatabaseOptions get options =>

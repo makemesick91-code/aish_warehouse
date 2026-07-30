@@ -43,12 +43,17 @@ class CurrentUserSession {
   /// Any branch-scoped role may read the documents of its own branch.
   bool get canViewOpname => canFillOpname || canReviewOpname;
 
-  String get roleLabel => switch (user.role) {
-    UserRole.perawat => 'Perawat',
-    UserRole.kepalaCabang => 'Kepala Cabang',
-    UserRole.warehouse => 'Petugas Warehouse',
-    UserRole.superAdmin => 'Super Admin',
-  };
+  bool get isWarehouse => user.role == UserRole.warehouse;
+
+  /// Kepala Cabang raise and send Purchase Requests (spec §3.1).
+  bool get canManagePurchaseRequest => isKepalaCabang && branchId != null;
+
+  /// The central warehouse processes and rejects them. It carries no branch by
+  /// design, so — unlike the branch-scoped predicates above — this one must not
+  /// ask for one.
+  bool get canProcessPurchaseRequest => isWarehouse;
+
+  String get roleLabel => user.role.label;
 
   @override
   bool operator ==(Object other) =>

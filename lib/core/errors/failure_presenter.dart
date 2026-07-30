@@ -17,3 +17,15 @@ String describeFailure(Object error) {
   }
   return 'Terjadi kesalahan tak terduga. Silakan coba lagi.';
 }
+
+/// The single sentence every refused route shows, whichever module refused it.
+///
+/// One message for every reason on purpose. "This document belongs to another
+/// branch" and "this document does not exist" are different facts, and telling them
+/// apart would let anyone with the app enumerate which document ids are real across
+/// the whole clinic group. It lives here rather than on one feature's access policy
+/// because Stok Opname and Purchase Request refuse identically, and a second copy of
+/// the wording is a second thing to keep in step.
+const String accessDeniedMessage =
+    'Anda tidak memiliki akses ke halaman ini. Dokumen ini mungkin tidak ada '
+    'atau berada di cabang lain.';

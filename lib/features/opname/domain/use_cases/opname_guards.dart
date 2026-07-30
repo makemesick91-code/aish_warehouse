@@ -68,12 +68,9 @@ class OpnameGuards {
               'tindakan ini.',
       };
 
-  static String _roleLabel(UserRole role) => switch (role) {
-    UserRole.perawat => 'Perawat',
-    UserRole.kepalaCabang => 'Kepala Cabang',
-    UserRole.warehouse => 'Petugas Warehouse',
-    UserRole.superAdmin => 'Super Admin',
-  };
+  /// Delegates to [UserRole.label] — the mapping lives on the enum so this file,
+  /// `CurrentUserSession` and the Purchase Request guards cannot drift apart.
+  static String _roleLabel(UserRole role) => role.label;
 
   /// G-R1 — the room must exist, be active, and belong to the actor's branch.
   ///

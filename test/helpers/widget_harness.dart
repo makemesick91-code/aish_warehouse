@@ -33,7 +33,11 @@ class FixedSessionController extends DevelopmentSessionController {
 /// Widget tests never touch a device database: the same [TestContext] the
 /// domain tests use is injected through `appDatabaseProvider`, which is the
 /// single place the app obtains its database.
-Future<void> pumpOpnameWidget(
+///
+/// Named for the app rather than for one feature, because Stok Opname and Purchase
+/// Request need exactly the same scaffolding. [pumpOpnameWidget] is kept as the
+/// original name so the Milestone 2 tests read as they did.
+Future<void> pumpAppWidget(
   WidgetTester tester, {
   required TestContext context,
   required MasterUser actingAs,
@@ -54,6 +58,21 @@ Future<void> pumpOpnameWidget(
   );
   await tester.pumpAndSettle();
 }
+
+/// The original name of [pumpAppWidget].
+Future<void> pumpOpnameWidget(
+  WidgetTester tester, {
+  required TestContext context,
+  required MasterUser actingAs,
+  required Widget child,
+  List<Override> overrides = const <Override>[],
+}) => pumpAppWidget(
+  tester,
+  context: context,
+  actingAs: actingAs,
+  child: child,
+  overrides: overrides,
+);
 
 /// Pumps the **real** app — router, redirect and route guards included — and
 /// navigates straight to [location].
@@ -132,4 +151,42 @@ Future<Finder> revealCard(WidgetTester tester, String itemName) async {
 Future<void> disposeWidget(WidgetTester tester) async {
   await tester.pumpWidget(const SizedBox.shrink());
   await tester.pumpAndSettle();
+}
+
+/// Sizes the test surface like the clinic tablets the app is built for.
+///
+/// The default 800×600 test window is smaller than any device in use, and a document
+/// form is a tall thing: with the default surface almost every line card sits below the
+/// fold in a lazy `ListView` and is simply not built, which reads as "the widget is
+/// missing" rather than "the widget is off screen". A realistic portrait tablet is both
+/// more honest and still narrow enough for a horizontal overflow to show up.
+void useTabletSurface(WidgetTester tester) {
+  tester.view.devicePixelRatio = 1.0;
+  tester.view.physicalSize = const Size(1024, 1366);
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+}
+
+/// Scrolls [finder] into view inside the scrollable identified by [listKey].
+///
+/// A lazy `ListView` has not built what is below the fold, so a finder for it matches
+/// nothing until the list is scrolled. Addressing the list by key matters because these
+/// screens hold several scrollables — the category chips scroll horizontally, and every
+/// text field has its own editable scrollable.
+Future<Finder> revealInList(
+  WidgetTester tester,
+  Finder finder, {
+  required Key listKey,
+  double delta = 300,
+}) async {
+  if (finder.evaluate().isNotEmpty) return finder;
+  await tester.scrollUntilVisible(
+    finder,
+    delta,
+    scrollable: find
+        .descendant(of: find.byKey(listKey), matching: find.byType(Scrollable))
+        .first,
+  );
+  await tester.pumpAndSettle();
+  return finder;
 }

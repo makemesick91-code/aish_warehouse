@@ -19,7 +19,7 @@ void main() {
     // v2 introduced fixed-point milli-unit quantities; v3 adds Stok Opname
     // as its own version rather than extending v2 (spec §6.3); v4 hardens
     // `stock_opnames` by dropping the lexical timestamp-order CHECK.
-    expect(context.database.schemaVersion, 4);
+    expect(context.database.schemaVersion, 5);
   });
 
   test('kolom kuantitas ledger bertipe INTEGER, bukan REAL', () async {

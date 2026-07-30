@@ -271,7 +271,7 @@ CREATE TABLE "stock_opnames" (
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 4);
+      expect(row.read<int>('user_version'), 5);
 
       await database.close();
     });
@@ -592,7 +592,7 @@ CREATE TABLE "stock_opnames" (
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 4);
+      expect(version.read<int>('user_version'), 5);
       await second.close();
     });
 
@@ -620,6 +620,9 @@ CREATE TABLE "stock_opnames" (
         'stock_movements',
         'stock_opnames',
         'stock_opname_lines',
+        'purchase_requests',
+        'purchase_request_opnames',
+        'purchase_request_lines',
       });
 
       await database.close();
@@ -651,7 +654,7 @@ CREATE TABLE "stock_opnames" (
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 4);
+        expect(version.read<int>('user_version'), 5);
 
         // v1 → v2 scaling ran exactly once…
         final balance = await database
@@ -718,7 +721,7 @@ CREATE TABLE "stock_opnames" (
       final version = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 4);
+      expect(version.read<int>('user_version'), 5);
 
       // Already milli-units at v2: 10500 becoming 10500000 is exactly the bug
       // the `from < 2` guard prevents.

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../features/opname/domain/services/opname_access_policy.dart';
+import '../../core/errors/failure_presenter.dart';
 import '../theme.dart';
 
 /// The screen every refused route lands on.
@@ -49,7 +49,7 @@ class AccessDeniedPage extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                OpnameAccess.deniedMessage,
+                accessDeniedMessage,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,

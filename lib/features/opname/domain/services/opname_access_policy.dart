@@ -1,4 +1,5 @@
 import '../../../../core/enums/app_enums.dart';
+import '../../../../core/errors/failure_presenter.dart';
 import '../../../master/domain/models/master_models.dart';
 import '../models/opname_models.dart';
 
@@ -56,15 +57,9 @@ class OpnameAccess {
 
   bool get isDenied => reason != null;
 
-  /// The single sentence every refusal shows.
-  ///
-  /// One message for every reason on purpose. "This document belongs to
-  /// another branch" and "this document does not exist" are different facts,
-  /// and telling them apart would let anyone with the app enumerate which
-  /// document ids are real across the whole clinic group.
-  static const String deniedMessage =
-      'Anda tidak memiliki akses ke halaman ini. Dokumen ini mungkin tidak ada '
-      'atau berada di cabang lain.';
+  /// The single sentence every refusal shows — see [accessDeniedMessage] for why
+  /// there is only one, and why it lives in `core/errors` rather than here.
+  static const String deniedMessage = accessDeniedMessage;
 }
 
 /// Who may read which Stok Opname screen (spec §3.1, G-R1/G-R2).

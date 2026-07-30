@@ -4,6 +4,7 @@ import 'app_database.dart';
 import 'daos/inventory_dao.dart';
 import 'daos/master_data_dao.dart';
 import 'daos/opname_dao.dart';
+import 'daos/purchase_request_dao.dart';
 import 'database_connection.dart';
 
 /// Single owner of the database handle.
@@ -26,4 +27,8 @@ final inventoryDaoProvider = Provider<InventoryDao>(
 
 final opnameDaoProvider = Provider<OpnameDao>(
   (ref) => ref.watch(appDatabaseProvider).opnameDao,
+);
+
+final purchaseRequestDaoProvider = Provider<PurchaseRequestDao>(
+  (ref) => ref.watch(appDatabaseProvider).purchaseRequestDao,
 );

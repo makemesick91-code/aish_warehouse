@@ -6,10 +6,12 @@ import 'converters/enum_converters.dart';
 import 'daos/inventory_dao.dart';
 import 'daos/master_data_dao.dart';
 import 'daos/opname_dao.dart';
+import 'daos/purchase_request_dao.dart';
 import 'tables/base_columns.dart';
 import 'tables/inventory_tables.dart';
 import 'tables/master_tables.dart';
 import 'tables/opname_tables.dart';
+import 'tables/purchase_request_tables.dart';
 
 part 'app_database.g.dart';
 
@@ -26,8 +28,11 @@ part 'app_database.g.dart';
     StockMovements,
     StockOpnames,
     StockOpnameLines,
+    PurchaseRequests,
+    PurchaseRequestOpnames,
+    PurchaseRequestLines,
   ],
-  daos: [MasterDataDao, InventoryDao, OpnameDao],
+  daos: [MasterDataDao, InventoryDao, OpnameDao, PurchaseRequestDao],
 )
 class AppDatabase extends _$AppDatabase {
   /// The executor is injected so tests can pass an in-memory database while the
@@ -39,8 +44,10 @@ class AppDatabase extends _$AppDatabase {
   /// * v3 — Milestone 2, Stok Opname (`stock_opnames`, `stock_opname_lines`).
   /// * v4 — Milestone 2.1, Stok Opname hardening: `stock_opnames` is rebuilt
   ///   without the lexical timestamp-order CHECK.
+  /// * v5 — Milestone 3, Purchase Request (`purchase_requests`,
+  ///   `purchase_request_opnames`, `purchase_request_lines`).
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -101,6 +108,29 @@ class AppDatabase extends _$AppDatabase {
         // mistake fails the suite instead of shipping.
         await m.alterTable(TableMigration(stockOpnames));
       }
+      if (from < 5) {
+        // Milestone 3 is purely additive, in the sense the `from < 3` block
+        // established: three new tables and their indexes, and not one
+        // statement touching an existing column. Ledger quantities keep the
+        // scaling the `from < 2` block gave them, `stock_opnames` keeps the
+        // shape the `from < 4` rebuild left it in, and every opname line,
+        // balance and movement is untouched — a Purchase Request never posts to
+        // the ledger (spec §2.5), so there is nothing about stock for this step
+        // to migrate.
+        //
+        // It also has to leave `stock_opnames` alone for a second reason: the
+        // `from < 4` block above reads the *current* Dart definition of that
+        // table through `alterTable`. A v5 that changed its shape would make a
+        // v3 → v5 upgrade land on the v5 shape at step 4 and then apply step 5
+        // on top. Purchase Request only references `stock_opnames` by foreign
+        // key, so that trap stays shut.
+        await m.createTable(purchaseRequests);
+        await m.createTable(purchaseRequestOpnames);
+        await m.createTable(purchaseRequestLines);
+        for (final statement in _v5PurchaseRequestIndexes) {
+          await customStatement(statement);
+        }
+      }
     },
     beforeOpen: (details) async {
       // SQLite does not enforce foreign keys unless explicitly asked to.
@@ -144,5 +174,50 @@ class AppDatabase extends _$AppDatabase {
     'CREATE UNIQUE INDEX IF NOT EXISTS idx_stock_opname_lines_unbatched '
         'ON stock_opname_lines (opname_id, item_id) '
         'WHERE batch_id IS NULL AND deleted_at IS NULL;',
+  ];
+
+  /// The Purchase Request indexes **exactly as schema v5 defined them**.
+  ///
+  /// Frozen as literal SQL for the reason [_v3OpnameIndexes] spells out: a
+  /// migration step must keep doing what it did the day it shipped, so this list
+  /// must not be derived from `allSchemaEntities` — that getter always describes
+  /// the current schema, and a v6 index added to one of these tables would
+  /// silently change what the `from < 5` block creates.
+  ///
+  /// The two partial unique indexes are the load-bearing ones:
+  /// `idx_purchase_requests_active_branch` is the database half of G-P4, and
+  /// `idx_purchase_request_lines_item_unique` the database half of G-P2. Losing
+  /// either on an upgrade path would leave the use cases as the only guard —
+  /// which is exactly what a concurrent submit defeats.
+  static const List<String> _v5PurchaseRequestIndexes = [
+    'CREATE INDEX IF NOT EXISTS idx_purchase_requests_branch_status '
+        'ON purchase_requests (branch_id, status);',
+    'CREATE INDEX IF NOT EXISTS idx_purchase_requests_requested_by_status '
+        'ON purchase_requests (requested_by, status);',
+    'CREATE INDEX IF NOT EXISTS idx_purchase_requests_created_at '
+        'ON purchase_requests (created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_purchase_requests_needed_date '
+        'ON purchase_requests (needed_date);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_purchase_requests_active_branch '
+        'ON purchase_requests (branch_id) '
+        "WHERE status IN ('submitted', 'processing') "
+        'AND deleted_at IS NULL;',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_purchase_requests_doc_number '
+        'ON purchase_requests (doc_number) WHERE deleted_at IS NULL;',
+    'CREATE INDEX IF NOT EXISTS idx_purchase_request_opnames_pr '
+        'ON purchase_request_opnames (pr_id);',
+    'CREATE INDEX IF NOT EXISTS idx_purchase_request_opnames_opname '
+        'ON purchase_request_opnames (opname_id);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_purchase_request_opnames_unique '
+        'ON purchase_request_opnames (pr_id, opname_id) '
+        'WHERE deleted_at IS NULL;',
+    'CREATE INDEX IF NOT EXISTS idx_purchase_request_lines_pr '
+        'ON purchase_request_lines (pr_id);',
+    'CREATE INDEX IF NOT EXISTS idx_purchase_request_lines_item '
+        'ON purchase_request_lines (item_id);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS '
+        'idx_purchase_request_lines_item_unique '
+        'ON purchase_request_lines (pr_id, item_id) '
+        'WHERE deleted_at IS NULL;',
   ];
 }

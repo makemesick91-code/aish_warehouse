@@ -249,7 +249,7 @@ class _ReviewHeader extends StatelessWidget {
               // the reviewer should know the master data behind it has moved
               // on (§7.6).
               const SizedBox(height: AppSpacing.sm),
-              HistoricalMasterBadge.forSummary(detail.summary),
+              opnameHistoricalBadge(detail.summary),
               const SizedBox(height: AppSpacing.md),
               const Divider(height: 1),
               const SizedBox(height: AppSpacing.md),

@@ -313,15 +313,23 @@ void main() {
         r"pathParameters\['id'\]",
       ).allMatches(router).length;
       expect(idRoutes, greaterThan(0), reason: 'Pola tes usang.');
+      // Matched by shape rather than by name, so a third module's guard counts
+      // automatically instead of quietly lowering the total. `OpnameRouteGuard(`
+      // and `PurchaseRequestRouteGuard(` both match; an import of the file does
+      // not.
+      final guards = RegExp(r'\w*RouteGuard\(').allMatches(router).length;
       expect(
-        'OpnameRouteGuard'.allMatches(router).length,
+        guards,
         idRoutes,
         reason:
-            'Ditemukan $idRoutes rute ber-:id tetapi jumlah OpnameRouteGuard '
-            'tidak sama. Setiap rute dokumen harus dibungkus penjaga.',
+            'Ditemukan $idRoutes rute ber-:id tetapi hanya $guards penjaga '
+            'dokumen. Setiap rute dokumen harus dibungkus penjaga.',
       );
       expect(router, contains('OpnameRouteKind.document'));
       expect(router, contains('OpnameRouteKind.reviewDocument'));
+      expect(router, contains('PurchaseRequestRouteKind.branchDocument'));
+      expect(router, contains('PurchaseRequestRouteKind.branchDraft'));
+      expect(router, contains('PurchaseRequestRouteKind.warehouseDocument'));
     });
 
     test('kebijakan akses bebas dari Flutter dan database', () {

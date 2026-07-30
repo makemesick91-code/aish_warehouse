@@ -81,7 +81,7 @@ void main() {
         reviewAt(id, submittedAt.subtract(const Duration(milliseconds: 1))),
         throwsA(
           isA<InvalidDocumentTimestampFailure>()
-              .having((f) => f.opnameId, 'opnameId', id)
+              .having((f) => f.documentId, 'documentId', id)
               .having((f) => f.earlierLabel, 'earlierLabel', 'submitted_at')
               .having((f) => f.laterLabel, 'laterLabel', 'reviewed_at')
               .having((f) => f.skew, 'skew', const Duration(milliseconds: 1)),
@@ -180,7 +180,7 @@ void main() {
 
       expect(
         () => DocumentTimestampPolicy.requireReviewNotBeforeSubmit(
-          opnameId: 'so-1',
+          documentId: 'so-1',
           submittedAtUtc: submitted,
           reviewedAtUtc: reviewed,
         ),
@@ -197,7 +197,7 @@ void main() {
       expect(asZulu.isAtSameMomentAs(asOffset), isTrue);
       expect(
         () => DocumentTimestampPolicy.requireReviewNotBeforeSubmit(
-          opnameId: 'so-1',
+          documentId: 'so-1',
           submittedAtUtc: asOffset,
           reviewedAtUtc: asZulu,
         ),
@@ -211,7 +211,7 @@ void main() {
       // problem.
       expect(
         () => DocumentTimestampPolicy.requireReviewNotBeforeSubmit(
-          opnameId: 'so-1',
+          documentId: 'so-1',
           submittedAtUtc: null,
           reviewedAtUtc: DateTime.utc(2020),
         ),

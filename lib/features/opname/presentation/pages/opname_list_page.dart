@@ -399,7 +399,7 @@ class _OpnameTile extends StatelessWidget {
                 const SizedBox(height: AppSpacing.xs),
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: HistoricalMasterBadge.forSummary(summary),
+                  child: opnameHistoricalBadge(summary),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(

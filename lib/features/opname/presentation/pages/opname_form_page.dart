@@ -358,7 +358,7 @@ class _DocumentHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
-              HistoricalMasterBadge.forSummary(detail.summary),
+              opnameHistoricalBadge(detail.summary),
               const SizedBox(height: AppSpacing.sm),
               SyncStatusTag(status: opname.syncStatus),
               if (!opname.isDraft) ...[

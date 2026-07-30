@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/session/acting_user_providers.dart';
 import '../../core/session/current_user_session.dart';
 import '../../features/master/domain/models/master_models.dart';
-import '../../features/master/presentation/providers/master_providers.dart';
 import '../../features/opname/domain/models/opname_models.dart';
 import '../../features/opname/domain/services/opname_access_policy.dart';
 import '../../features/opname/presentation/providers/opname_providers.dart';
@@ -35,8 +35,10 @@ final opnameRouteAccessProvider = FutureProvider.autoDispose
         return const OpnameAccess.denied(OpnameAccessDenialReason.noSession);
       }
 
-      final master = ref.watch(masterDataRepositoryProvider);
-      final MasterUser? actor = await master.userById(session.userId);
+      // The stored user, not the session's claim about itself, and read through
+      // the shared acting-user provider so this guard, the Purchase Request guard
+      // and every branch-scoped provider rest on one source (O-8).
+      final MasterUser? actor = await ref.watch(actingUserProvider.future);
 
       final section = OpnameAccessPolicy.forSection(
         user: actor,

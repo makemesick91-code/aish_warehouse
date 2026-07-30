@@ -165,6 +165,53 @@ final class Quantity implements Comparable<Quantity> {
 
   bool operator >=(Quantity other) => milliUnits >= other.milliUnits;
 
+  /// Whether this quantity exceeds [other] scaled by [numerator]/[denominator],
+  /// compared **exactly** in fixed point.
+  ///
+  /// This is how G-P3's "more than 150 % of the suggestion" is asked:
+  /// `requested.exceedsRatioOf(suggested, numerator: 3, denominator: 2)`. The
+  /// comparison is cross-multiplied to `requested × 2 > suggested × 3`, so it is
+  /// integer arithmetic end to end. Written the obvious way instead —
+  /// `requested.toDouble() > suggested.toDouble() * 1.5` — a request of exactly
+  /// 150 % would land on whichever side of the boundary binary floating point
+  /// happened to round it to, and the threshold would be unstable for values
+  /// such as `1.5 × 0.7`. Nothing here converts to `double`, which is also why
+  /// this type still offers no way to.
+  ///
+  /// Strictly greater than, deliberately: a request of exactly
+  /// [numerator]/[denominator] is *not* above the threshold, because the rule is
+  /// worded `> 150%`.
+  ///
+  /// The comparison stays meaningful for a zero or negative [other] — it simply
+  /// reduces to `this > 0` — but "150 % of nothing" is not a business rule, and
+  /// the caller that owns that distinction is
+  /// `PurchaseRequestQuantityPolicy.isManualRequest`.
+  bool exceedsRatioOf(
+    Quantity other, {
+    required int numerator,
+    required int denominator,
+  }) => milliUnits * denominator > other.milliUnits * numerator;
+
+  /// This quantity scaled by the exact fraction [numerator]/[denominator].
+  ///
+  /// Integer arithmetic on milli-units, so `1.5 × 3/2` is exactly `2.25` and not
+  /// `2.2500000000000004`. When the result does not land on a whole milli-unit it
+  /// is **truncated towards zero** rather than rounded, which keeps the value
+  /// inside the fraction it was asked for — the property that matters for the
+  /// only current caller, the "highest quantity that still needs no
+  /// justification" hint under the input (G-P3).
+  ///
+  /// Not used to decide the 150 % threshold itself: that is
+  /// [exceedsRatioOf], which cross-multiplies and therefore has no division to
+  /// truncate at all.
+  Quantity scaledBy({required int numerator, required int denominator}) =>
+      Quantity.fromMilliUnits(milliUnits * numerator ~/ denominator);
+
+  /// The larger of two quantities — `max(zero, min − counted)` is how a Purchase
+  /// Request suggestion clamps a surplus to nothing rather than to a negative
+  /// order.
+  static Quantity max(Quantity a, Quantity b) => a >= b ? a : b;
+
   /// The smaller of two quantities — the FEFO allocator takes
   /// `min(remaining, batch on hand)` from each batch.
   static Quantity min(Quantity a, Quantity b) => a <= b ? a : b;

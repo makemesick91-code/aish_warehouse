@@ -1,5 +1,6 @@
 import 'package:aish_warehouse/core/enums/app_enums.dart';
 import 'package:aish_warehouse/core/quantity/quantity.dart';
+import 'package:aish_warehouse/core/time/operational_iso_week.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/test_context.dart';
@@ -232,6 +233,166 @@ void main() {
           reason: 'stock_balances tidak boleh ditulis tanpa movement (G-A1).',
         );
       }
+    });
+  });
+
+  group('data demo Purchase Request', () {
+    test('seed memfile opname acuan untuk jendela G-P1', () async {
+      await context.seed.run();
+
+      final rows = await context.database
+          .customSelect(
+            'SELECT o.status, o.period_year, o.period_week, r.code AS room '
+            'FROM stock_opnames o JOIN rooms r ON r.id = o.room_id '
+            'WHERE o.deleted_at IS NULL;',
+          )
+          .get();
+
+      // Two current-week counts from different rooms, one from the previous week, and
+      // one deliberately outside the window (§28).
+      expect(rows, hasLength(4));
+      expect(
+        rows.map((row) => row.read<String>('status')).toSet(),
+        {'submitted'},
+        reason: 'Acuan harus sudah diserahkan agar dapat dikutip (G-O4).',
+      );
+
+      final current = OperationalIsoWeek.ofUtcInstant(DateTime.now().toUtc());
+      final periods = rows
+          .map(
+            (row) => OperationalIsoWeek(
+              year: row.read<int>('period_year'),
+              week: row.read<int>('period_week'),
+            ),
+          )
+          .toList(growable: false);
+
+      final distances = periods.map(current.weeksAfter).toList(growable: false)
+        ..sort();
+      expect(
+        distances,
+        [0, 0, 1, 3],
+        reason:
+            'Dua minggu berjalan, satu minggu sebelumnya, satu terlalu tua '
+            'untuk mendemonstrasikan batas G-P1.',
+      );
+
+      // The two current-week counts come from different rooms, so a Purchase Request
+      // can demonstrate the multi-room aggregate.
+      final currentRooms = <String>{
+        for (final row in rows)
+          if (current.weeksAfter(
+                OperationalIsoWeek(
+                  year: row.read<int>('period_year'),
+                  week: row.read<int>('period_week'),
+                ),
+              ) ==
+              0)
+            row.read<String>('room'),
+      };
+      expect(currentRooms, hasLength(2));
+    });
+
+    test('acuan seed menghasilkan saran desimal dan kandidat manual', () async {
+      await context.seed.run();
+
+      final head = (await context.master.activeUsers()).firstWhere(
+        (user) => user.role == UserRole.kepalaCabang,
+      );
+      final eligible = await context.eligibleOpnamesFor(
+        branchId: head.branchId!,
+        utcNow: DateTime.now().toUtc(),
+      );
+      expect(eligible, hasLength(3), reason: 'Tiga acuan berada di jendela.');
+
+      final request = await context.createPurchaseRequest().call(
+        actorUserId: head.id,
+        selectedOpnameIds: eligible
+            .map((reference) => reference.opnameId)
+            .toList(growable: false),
+      );
+      final detail = await context.requests.getDetail(request.id);
+      final bySku = {for (final line in detail!.lines) line.sku: line};
+
+      // DEN-0004: par 5/room, R1 holds 4.5 and R2 holds 3 → 0.5 + 2 = 2.5 box.
+      expect(bySku['DEN-0004']!.suggestedQty, Quantity.parse('2.5'));
+      // DEN-0007: par 10/room, R2 holds two batches of 2 → summed to 4 before the par
+      // comparison, so 6 ampul rather than 8 + 8.
+      expect(bySku['DEN-0007']!.suggestedQty, Quantity.parse('6'));
+      // DEN-0005: R1 holds 120 against a par of 50, so nothing is suggested — which is
+      // what makes it the position a manual request is demonstrated against.
+      expect(bySku.containsKey('DEN-0005'), isFalse);
+    });
+
+    test(
+      'seed utama tidak mengirim PR, agar demo membuat bisa dijalankan',
+      () async {
+        await context.seed.run();
+
+        final rows = await context.database
+            .customSelect('SELECT COUNT(*) AS c FROM purchase_requests;')
+            .getSingle();
+        expect(
+          rows.read<int>('c'),
+          0,
+          reason:
+              'PR submitted akan menempati slot aktif cabang (G-P4) dan menolak '
+              'hal pertama yang dicoba pengembang.',
+        );
+      },
+    );
+
+    test('demo PR submitted tersedia sebagai langkah terpisah', () async {
+      await context.seed.run();
+
+      final prId = await context.seed.seedSubmittedPurchaseRequest();
+      expect(prId, isNotNull);
+      expect(await context.purchaseRequestStatusOf(prId!), 'submitted');
+
+      final head = (await context.master.activeUsers()).firstWhere(
+        (user) => user.role == UserRole.kepalaCabang,
+      );
+      // Idempotent: the branch now holds its one active order, so a second call is a
+      // no-op rather than a constraint violation.
+      expect(await context.seed.seedSubmittedPurchaseRequest(), isNull);
+      expect(await context.activePurchaseRequestCount(head.branchId!), 1);
+    });
+
+    test('seed kedua tidak menduplikasi opname acuan', () async {
+      await context.seed.run();
+      await context.seed.run();
+
+      final rows = await context.database
+          .customSelect(
+            'SELECT COUNT(*) AS c FROM stock_opnames WHERE deleted_at IS NULL;',
+          )
+          .getSingle();
+      expect(
+        rows.read<int>('c'),
+        4,
+        reason:
+            'G-O1 menolak opname kedua per ruangan per minggu; seed melewatinya.',
+      );
+    });
+
+    test('seed menyediakan Kepala Cabang dan Warehouse aktif', () async {
+      await context.seed.run();
+
+      final users = await context.master.activeUsers();
+      expect(
+        users.where((user) => user.role == UserRole.kepalaCabang),
+        isNotEmpty,
+      );
+      expect(
+        users.where((user) => user.role == UserRole.warehouse),
+        isNotEmpty,
+      );
+      // The branch head must actually be attached to a branch, or nothing in the
+      // Purchase Request workflow is reachable.
+      expect(
+        users.firstWhere((user) => user.role == UserRole.kepalaCabang).branchId,
+        isNotNull,
+      );
     });
   });
 }
