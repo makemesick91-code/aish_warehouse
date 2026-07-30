@@ -13,6 +13,12 @@ import 'package:aish_warehouse/features/delivery/domain/use_cases/create_deliver
 import 'package:aish_warehouse/features/delivery/domain/use_cases/remove_delivery_order_line_use_case.dart';
 import 'package:aish_warehouse/features/delivery/domain/use_cases/ship_delivery_order_use_case.dart';
 import 'package:aish_warehouse/features/delivery/domain/use_cases/update_delivery_order_line_use_case.dart';
+import 'package:aish_warehouse/features/good_receipt/data/repositories/drift_good_receipt_repository.dart';
+import 'package:aish_warehouse/features/good_receipt/domain/models/good_receipt_models.dart';
+import 'package:aish_warehouse/features/good_receipt/domain/repositories/good_receipt_repository.dart';
+import 'package:aish_warehouse/features/good_receipt/domain/use_cases/create_good_receipt_use_case.dart';
+import 'package:aish_warehouse/features/good_receipt/domain/use_cases/decide_good_receipt_line_use_cases.dart';
+import 'package:aish_warehouse/features/good_receipt/domain/use_cases/post_good_receipt_use_case.dart';
 import 'package:aish_warehouse/features/inventory/data/repositories/drift_inventory_repository.dart';
 import 'package:aish_warehouse/features/inventory/domain/repositories/inventory_repository.dart';
 import 'package:aish_warehouse/features/inventory/domain/services/stock_posting_service.dart';
@@ -52,6 +58,7 @@ class TestContext {
     required this.opnames,
     required this.requests,
     required this.deliveries,
+    required this.receipts,
     required this.posting,
     required this.clock,
   });
@@ -68,6 +75,7 @@ class TestContext {
       database.purchaseRequestDao,
     );
     final deliveries = DriftDeliveryOrderRepository(database.deliveryOrderDao);
+    final receipts = DriftGoodReceiptRepository(database.goodReceiptDao);
     return TestContext._(
       database: database,
       master: master,
@@ -75,6 +83,7 @@ class TestContext {
       opnames: opnames,
       requests: requests,
       deliveries: deliveries,
+      receipts: receipts,
       clock: clock,
       posting: StockPostingService(
         inventory: inventory,
@@ -91,6 +100,7 @@ class TestContext {
   final OpnameRepository opnames;
   final PurchaseRequestRepository requests;
   final DeliveryOrderRepository deliveries;
+  final GoodReceiptRepository receipts;
   final StockPostingService posting;
 
   /// The injected UTC clock, or `null` when the real one is in use.
@@ -280,10 +290,93 @@ class TestContext {
     );
   }
 
+  // --- Good Receipt (Milestone 5) -------------------------------------------
+  //
+  // Every factory takes an optional clock for the same two reasons the delivery
+  // ones do: G-E5 is a function of the current operational day, and G-G6 of how
+  // far past a 48-hour deadline a shipment has drifted. Omitting it falls back to
+  // the context's clock, and omitting that too uses the real one.
+
+  CreateGoodReceiptUseCase createGoodReceipt({
+    DateTime Function()? clock,
+    String Function()? idGenerator,
+  }) => CreateGoodReceiptUseCase(
+    receipts: receipts,
+    deliveries: deliveries,
+    requests: requests,
+    master: master,
+    clock: clock ?? this.clock,
+    idGenerator: idGenerator,
+  );
+
+  CheckGoodReceiptLineUseCase checkGoodReceiptLine({
+    DateTime Function()? clock,
+  }) => CheckGoodReceiptLineUseCase(
+    receipts: receipts,
+    master: master,
+    clock: clock ?? this.clock,
+  );
+
+  RejectGoodReceiptLineUseCase rejectGoodReceiptLine({
+    DateTime Function()? clock,
+  }) => RejectGoodReceiptLineUseCase(
+    receipts: receipts,
+    master: master,
+    clock: clock ?? this.clock,
+  );
+
+  ResetGoodReceiptLineUseCase resetGoodReceiptLine({
+    DateTime Function()? clock,
+  }) => ResetGoodReceiptLineUseCase(
+    receipts: receipts,
+    master: master,
+    clock: clock ?? this.clock,
+  );
+
+  /// The post use case, with both clocks pointing at the same instant.
+  ///
+  /// [posting] is injectable so a test can hand it a service that fails on a
+  /// chosen line and then assert that *nothing* was written — the rollback
+  /// assertion the atomicity rule exists for.
+  PostGoodReceiptUseCase postGoodReceipt({
+    DateTime Function()? clock,
+    StockPostingService? posting,
+  }) {
+    final effectiveClock = clock ?? this.clock;
+    return PostGoodReceiptUseCase(
+      receipts: receipts,
+      deliveries: deliveries,
+      requests: requests,
+      master: master,
+      posting:
+          posting ??
+          (effectiveClock == null
+              ? this.posting
+              : postingWithClock(effectiveClock)),
+      clock: effectiveClock,
+    );
+  }
+
   /// A posting service on the same database but with a different notion of
   /// "now", used to test expiry rules without waiting.
   StockPostingService postingWithClock(DateTime Function() clock) =>
       StockPostingService(inventory: inventory, master: master, clock: clock);
+
+  /// A posting service with one dependency swapped.
+  ///
+  /// Exists so an atomicity test can hand it a [FailingInventoryRepository] and then
+  /// assert that *nothing* was written — the rollback assertion the whole "one
+  /// transaction per document" rule exists for. Injecting the repository rather than
+  /// stubbing the service keeps the real posting logic in the path, so the failure
+  /// lands where a real one would.
+  StockPostingService postingWith({
+    InventoryRepository? inventory,
+    DateTime Function()? clock,
+  }) => StockPostingService(
+    inventory: inventory ?? this.inventory,
+    master: master,
+    clock: clock ?? this.clock,
+  );
 
   DevelopmentSeed get seed => DevelopmentSeed(
     master: master,
@@ -292,6 +385,7 @@ class TestContext {
     opnames: opnames,
     requests: requests,
     deliveries: deliveries,
+    receipts: receipts,
     isDevelopmentBuild: true,
   );
 
@@ -303,6 +397,7 @@ class TestContext {
     opnames: opnames,
     requests: requests,
     deliveries: deliveries,
+    receipts: receipts,
     isDevelopmentBuild: false,
   );
 
@@ -517,6 +612,129 @@ class TestContext {
         '${row.read<String>('item_id')}|${row.read<String?>('batch_id') ?? ''}':
             row.read<int>('qty_on_hand'),
     };
+  }
+
+  // --- Good Receipt raw reads, for rollback and atomicity assertions ---------
+  //
+  // All of these read the columns directly, so an assertion about a rolled-back
+  // transaction cannot be fooled by a cached repository read.
+
+  /// The stored status of one Good Receipt.
+  Future<String> goodReceiptStatusOf(String grId) async {
+    final row = await database
+        .customSelect(
+          'SELECT status FROM good_receipts WHERE id = ?;',
+          variables: [Variable<String>(grId)],
+        )
+        .getSingle();
+    return row.read<String>('status');
+  }
+
+  /// One raw column of a Good Receipt, for assertions about audit metadata.
+  Future<String?> goodReceiptColumn(String grId, String column) async {
+    final row = await database
+        .customSelect(
+          'SELECT $column AS value FROM good_receipts WHERE id = ?;',
+          variables: [Variable<String>(grId)],
+        )
+        .getSingle();
+    return row.read<String?>('value');
+  }
+
+  /// How many live receipts exist for one shipment.
+  ///
+  /// Counted in SQL rather than through the repository, because the assertion this
+  /// serves — "a concurrent create produced exactly one receipt" — is about what the
+  /// database contains, not about what a query object chose to return.
+  Future<int> goodReceiptCountFor(String doId) async {
+    final row = await database
+        .customSelect(
+          'SELECT COUNT(*) AS c FROM good_receipts WHERE do_id = ?;',
+          variables: [Variable<String>(doId)],
+        )
+        .getSingle();
+    return row.read<int>('c');
+  }
+
+  /// Live line count of one receipt, read without any join.
+  Future<int> goodReceiptLineCount(String grId) async {
+    final row = await database
+        .customSelect(
+          'SELECT COUNT(*) AS c FROM good_receipt_lines '
+          'WHERE gr_id = ? AND deleted_at IS NULL;',
+          variables: [Variable<String>(grId)],
+        )
+        .getSingle();
+    return row.read<int>('c');
+  }
+
+  /// Raw decision rows of one receipt, keyed by line id.
+  Future<Map<String, Map<String, Object?>>> goodReceiptLineRows(
+    String grId,
+  ) async {
+    final rows = await database
+        .customSelect(
+          'SELECT id, do_line_id, item_id, batch_id, shipped_qty, '
+          'received_qty, line_status, reject_reason FROM good_receipt_lines '
+          'WHERE gr_id = ? AND deleted_at IS NULL;',
+          variables: [Variable<String>(grId)],
+        )
+        .get();
+    return {
+      for (final row in rows)
+        row.read<String>('id'): <String, Object?>{
+          'do_line_id': row.read<String>('do_line_id'),
+          'item_id': row.read<String>('item_id'),
+          'batch_id': row.read<String?>('batch_id'),
+          'shipped_qty': row.read<int>('shipped_qty'),
+          'received_qty': row.read<int>('received_qty'),
+          'line_status': row.read<String>('line_status'),
+          'reject_reason': row.read<String?>('reject_reason'),
+        },
+    };
+  }
+
+  /// Ledger rows written against one Good Receipt.
+  ///
+  /// The assertion behind every rollback test: a failed posting must leave **zero**
+  /// of these, whichever line it failed on.
+  Future<int> goodReceiptMovementCount(String grId) async {
+    final row = await database
+        .customSelect(
+          "SELECT COUNT(*) AS c FROM stock_movements WHERE ref_doc_type = 'GR' "
+          'AND ref_doc_id = ?;',
+          variables: [Variable<String>(grId)],
+        )
+        .getSingle();
+    return row.read<int>('c');
+  }
+
+  /// Every `good_receipt` movement of one receipt, as raw column values.
+  Future<List<Map<String, Object?>>> goodReceiptMovements(String grId) async {
+    final rows = await database
+        .customSelect(
+          'SELECT item_id, batch_id, from_location_id, to_location_id, qty, '
+          'movement_type, ref_doc_type, ref_doc_id, actor_user_id '
+          "FROM stock_movements WHERE ref_doc_type = 'GR' AND ref_doc_id = ? "
+          'ORDER BY created_at, id;',
+          variables: [Variable<String>(grId)],
+        )
+        .get();
+    return rows
+        .map(
+          (row) => <String, Object?>{
+            'item_id': row.read<String>('item_id'),
+            'batch_id': row.read<String?>('batch_id'),
+            'from_location_id': row.read<String?>('from_location_id'),
+            'to_location_id': row.read<String?>('to_location_id'),
+            'qty': row.read<int>('qty'),
+            'movement_type': row.read<String>('movement_type'),
+            'ref_doc_type': row.read<String?>('ref_doc_type'),
+            'ref_doc_id': row.read<String?>('ref_doc_id'),
+            'actor_user_id': row.read<String>('actor_user_id'),
+          },
+        )
+        .toList(growable: false);
   }
 
   /// The stored status of one document, bypassing every Dart layer.
@@ -887,6 +1105,13 @@ Future<Quantity> roomBalanceOf(TestContext context, OpnameFixture fixture) =>
       locationId: fixture.roomLocation.id,
       itemId: fixture.simpleItem.id,
     );
+
+/// The operational (GMT+8) calendar date of a UTC instant.
+///
+/// A one-line wrapper so expiry tests read as dates rather than as timezone
+/// arithmetic, and so they go through the same [AppTimeZone] the production code does
+/// (T-5) rather than subtracting eight hours by hand.
+DateTime operationalToday(DateTime utc) => AppTimeZone.operationalDate(utc);
 
 /// A fixed UTC instant that always lands mid-week in operational time, so a
 /// test that adds or subtracts days stays inside one ISO week unless it means
@@ -1748,3 +1973,210 @@ DeliveryAllocation simpleAllocation(
   itemId: fixture.simpleItem.id,
   qty: Quantity.parse(qty),
 );
+
+/// The fixture's safely dated batch, with the FEFO override reason shipping it needs.
+///
+/// `C-SAFE` expires in 300 days and `B-NEAR` in 12, so choosing the safe one skips a
+/// nearer-expiry batch that still holds stock — which G-E3 requires a written reason
+/// for. Good Receipt tests want a shipment whose expiry verdict is *valid*, and they
+/// should not each have to rediscover that the shipment side demands a justification
+/// for it.
+DeliveryAllocation safeBatchAllocation(
+  DeliveryFixture fixture, {
+  required String qty,
+}) => batchAllocation(
+  fixture,
+  batchId: fixture.safeBatch.id,
+  qty: qty,
+  fefoOverrideReason: 'Cabang meminta batch dengan sisa umur panjang',
+);
+
+/// One allocation of the fixture's tie-expiry item.
+///
+/// `T-A` and `T-B` share an expiry date 100 days out, so either is *valid* for a Good
+/// Receipt and neither skips a nearer batch — which makes this the cheapest way for a
+/// receipt test to reach a third position without arguing with FEFO.
+DeliveryAllocation tieAllocation(
+  DeliveryFixture fixture, {
+  required String qty,
+  String? batchId,
+}) => DeliveryAllocation(
+  prLineId: fixture.tieLineId,
+  itemId: fixture.tieItem.id,
+  batchId: batchId ?? fixture.tieBatchA.id,
+  qty: Quantity.parse(qty),
+);
+
+/// One allocation of the fixture's deliberately unstocked item.
+///
+/// Call [stockForFullShipment] first. The fixture leaves `scarceItem` with no warehouse
+/// balance because the delivery tests use it to prove "nothing to send"; a Good Receipt
+/// test that needs *every* requested position shipped has to stock it.
+DeliveryAllocation scarceAllocation(
+  DeliveryFixture fixture, {
+  required String qty,
+}) => DeliveryAllocation(
+  prLineId: fixture.scarceLineId,
+  itemId: fixture.scarceItem.id,
+  qty: Quantity.parse(qty),
+);
+
+/// Tops the central warehouse up so **every** requested position of the fixture's
+/// Purchase Request can ship in full.
+///
+/// The fixture is built for the delivery tests, where two positions are deliberately
+/// short: `simpleItem` has `2.5` against a request for `3` (forcing a partial
+/// shipment) and `scarceItem` has nothing at all. A Good Receipt closure test needs the
+/// opposite — a request that *can* be completed — so this places the difference.
+///
+/// Posted through the ledger with a clock well before [nowUtc], exactly as the
+/// fixture's own opening balances are, so the inbound movement predates the shipment
+/// that consumes it.
+Future<void> stockForFullShipment(
+  TestContext context,
+  DeliveryFixture fixture, {
+  required DateTime nowUtc,
+}) async {
+  final posting = context.postingWithClock(
+    () => nowUtc.subtract(const Duration(days: 30)),
+  );
+  Future<void> place(String itemId, String qty, String key) =>
+      posting.postInboundWarehouse(
+        itemId: itemId,
+        toLocationId: fixture.warehouse.id,
+        qty: Quantity.parse(qty),
+        actorUserId: fixture.warehouseUser.id,
+        refDocType: RefDocType.seed,
+        refDocId: 'fixture-topup-$key',
+        note: 'Saldo tambahan agar seluruh permintaan dapat dikirim',
+      );
+
+  await place(fixture.simpleItem.id, '1', 'simple');
+  await place(fixture.scarceItem.id, '2', 'scarce');
+}
+
+/// Allocations that ship the fixture's request **completely** — the state G-D5 moves
+/// the Purchase Request to `shipped` for, and therefore the only state from which a
+/// Good Receipt can close it.
+///
+/// The tie item is split across both of its batches because neither holds the full `3`
+/// on its own, and they share an expiry date so taking `T-A` before `T-B` is the FEFO
+/// order rather than an override.
+///
+/// Call [stockForFullShipment] first.
+List<DeliveryAllocation> fullRequestAllocations(DeliveryFixture fixture) => [
+  simpleAllocation(fixture, qty: '3'),
+  safeBatchAllocation(fixture, qty: '4'),
+  tieAllocation(fixture, qty: '2'),
+  tieAllocation(fixture, qty: '1', batchId: fixture.tieBatchB.id),
+  scarceAllocation(fixture, qty: '2'),
+];
+
+// --- Good Receipt helpers (Milestone 5) -------------------------------------
+
+/// Prepares a Delivery Order with [allocations] and **ships** it, so a Good Receipt
+/// has something to check in.
+///
+/// Everything is stamped from [nowUtc] — creation and shipment both — because the
+/// timestamp policy refuses a shipment that predates its own document (§36), and a
+/// fixture that mixed the injected clock with the wall clock could not pin the
+/// ordering. [shippedAtUtc] moves only the shipment, which is what a G-G6 deadline
+/// test needs: a shipment that left 60 hours ago is overdue, and one that left an hour
+/// ago is not.
+Future<String> shipDeliveryOrderFor(
+  TestContext context,
+  DeliveryFixture fixture, {
+  required DateTime nowUtc,
+  required List<DeliveryAllocation> allocations,
+  DateTime? shippedAtUtc,
+  String? actorUserId,
+}) async {
+  final doId = await prepareDeliveryOrder(
+    context,
+    fixture,
+    nowUtc: nowUtc,
+    allocations: allocations,
+    actorUserId: actorUserId,
+  );
+  final shippedAt = shippedAtUtc ?? nowUtc;
+  await context
+      .shipDeliveryOrder(clock: () => shippedAt)
+      .call(
+        actorUserId: actorUserId ?? fixture.warehouseUser.id,
+        deliveryOrderId: doId,
+      );
+  return doId;
+}
+
+/// Creates the `checking` Good Receipt of one shipment and returns its id.
+Future<String> startGoodReceiptFor(
+  TestContext context,
+  DeliveryFixture fixture, {
+  required String deliveryOrderId,
+  required DateTime nowUtc,
+  String? actorUserId,
+}) async {
+  final receipt = await context
+      .createGoodReceipt(clock: () => nowUtc)
+      .call(
+        actorUserId: actorUserId ?? fixture.branchHead.id,
+        deliveryOrderId: deliveryOrderId,
+      );
+  return receipt.id;
+}
+
+/// `doLineId → good_receipt_lines.id` for one receipt.
+Future<Map<String, String>> goodReceiptLineIdsByDoLine(
+  TestContext context,
+  String grId,
+) async {
+  final rows = await context.database
+      .customSelect(
+        'SELECT id, do_line_id FROM good_receipt_lines '
+        'WHERE gr_id = ? AND deleted_at IS NULL;',
+        variables: [Variable<String>(grId)],
+      )
+      .get();
+  return {
+    for (final row in rows)
+      row.read<String>('do_line_id'): row.read<String>('id'),
+  };
+}
+
+/// The receipt's lines keyed by item id, which is what most assertions address them
+/// by. Throws when the receipt cannot be read at all, so a test fails on the missing
+/// document rather than on a null dereference three lines later.
+Future<Map<String, GoodReceiptLine>> goodReceiptLinesByItem(
+  TestContext context,
+  String grId,
+) async {
+  final detail = await context.receipts.getDetail(grId);
+  if (detail == null) {
+    throw StateError('Good Receipt $grId tidak dapat dimuat.');
+  }
+  return {for (final line in detail.lines) line.itemId: line};
+}
+
+/// Decides every position of [grId] as accepted in full — the shortest route to a
+/// receipt that G-G2 will let post.
+Future<void> checkEveryGoodReceiptLine(
+  TestContext context,
+  DeliveryFixture fixture, {
+  required String grId,
+  required DateTime nowUtc,
+  String? actorUserId,
+}) async {
+  final detail = await context.receipts.getDetail(grId);
+  if (detail == null) {
+    throw StateError('Good Receipt $grId tidak dapat dimuat.');
+  }
+  final check = context.checkGoodReceiptLine(clock: () => nowUtc);
+  for (final line in detail.lines) {
+    await check.call(
+      actorUserId: actorUserId ?? fixture.branchHead.id,
+      goodReceiptId: grId,
+      goodReceiptLineId: line.id,
+      receivedQty: line.shippedQty,
+    );
+  }
+}

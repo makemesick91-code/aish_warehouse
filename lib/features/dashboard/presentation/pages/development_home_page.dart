@@ -12,6 +12,7 @@ import '../../../inventory/domain/models/inventory_models.dart';
 import '../../../inventory/presentation/widgets/expiry_badge.dart';
 import '../../../master/domain/models/master_models.dart';
 import '../../../master/presentation/providers/master_providers.dart';
+import '../../../good_receipt/presentation/widgets/good_receipt_dashboard_cards.dart';
 import '../providers/development_home_providers.dart';
 
 /// Development screen that proves the foundation works end to end: the local
@@ -61,6 +62,12 @@ class DevelopmentHomePage extends ConsumerWidget {
             const SizedBox(height: AppSpacing.md),
             const _SessionCard(),
             const SizedBox(height: AppSpacing.md),
+            // G-G6's reminder and §33's selisih card. Both render nothing for a role
+            // they do not belong to, and both are scoped by the acting session, so
+            // switching user re-runs them rather than serving the previous branch's
+            // count from cache.
+            const GoodReceiptReminderCard(),
+            const GoodReceiptDiscrepancyCard(),
             summary.when(
               loading: () =>
                   const _LoadingBlock(message: 'Memuat ringkasan master data…'),
@@ -307,6 +314,32 @@ class _SessionCard extends ConsumerWidget {
                   onPressed: () => context.pushNamed(AppRoutes.deliveriesName),
                   icon: const Icon(Icons.move_to_inbox_outlined),
                   label: const Text('Pengiriman Masuk'),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('homeBranchGoodReceipts'),
+                  onPressed: () => context.pushNamed(AppRoutes.receiptsName),
+                  icon: const Icon(Icons.fact_check_outlined),
+                  label: const Text('Penerimaan'),
+                ),
+              ),
+            ],
+            // Good Receipt's warehouse side is read-only: the posted receipts and
+            // the selisih/retur queue (§33). No create, decide or post route
+            // exists for them at all.
+            if (session.value?.canProcessPurchaseRequest ?? false) ...[
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('homeWarehouseGoodReceipts'),
+                  onPressed: () =>
+                      context.pushNamed(AppRoutes.warehouseGoodReceiptsName),
+                  icon: const Icon(Icons.inventory_2_outlined),
+                  label: const Text('Penerimaan Cabang'),
                 ),
               ),
             ],

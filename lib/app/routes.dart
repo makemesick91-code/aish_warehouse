@@ -91,6 +91,38 @@ abstract final class AppRoutes {
   static const String deliveryWaybill = 'waybill';
   static const String deliveryWaybillName = 'deliveryWaybill';
 
+  // --- Good Receipt (Milestone 5) -------------------------------------------
+
+  /// The Kepala Cabang's Penerimaan section.
+  static const String receipts = '/receipts';
+  static const String receiptsName = 'receipts';
+
+  /// `/receipts/new/{deliveryOrderId}` — start checking one shipment in. Names a
+  /// **Delivery Order**, not a receipt: the receipt does not exist yet. Declared
+  /// **before** the `:id` pattern, or the literal `new` segment would be matched
+  /// as a document id.
+  static const String receiptNew = 'new/:deliveryOrderId';
+  static const String receiptNewName = 'receiptNew';
+
+  static const String receiptDetail = ':id';
+  static const String receiptDetailName = 'receiptDetail';
+
+  /// The warehouse's read-only view of posted receipts, across every branch.
+  static const String warehouseGoodReceipts = '/warehouse/good-receipts';
+  static const String warehouseGoodReceiptsName = 'warehouseGoodReceipts';
+
+  static const String warehouseGoodReceiptDetail = ':id';
+  static const String warehouseGoodReceiptDetailName =
+      'warehouseGoodReceiptDetail';
+
+  /// The selisih/retur queue (G-G3/G-G5). A separate top-level path rather than a
+  /// child of [warehouseGoodReceipts], because it is a line-level report across
+  /// documents rather than a view of one.
+  static const String warehouseGoodReceiptDiscrepancies =
+      '/warehouse/good-receipt-discrepancies';
+  static const String warehouseGoodReceiptDiscrepanciesName =
+      'warehouseGoodReceiptDiscrepancies';
+
   // There is deliberately no `/akses-ditolak` route. A refused document route
   // renders `AccessDeniedPage` *in place*, keeping the URL the user typed:
   // redirecting to a dedicated path would tell them, by the address bar alone,

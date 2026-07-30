@@ -169,8 +169,12 @@ void main() {
       // would keep passing the day somebody adds `/purchase-requests/:id/cetak` without
       // a guard. Reading `pathParameters['id']` is what makes a route
       // document-specific, so every such builder must be wrapped.
+      // `id` and `deliveryOrderId` both name a *document*, so both make a route
+      // document-specific and both must be wrapped. `purchaseRequestId` does not:
+      // `/warehouse/delivery-orders/new/{pr}` creates a document rather than
+      // opening one, and its section guard is the right shape for it.
       final idRoutes = RegExp(
-        r"pathParameters\['id'\]",
+        r"pathParameters\['(?:id|deliveryOrderId)'\]",
       ).allMatches(router).length;
       final guards = RegExp(r'\w*RouteGuard\(').allMatches(router).length;
 

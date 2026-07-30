@@ -4,12 +4,14 @@ import '../enums/app_enums.dart';
 import '../quantity/quantity.dart';
 import 'converters/enum_converters.dart';
 import 'daos/delivery_order_dao.dart';
+import 'daos/good_receipt_dao.dart';
 import 'daos/inventory_dao.dart';
 import 'daos/master_data_dao.dart';
 import 'daos/opname_dao.dart';
 import 'daos/purchase_request_dao.dart';
 import 'tables/base_columns.dart';
 import 'tables/delivery_tables.dart';
+import 'tables/good_receipt_tables.dart';
 import 'tables/inventory_tables.dart';
 import 'tables/master_tables.dart';
 import 'tables/opname_tables.dart';
@@ -35,6 +37,8 @@ part 'app_database.g.dart';
     PurchaseRequestLines,
     DeliveryOrders,
     DeliveryOrderLines,
+    GoodReceipts,
+    GoodReceiptLines,
   ],
   daos: [
     MasterDataDao,
@@ -42,6 +46,7 @@ part 'app_database.g.dart';
     OpnameDao,
     PurchaseRequestDao,
     DeliveryOrderDao,
+    GoodReceiptDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -58,8 +63,9 @@ class AppDatabase extends _$AppDatabase {
   ///   `purchase_request_opnames`, `purchase_request_lines`).
   /// * v6 — Milestone 4, Delivery Order (`delivery_orders`,
   ///   `delivery_order_lines`).
+  /// * v7 — Milestone 5, Good Receipt (`good_receipts`, `good_receipt_lines`).
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -166,6 +172,37 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(deliveryOrders);
         await m.createTable(deliveryOrderLines);
         for (final statement in _v6DeliveryOrderIndexes) {
+          await customStatement(statement);
+        }
+      }
+      if (from < 7) {
+        // Milestone 5, purely additive in the sense the `from < 3` block
+        // established: two new tables and their indexes, and not one statement
+        // touching an existing column.
+        //
+        // The Good Receipt is the document that *credits* the branch store
+        // (spec §2.5), and this step still does not migrate stock — the posting
+        // happens when a receipt is posted, at runtime, not when the schema is
+        // upgraded. So ledger quantities keep the scaling the `from < 2` block
+        // gave them, `stock_opnames` keeps the shape the `from < 4` rebuild left
+        // it in, and every Purchase Request and Delivery Order row is untouched.
+        //
+        // In particular this step does **not** touch `delivery_orders`. A
+        // shipment that is already `shipped` stays `shipped`: whether it has been
+        // received is a fact a Good Receipt establishes by being posted, and
+        // inventing one for the rows already on the device would be a migration
+        // asserting a business event that never happened.
+        //
+        // It also has to leave `stock_opnames` alone for the second reason the
+        // `from < 5` block spells out: the `from < 4` block reads the *current*
+        // Dart definition of that table through `alterTable`, so a v7 that
+        // changed its shape would make a v3 → v7 upgrade land on the v7 shape at
+        // step 4 and then apply steps 5, 6 and 7 on top. Good Receipt only
+        // references `delivery_orders`, `delivery_order_lines`, `items`,
+        // `item_batches` and `users` by foreign key, so that trap stays shut.
+        await m.createTable(goodReceipts);
+        await m.createTable(goodReceiptLines);
+        for (final statement in _v7GoodReceiptIndexes) {
           await customStatement(statement);
         }
       }
@@ -302,5 +339,54 @@ class AppDatabase extends _$AppDatabase {
     'CREATE UNIQUE INDEX IF NOT EXISTS idx_delivery_order_lines_unbatched '
         'ON delivery_order_lines (do_id, pr_line_id) '
         'WHERE batch_id IS NULL AND deleted_at IS NULL;',
+  ];
+
+  /// The Good Receipt indexes **exactly as schema v7 defined them**.
+  ///
+  /// Frozen as literal SQL for the reason [_v3OpnameIndexes] spells out: a
+  /// migration step must keep doing what it did the day it shipped, so this list
+  /// must not be derived from `allSchemaEntities` — that getter always describes
+  /// the current schema, and a v8 index added to one of these tables would
+  /// silently change what the `from < 7` block creates.
+  ///
+  /// Two of these are load-bearing, and both are **unqualified** unique indexes
+  /// rather than the partial `WHERE deleted_at IS NULL` shape the document-number
+  /// indexes use:
+  ///
+  /// * `idx_good_receipts_do` is the database half of G-G1 (*1 DO = 1 GR*). A
+  ///   partial index would let a soft-deleted receipt be followed by a second one
+  ///   for the same shipment, and posting that second receipt would credit the
+  ///   branch twice from one delivery.
+  /// * `idx_good_receipt_lines_unique` is what keeps the snapshot faithful: one
+  ///   receipt line per shipped allocation. Nothing removes a receipt line —
+  ///   rejecting is a decision, not a deletion (G-G4) — so "live rows only" would
+  ///   be a qualification with nothing behind it.
+  ///
+  /// Losing either on an upgrade path would leave the use cases as the only
+  /// guard, which is exactly what two devices checking the same shipment in
+  /// defeat.
+  static const List<String> _v7GoodReceiptIndexes = [
+    'CREATE INDEX IF NOT EXISTS idx_good_receipts_received_by_status '
+        'ON good_receipts (received_by, status);',
+    'CREATE INDEX IF NOT EXISTS idx_good_receipts_status_created '
+        'ON good_receipts (status, created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_good_receipts_posted_at '
+        'ON good_receipts (posted_at);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_good_receipts_do '
+        'ON good_receipts (do_id);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_good_receipts_doc_number '
+        'ON good_receipts (doc_number) WHERE deleted_at IS NULL;',
+    'CREATE INDEX IF NOT EXISTS idx_good_receipt_lines_gr '
+        'ON good_receipt_lines (gr_id);',
+    'CREATE INDEX IF NOT EXISTS idx_good_receipt_lines_do_line '
+        'ON good_receipt_lines (do_line_id);',
+    'CREATE INDEX IF NOT EXISTS idx_good_receipt_lines_item '
+        'ON good_receipt_lines (item_id);',
+    'CREATE INDEX IF NOT EXISTS idx_good_receipt_lines_batch '
+        'ON good_receipt_lines (batch_id);',
+    'CREATE INDEX IF NOT EXISTS idx_good_receipt_lines_status '
+        'ON good_receipt_lines (line_status);',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_good_receipt_lines_unique '
+        'ON good_receipt_lines (gr_id, do_line_id);',
   ];
 }

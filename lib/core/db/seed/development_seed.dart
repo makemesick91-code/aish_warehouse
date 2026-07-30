@@ -1,8 +1,18 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../features/delivery/domain/models/delivery_models.dart';
 import '../../../features/delivery/domain/repositories/delivery_order_repository.dart';
+import '../../../features/delivery/domain/services/delivery_expiry_policy.dart';
 import '../../../features/delivery/domain/services/delivery_order_state_policy.dart';
+import '../../../features/delivery/domain/services/delivery_warehouse_stock_reader.dart';
+import '../../../features/delivery/domain/use_cases/build_fefo_delivery_allocation_use_case.dart';
 import '../../../features/delivery/domain/use_cases/create_delivery_order_use_case.dart';
+import '../../../features/delivery/domain/use_cases/ship_delivery_order_use_case.dart';
+import '../../../features/good_receipt/domain/repositories/good_receipt_repository.dart';
+import '../../../features/good_receipt/domain/services/good_receipt_line_decision_policy.dart';
+import '../../../features/good_receipt/domain/use_cases/create_good_receipt_use_case.dart';
+import '../../../features/good_receipt/domain/use_cases/decide_good_receipt_line_use_cases.dart';
+import '../../../features/good_receipt/domain/use_cases/post_good_receipt_use_case.dart';
 import '../../../features/inventory/domain/repositories/inventory_repository.dart';
 import '../../../features/inventory/domain/services/stock_posting_service.dart';
 import '../../../features/master/domain/models/master_models.dart';
@@ -114,6 +124,7 @@ class DevelopmentSeed {
     required OpnameRepository opnames,
     required this._requests,
     required this._deliveries,
+    required this._receipts,
     bool? isDevelopmentBuild,
   }) : _opnameRepository = opnames,
        _isDevelopmentBuild = isDevelopmentBuild ?? !kReleaseMode;
@@ -124,6 +135,7 @@ class DevelopmentSeed {
   final OpnameRepository _opnameRepository;
   final PurchaseRequestRepository _requests;
   final DeliveryOrderRepository _deliveries;
+  final GoodReceiptRepository _receipts;
   final bool _isDevelopmentBuild;
 
   static const _categoryNames = <String>[
@@ -639,7 +651,14 @@ class DevelopmentSeed {
   ///
   /// Returns the request id, or `null` when there is nothing eligible to cite or
   /// the branch already has an active order.
-  Future<String?> seedSubmittedPurchaseRequest() async {
+  ///
+  /// [clock] backdates the whole chain, which the Good Receipt demo needs: a
+  /// shipment cannot be stamped before the request it belongs to was submitted, so
+  /// demonstrating a 2×24 hour overdue receipt (G-G6) means submitting the request in
+  /// the past too.
+  Future<String?> seedSubmittedPurchaseRequest({
+    DateTime Function()? clock,
+  }) async {
     if (!_isDevelopmentBuild) {
       throw StateError(
         'Seed pengembangan tidak boleh dijalankan pada build produksi.',
@@ -670,6 +689,7 @@ class DevelopmentSeed {
         await CreatePurchaseRequestUseCase(
           requests: _requests,
           master: _master,
+          clock: clock,
         ).call(
           actorUserId: head.id,
           selectedOpnameIds: eligible
@@ -685,6 +705,7 @@ class DevelopmentSeed {
     await SubmitPurchaseRequestUseCase(
       requests: _requests,
       master: _master,
+      clock: clock,
     ).call(actorUserId: head.id, prId: request.id);
 
     return request.id;
@@ -741,6 +762,330 @@ class DevelopmentSeed {
           note: 'Surat Jalan demo seed pengembangan',
         );
     return order.id;
+  }
+
+  /// Ships one Delivery Order [age] in the past, so the Good Receipt screens have a
+  /// real shipment to check in — and so G-G6's 2×24 hour reminder is demonstrable
+  /// without waiting two days.
+  ///
+  /// **Deliberately not part of [run]**, for the reason
+  /// [seedPreparingDeliveryOrder] gives: shipping takes stock out of the warehouse,
+  /// and a developer's first walk through *Alokasikan FEFO → Kirim* would otherwise
+  /// find the work already done.
+  ///
+  /// The **whole chain** is stamped at one backdated instant — request created,
+  /// submitted, taken on, document raised, shipment posted — because the timestamp
+  /// policy refuses a shipment that predates the request it belongs to (§36). Doing
+  /// only the last step in the past would fail, which is exactly the check working.
+  /// The default of 60 hours puts the shipment past its deadline; pass a smaller
+  /// [age] for a receipt that is merely due.
+  ///
+  /// Idempotent by the same mechanism the rest of the seed uses: a second run finds
+  /// the shipment it created last time and adds nothing. Returns the Delivery Order
+  /// id, or `null` when there is nothing to raise a shipment against.
+  Future<String?> seedShippedDeliveryOrder({
+    Duration age = const Duration(hours: 60),
+  }) async {
+    _requireDevelopmentBuild();
+
+    final users = await _master.activeUsers();
+    final officers = users.where((user) => user.role == UserRole.warehouse);
+    final heads = users.where((user) => user.role == UserRole.kepalaCabang);
+    if (officers.isEmpty || heads.isEmpty) return null;
+    final branchId = heads.first.branchId;
+    if (branchId == null) return null;
+
+    // Already shipped by an earlier run? Reuse it rather than shipping a second
+    // document out of a warehouse the demo has already drawn down.
+    final shipped = await _shippedOrderForBranch(branchId);
+    if (shipped != null) return shipped;
+
+    final shippedAt = DateTime.now().toUtc().subtract(age);
+    // One hour before the shipment, so `shipped_at >= created_at` holds by a real
+    // margin rather than by microseconds.
+    final preparedAt = shippedAt.subtract(const Duration(hours: 1));
+    DateTime prepared() => preparedAt;
+
+    var request = await _requests.activeRequestForBranch(branchId);
+    if (request == null) {
+      final prId = await seedSubmittedPurchaseRequest(clock: prepared);
+      if (prId == null) return null;
+      request = await _requests.getById(prId);
+      if (request == null) return null;
+    }
+    if (!DeliveryOrderStatePolicy.canCreateFrom(request.status)) return null;
+
+    final order =
+        await CreateDeliveryOrderUseCase(
+          deliveries: _deliveries,
+          requests: _requests,
+          master: _master,
+          clock: prepared,
+        ).call(
+          actorUserId: officers.first.id,
+          purchaseRequestId: request.id,
+          note: 'Surat Jalan demo Good Receipt',
+        );
+
+    final stock = DeliveryWarehouseStockReader(_inventory);
+    await BuildFefoDeliveryAllocationUseCase(
+      deliveries: _deliveries,
+      master: _master,
+      stock: stock,
+      clock: prepared,
+    ).call(actorUserId: officers.first.id, deliveryOrderId: order.id);
+
+    // Nothing to send — every requested position is out of stock — leaves the
+    // document `preparing` rather than failing the seed. The screens still have
+    // something to show, and a developer sees why.
+    final allocations = await _deliveries.lineReferences(order.id);
+    if (allocations.isEmpty) return order.id;
+
+    // FEFO consumes the nearest-expiry batch first, and several of the seeded batches
+    // are inside their alert window — which G-E4 will not ship without an explicit
+    // confirmation. Recording it here is exactly what a warehouse officer does on the
+    // allocation screen; skipping it would make the seed fail on a rule that is working.
+    // The receipt then has to *reject* those positions under G-E5, which is precisely
+    // the case the demo exists to show.
+    await _confirmNearExpiryAllocations(
+      allocations: allocations,
+      nowUtc: shippedAt,
+    );
+
+    await ShipDeliveryOrderUseCase(
+      deliveries: _deliveries,
+      requests: _requests,
+      master: _master,
+      posting: _postingAt(shippedAt),
+      stock: stock,
+      clock: () => shippedAt,
+    ).call(actorUserId: officers.first.id, deliveryOrderId: order.id);
+
+    return order.id;
+  }
+
+  /// Ticks the near-expiry confirmation on every allocation that needs one (G-E4).
+  ///
+  /// Judged at [nowUtc] rather than at the wall clock, so a backdated shipment is
+  /// confirmed against the shelf life it actually had when it left.
+  Future<void> _confirmNearExpiryAllocations({
+    required List<DeliveryLineReference> allocations,
+    required DateTime nowUtc,
+  }) async {
+    for (final allocation in allocations) {
+      final batchId = allocation.batchId;
+      if (batchId == null) continue;
+
+      final batch = await _master.batchById(batchId);
+      final item = await _master.itemById(allocation.itemId);
+      if (batch == null || item == null) continue;
+      if (!DeliveryExpiryPolicy.requiresNearExpiryConfirmation(
+        expiryDate: batch.expiryDate,
+        expiryAlertDays: item.expiryAlertDays,
+        nowUtc: nowUtc,
+      )) {
+        continue;
+      }
+
+      await _deliveries.updatePreparingLine(
+        lineId: allocation.id,
+        shippedQty: allocation.shippedQty,
+        batchId: batchId,
+        fefoOverrideReason: allocation.fefoOverrideReason,
+        nearExpiryConfirmed: true,
+        nearExpiryNote: 'Dikonfirmasi pada seed pengembangan',
+      );
+    }
+  }
+
+  /// Creates a `checking` Good Receipt for the seeded shipment, so the checklist has
+  /// something to open (§37).
+  ///
+  /// Opt-in and idempotent: a shipment that already has a receipt returns it. Nothing
+  /// about stock happens — the branch is credited when the receipt is *posted*
+  /// (spec §2.5). Returns the receipt id, or `null` when there is no shipment to
+  /// check in.
+  Future<String?> seedCheckingGoodReceipt() async {
+    _requireDevelopmentBuild();
+
+    final users = await _master.activeUsers();
+    final heads = users.where((user) => user.role == UserRole.kepalaCabang);
+    if (heads.isEmpty) return null;
+    final head = heads.first;
+    final branchId = head.branchId;
+    if (branchId == null) return null;
+
+    // A receipt this seed created on an earlier run — whatever status it reached. Looked
+    // up before anything is built, because posting one moves its shipment to `received`
+    // and the "awaiting" lookup below would then miss it and start a second chain.
+    final previous = await _existingReceiptForBranch(branchId);
+    if (previous != null) return previous;
+
+    final doId =
+        await _shippedOrderForBranch(branchId) ??
+        await seedShippedDeliveryOrder();
+    if (doId == null) return null;
+
+    final existing = await _receipts.findByDeliveryOrder(doId);
+    if (existing != null) return existing.id;
+
+    final receipt = await CreateGoodReceiptUseCase(
+      receipts: _receipts,
+      deliveries: _deliveries,
+      requests: _requests,
+      master: _master,
+    ).call(actorUserId: head.id, deliveryOrderId: doId);
+    return receipt.id;
+  }
+
+  /// Decides every position of the seeded receipt and posts it, producing **both**
+  /// shapes of discrepancy the warehouse queue reports (§17/§37).
+  ///
+  /// The pattern is chosen so the queue is never empty and never one-sided:
+  ///
+  /// * the first position is accepted **short** — a `checked` line whose received
+  ///   quantity is below what was shipped, which is a *shortage* (G-G3);
+  /// * the second, when there is one, is **refused** — a `rejected` line, which is a
+  ///   *return* (G-G4/G-G5);
+  /// * everything else is accepted in full.
+  ///
+  /// The branch's opening balance therefore arrives **through the ledger** — a real
+  /// `good_receipt` movement per accepted position — and never by writing
+  /// `stock_balances`, which is the rule the production code follows (G-A1).
+  ///
+  /// A position G-E5 refuses is rejected rather than accepted, whatever its place in
+  /// the order: the seed obeys the same rule the screens do.
+  ///
+  /// Returns the receipt id, or `null` when there is nothing to post.
+  Future<String?> seedPostedGoodReceipt() async {
+    _requireDevelopmentBuild();
+
+    final users = await _master.activeUsers();
+    final heads = users.where((user) => user.role == UserRole.kepalaCabang);
+    if (heads.isEmpty) return null;
+    final head = heads.first;
+
+    final grId = await seedCheckingGoodReceipt();
+    if (grId == null) return null;
+
+    final receipt = await _receipts.getById(grId);
+    if (receipt == null) return null;
+    // Already posted by an earlier run.
+    if (receipt.isPosted) return grId;
+
+    final detail = await _receipts.getDetail(grId);
+    if (detail == null || detail.lines.isEmpty) return null;
+
+    final check = CheckGoodReceiptLineUseCase(
+      receipts: _receipts,
+      master: _master,
+    );
+    final reject = RejectGoodReceiptLineUseCase(
+      receipts: _receipts,
+      master: _master,
+    );
+
+    final nowUtc = DateTime.now().toUtc();
+
+    // G-E5 comes first and is not negotiable: an expired or nearly expired batch must be
+    // refused, and the seed is not exempt from a rule the screens enforce. The demo
+    // pattern is then applied to what is *left*, so a delivery that happens to be all
+    // near-expiry still produces a valid receipt rather than a shortage that G-E5 would
+    // have refused anyway.
+    final mustReject = detail.lines
+        .where((line) => line.mustBeRejectedOn(nowUtc))
+        .toList(growable: false);
+    final acceptable = detail.lines
+        .where((line) => !line.mustBeRejectedOn(nowUtc))
+        .toList(growable: false);
+
+    for (final line in mustReject) {
+      await reject.call(
+        actorUserId: head.id,
+        goodReceiptId: grId,
+        goodReceiptLineId: line.id,
+        reason: GoodReceiptLineDecisionPolicy.composeReason(
+          preset: GoodReceiptRejectReasonPreset.expired,
+          detail: 'Batch terlalu dekat kedaluwarsa saat diterima',
+        ),
+      );
+    }
+
+    for (var index = 0; index < acceptable.length; index += 1) {
+      final line = acceptable[index];
+      // The second acceptable position is refused, so the queue has a *return* to show
+      // even when nothing was near its expiry date. When there is only one, the expiry
+      // refusals above already provide it.
+      if (index == 1) {
+        await reject.call(
+          actorUserId: head.id,
+          goodReceiptId: grId,
+          goodReceiptLineId: line.id,
+          reason: GoodReceiptLineDecisionPolicy.composeReason(
+            preset: GoodReceiptRejectReasonPreset.damaged,
+            detail: 'Kemasan rusak saat diterima (demo seed)',
+          ),
+        );
+        continue;
+      }
+      // The first accepted position arrives short, so the queue has a shortage to show.
+      // Halved in exact fixed point, so a `1` box becomes `0.5` rather than a
+      // floating-point approximation of it (Q-2).
+      await check.call(
+        actorUserId: head.id,
+        goodReceiptId: grId,
+        goodReceiptLineId: line.id,
+        receivedQty: index == 0
+            ? line.shippedQty.scaledBy(numerator: 1, denominator: 2)
+            : line.shippedQty,
+      );
+    }
+
+    await PostGoodReceiptUseCase(
+      receipts: _receipts,
+      deliveries: _deliveries,
+      requests: _requests,
+      master: _master,
+      posting: _posting,
+    ).call(actorUserId: head.id, goodReceiptId: grId);
+
+    return grId;
+  }
+
+  /// The id of any Good Receipt this branch already has, or `null`.
+  ///
+  /// Read through the branch-scoped list so it cannot report another branch's document,
+  /// and status-agnostic so a *posted* receipt still counts as "already seeded" — which is
+  /// what makes a second run a no-op rather than the start of a second chain.
+  Future<String?> _existingReceiptForBranch(String branchId) async {
+    final receipts = await _receipts.listForBranch(branchId: branchId);
+    return receipts.isEmpty ? null : receipts.first.id;
+  }
+
+  /// The branch's most recent `shipped` Delivery Order, or `null`.
+  Future<String?> _shippedOrderForBranch(String branchId) async {
+    final orders = await _deliveries.listForWarehouse(
+      DeliveryOrderFilter(
+        branchId: branchId,
+        statuses: const {DeliveryOrderStatus.shipped},
+      ),
+    );
+    return orders.isEmpty ? null : orders.first.id;
+  }
+
+  /// A posting service on the same repositories but with a different notion of
+  /// "now", so a backdated shipment judges expiry against the day it was sent.
+  StockPostingService _postingAt(DateTime instant) => StockPostingService(
+    inventory: _inventory,
+    master: _master,
+    clock: () => instant,
+  );
+
+  void _requireDevelopmentBuild() {
+    if (_isDevelopmentBuild) return;
+    throw StateError(
+      'Seed pengembangan tidak boleh dijalankan pada build produksi.',
+    );
   }
 
   Future<MasterItem?> _findItemBySku(String sku) async {

@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import '../core/session/current_user_session.dart';
 import '../features/delivery/domain/services/delivery_order_access_policy.dart';
+import '../features/good_receipt/domain/services/good_receipt_access_policy.dart';
 import '../features/opname/domain/services/opname_access_policy.dart';
 import '../features/purchase_request/domain/services/purchase_request_access_policy.dart';
 import 'guards/delivery_order_route_guard.dart';
+import 'guards/good_receipt_route_guard.dart';
 import 'guards/opname_route_guard.dart';
 import 'guards/purchase_request_route_guard.dart';
 import 'routes.dart';
@@ -17,6 +19,11 @@ import '../features/delivery/presentation/pages/delivery_order_detail_page.dart'
 import '../features/delivery/presentation/pages/delivery_order_form_page.dart';
 import '../features/delivery/presentation/pages/delivery_waybill_page.dart';
 import '../features/delivery/presentation/pages/warehouse_delivery_order_list_page.dart';
+import '../features/good_receipt/presentation/pages/branch_good_receipt_list_page.dart';
+import '../features/good_receipt/presentation/pages/good_receipt_detail_page.dart';
+import '../features/good_receipt/presentation/pages/good_receipt_start_page.dart';
+import '../features/good_receipt/presentation/pages/warehouse_good_receipt_discrepancy_page.dart';
+import '../features/good_receipt/presentation/pages/warehouse_good_receipt_list_page.dart';
 import '../features/opname/presentation/pages/opname_form_page.dart';
 import '../features/opname/presentation/pages/opname_list_page.dart';
 import '../features/opname/presentation/pages/opname_review_detail_page.dart';
@@ -131,6 +138,35 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
       if (location.startsWith(AppRoutes.deliveries)) {
         return deliverySectionFor(DeliveryRouteKind.branchList).isGranted
+            ? null
+            : AppRoutes.home;
+      }
+
+      // Good Receipt. Same shape again: the rule is
+      // [GoodReceiptAccessPolicy]'s, and the redirect only asks the cheap
+      // section half of it. Whether a *document* may be opened is the guard's
+      // question, because only the database knows which branch a receipt belongs
+      // to and whether it has been posted.
+      GoodReceiptAccess receiptSectionFor(GoodReceiptRouteKind kind) =>
+          GoodReceiptAccessPolicy.forSection(user: session.user, kind: kind);
+
+      // The discrepancy queue is checked before the receipt list because its path
+      // is a sibling prefix rather than a nested one, and relying on the two not
+      // colliding is one route rename away from being wrong.
+      if (location.startsWith(AppRoutes.warehouseGoodReceiptDiscrepancies)) {
+        return receiptSectionFor(
+              GoodReceiptRouteKind.warehouseDiscrepancies,
+            ).isGranted
+            ? null
+            : AppRoutes.home;
+      }
+      if (location.startsWith(AppRoutes.warehouseGoodReceipts)) {
+        return receiptSectionFor(GoodReceiptRouteKind.warehouseList).isGranted
+            ? null
+            : AppRoutes.home;
+      }
+      if (location.startsWith(AppRoutes.receipts)) {
+        return receiptSectionFor(GoodReceiptRouteKind.branchList).isGranted
             ? null
             : AppRoutes.home;
       }
@@ -357,6 +393,76 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      GoRoute(
+        path: AppRoutes.receipts,
+        name: AppRoutes.receiptsName,
+        builder: (context, state) => const GoodReceiptSectionGuard(
+          kind: GoodReceiptRouteKind.branchList,
+          builder: _branchGoodReceiptList,
+        ),
+        routes: [
+          // Listed first: the literal `new` segment must win over the `:id`
+          // pattern, or `/receipts/new/{do}` would be read as a receipt id
+          // followed by a stray segment.
+          GoRoute(
+            path: AppRoutes.receiptNew,
+            name: AppRoutes.receiptNewName,
+            builder: (context, state) {
+              final doId = state.pathParameters['deliveryOrderId']!;
+              // The create route names a **shipment**, so its guard resolves the
+              // Delivery Order's access scope — branch predicate and G-G1's
+              // `shipped` predicate both inside the query.
+              return GoodReceiptCreateRouteGuard(
+                doId: doId,
+                builder: (_) => GoodReceiptStartPage(deliveryOrderId: doId),
+              );
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.receiptDetail,
+            name: AppRoutes.receiptDetailName,
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return GoodReceiptRouteGuard(
+                kind: GoodReceiptRouteKind.branchDocument,
+                grId: id,
+                builder: (_) => GoodReceiptDetailPage(grId: id),
+              );
+            },
+          ),
+        ],
+      ),
+      GoRoute(
+        path: AppRoutes.warehouseGoodReceipts,
+        name: AppRoutes.warehouseGoodReceiptsName,
+        builder: (context, state) => const GoodReceiptSectionGuard(
+          kind: GoodReceiptRouteKind.warehouseList,
+          builder: _warehouseGoodReceiptList,
+        ),
+        routes: [
+          GoRoute(
+            path: AppRoutes.warehouseGoodReceiptDetail,
+            name: AppRoutes.warehouseGoodReceiptDetailName,
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return GoodReceiptRouteGuard(
+                kind: GoodReceiptRouteKind.warehouseDocument,
+                grId: id,
+                builder: (_) =>
+                    GoodReceiptDetailPage(grId: id, branchScoped: false),
+              );
+            },
+          ),
+        ],
+      ),
+      GoRoute(
+        path: AppRoutes.warehouseGoodReceiptDiscrepancies,
+        name: AppRoutes.warehouseGoodReceiptDiscrepanciesName,
+        builder: (context, state) => const GoodReceiptSectionGuard(
+          kind: GoodReceiptRouteKind.warehouseDiscrepancies,
+          builder: _warehouseGoodReceiptDiscrepancies,
+        ),
+      ),
     ],
   );
 });
@@ -376,6 +482,15 @@ Widget _warehouseDeliveryList(BuildContext context) =>
 
 Widget _branchDeliveryList(BuildContext context) =>
     const BranchDeliveryListPage();
+
+Widget _branchGoodReceiptList(BuildContext context) =>
+    const BranchGoodReceiptListPage();
+
+Widget _warehouseGoodReceiptList(BuildContext context) =>
+    const WarehouseGoodReceiptListPage();
+
+Widget _warehouseGoodReceiptDiscrepancies(BuildContext context) =>
+    const WarehouseGoodReceiptDiscrepancyPage();
 
 /// Bridges the session provider to GoRouter's `refreshListenable`, so switching
 /// role re-runs the redirect immediately instead of on the next navigation.

@@ -811,3 +811,307 @@ final class HistoricalDeliveryReferenceMissingFailure extends AppFailure {
 
   final String doId;
 }
+
+// --- Good Receipt (Milestone 5) ----------------------------------------------
+
+/// The Good Receipt does not exist, or has been soft deleted.
+final class GoodReceiptNotFoundFailure extends AppFailure {
+  const GoodReceiptNotFoundFailure(super.message, {required this.grId});
+
+  final String grId;
+}
+
+/// G-G1: the shipment already has a Good Receipt. One DO, one GR.
+///
+/// Also the failure a losing concurrent create sees: the unique index on
+/// `good_receipts.do_id` is the final guard, and the repository translates it into
+/// this rather than letting a driver error surface.
+final class GoodReceiptAlreadyExistsFailure extends AppFailure {
+  const GoodReceiptAlreadyExistsFailure(
+    super.message, {
+    required this.doId,
+    this.grId,
+  });
+
+  final String doId;
+
+  /// The receipt that already holds the shipment, when it is known. `null` when
+  /// the unique index refused an insert and the winner's id was never read.
+  final String? grId;
+}
+
+/// G-S1/G-S2: the requested transition or edit is not allowed from the status the
+/// receipt is actually in.
+final class InvalidGoodReceiptStateFailure extends AppFailure {
+  const InvalidGoodReceiptStateFailure(
+    super.message, {
+    required this.grId,
+    required this.currentStatus,
+    this.attemptedStatus,
+  });
+
+  final String grId;
+  final GoodReceiptStatus currentStatus;
+  final GoodReceiptStatus? attemptedStatus;
+}
+
+/// The receipt has already been posted to the ledger.
+///
+/// Separate from [InvalidGoodReceiptStateFailure] because the situation has its
+/// own remedy: nothing is wrong with the receipt, it simply already happened, and
+/// the branch head needs the posted document rather than a corrected checklist.
+final class GoodReceiptAlreadyPostedFailure extends AppFailure {
+  const GoodReceiptAlreadyPostedFailure(
+    super.message, {
+    required this.grId,
+    this.postedAt,
+  });
+
+  final String grId;
+
+  /// UTC instant (T-1).
+  final DateTime? postedAt;
+}
+
+/// G-G1: the Delivery Order is not one a Good Receipt may be raised against —
+/// still `preparing`, or already `received`.
+final class InvalidDeliveryOrderForReceiptFailure extends AppFailure {
+  const InvalidDeliveryOrderForReceiptFailure(
+    super.message, {
+    required this.doId,
+    required this.currentStatus,
+  });
+
+  final String doId;
+  final DeliveryOrderStatus currentStatus;
+}
+
+/// A shipment with no allocations has nothing to check in.
+final class GoodReceiptLineRequiredFailure extends AppFailure {
+  const GoodReceiptLineRequiredFailure(super.message, {required this.doId});
+
+  final String doId;
+}
+
+/// The line does not exist on this receipt.
+final class GoodReceiptLineNotFoundFailure extends AppFailure {
+  const GoodReceiptLineNotFoundFailure(super.message, {required this.lineId});
+
+  final String lineId;
+}
+
+/// G-G2: the receipt cannot be posted while any position is still `pending`.
+final class GoodReceiptLinesPendingFailure extends AppFailure {
+  const GoodReceiptLinesPendingFailure(
+    super.message, {
+    required this.grId,
+    required this.pendingLineIds,
+  });
+
+  final String grId;
+
+  /// Every position still waiting for a decision, so the screen can point at the
+  /// first one rather than at the document.
+  final List<String> pendingLineIds;
+
+  int get pendingCount => pendingLineIds.length;
+}
+
+/// G-G3: the received quantity is negative, or otherwise not a quantity a
+/// position may accept.
+final class InvalidReceivedQuantityFailure extends AppFailure {
+  const InvalidReceivedQuantityFailure(
+    super.message, {
+    required this.lineId,
+    required this.received,
+  });
+
+  final String lineId;
+  final Quantity received;
+}
+
+/// G-G3: the received quantity is larger than what was shipped.
+///
+/// Distinct from [InvalidReceivedQuantityFailure] so the UI can say *how much* was
+/// sent rather than only that the number is wrong.
+final class ReceivedQuantityExceedsShippedFailure extends AppFailure {
+  const ReceivedQuantityExceedsShippedFailure(
+    super.message, {
+    required this.lineId,
+    required this.shipped,
+    required this.received,
+  });
+
+  final String lineId;
+  final Quantity shipped;
+  final Quantity received;
+
+  Quantity get excess => received - shipped;
+}
+
+/// G-G4: a refused position was stored without a reason, or with whitespace.
+final class GoodReceiptRejectReasonRequiredFailure extends AppFailure {
+  const GoodReceiptRejectReasonRequiredFailure(
+    super.message, {
+    required this.lineId,
+  });
+
+  final String lineId;
+}
+
+/// G-E5: the batch is past its expiry date, so the position must be **rejected**
+/// rather than accepted.
+///
+/// Deliberately not a variant of the Delivery Order's expiry failure: on a
+/// shipment an expired batch simply cannot be sent, while here the goods are
+/// physically on the branch's counter and the only correct answer is to refuse
+/// them with `kedaluwarsa` and put them on the return list.
+final class GoodReceiptExpiredBatchMustBeRejectedFailure extends AppFailure {
+  const GoodReceiptExpiredBatchMustBeRejectedFailure(
+    super.message, {
+    required this.lineId,
+    required this.batchId,
+    required this.batchNo,
+    required this.expiryDate,
+  });
+
+  final String lineId;
+  final String batchId;
+  final String batchNo;
+
+  /// Civil date — never timezone converted (T-8).
+  final DateTime expiryDate;
+}
+
+/// G-E5: the batch has less than `expiry_alert_days` of shelf life left, so the
+/// position must be **rejected**.
+///
+/// Unlike the shipment's near-expiry rule (G-E4), no confirmation can accept this:
+/// spec §3.11 says goods too close to their expiry date are refused with
+/// `kedaluwarsa` and go on the return list.
+final class GoodReceiptNearExpiryBatchMustBeRejectedFailure extends AppFailure {
+  const GoodReceiptNearExpiryBatchMustBeRejectedFailure(
+    super.message, {
+    required this.lineId,
+    required this.batchId,
+    required this.batchNo,
+    required this.remainingDays,
+    required this.expiryAlertDays,
+  });
+
+  final String lineId;
+  final String batchId;
+  final String batchNo;
+
+  /// Whole operational days until the expiry date, GMT+8 (T-3/T-10).
+  final int remainingDays;
+  final int expiryAlertDays;
+}
+
+/// The batch does not belong to the item, or the item's expiry tracking and the
+/// receipt line disagree (G-E1/G-E2).
+final class InvalidGoodReceiptBatchFailure extends AppFailure {
+  const InvalidGoodReceiptBatchFailure(
+    super.message, {
+    required this.itemId,
+    this.batchId,
+  });
+
+  final String itemId;
+  final String? batchId;
+}
+
+/// G-G1: the acting Kepala Cabang does not belong to the shipment's destination
+/// branch.
+final class GoodReceiptBranchMismatchFailure extends AppFailure {
+  const GoodReceiptBranchMismatchFailure(
+    super.message, {
+    required this.actorUserId,
+    this.actorBranchId,
+    required this.documentBranchId,
+  });
+
+  final String actorUserId;
+  final String? actorBranchId;
+  final String documentBranchId;
+}
+
+/// There is no *Gudang Cabang* stock location for the branch, so a receipt has no
+/// destination to credit (G-G5).
+final class GoodReceiptBranchStoreNotFoundFailure extends AppFailure {
+  const GoodReceiptBranchStoreNotFoundFailure(
+    super.message, {
+    required this.branchId,
+  });
+
+  final String branchId;
+}
+
+/// There is more than one *Gudang Cabang* location for the branch.
+///
+/// Refused rather than resolved: which store the goods entered is a business fact,
+/// and picking one would post the ledger against a location nobody chose.
+final class GoodReceiptBranchStoreAmbiguousFailure extends AppFailure {
+  const GoodReceiptBranchStoreAmbiguousFailure(
+    super.message, {
+    required this.branchId,
+    required this.locationIds,
+  });
+
+  final String branchId;
+  final List<String> locationIds;
+}
+
+/// The receipt and the shipment it snapshots no longer agree: a line is missing,
+/// or one is present that no allocation accounts for.
+final class GoodReceiptLineIntegrityFailure extends AppFailure {
+  const GoodReceiptLineIntegrityFailure(
+    super.message, {
+    required this.grId,
+    this.missingDoLineIds = const <String>[],
+    this.extraDoLineIds = const <String>[],
+  });
+
+  final String grId;
+
+  /// Allocations the shipment has and the receipt does not — checking in less
+  /// than was sent, silently.
+  final List<String> missingDoLineIds;
+
+  /// Receipt lines that answer no live allocation — checking in something the
+  /// shipment never carried.
+  final List<String> extraDoLineIds;
+}
+
+/// A master, Delivery Order or Purchase Request row a Good Receipt depends on is
+/// physically gone.
+///
+/// The same distinction [HistoricalReferenceMissingFailure] draws for Stok Opname:
+/// a deactivated or soft-deleted row is still there and the receipt may still be
+/// posted against it, but a row that cannot be found at all means the reference is
+/// broken. Nothing may be invented, substituted or guessed to paper over it.
+final class GoodReceiptHistoricalReferenceMissingFailure extends AppFailure {
+  const GoodReceiptHistoricalReferenceMissingFailure(
+    super.message, {
+    required this.entity,
+    required this.id,
+    required this.grId,
+  });
+
+  /// The table whose row is missing: `items`, `item_batches`,
+  /// `delivery_order_lines`, `stock_locations`…
+  final String entity;
+
+  /// The id the document still points at.
+  final String id;
+
+  final String grId;
+}
+
+/// A guarded write affected no rows: somebody else changed the receipt between
+/// reading it and writing it. The caller must reload rather than retry blindly.
+final class ConcurrentGoodReceiptUpdateFailure extends AppFailure {
+  const ConcurrentGoodReceiptUpdateFailure(super.message, {required this.grId});
+
+  final String grId;
+}

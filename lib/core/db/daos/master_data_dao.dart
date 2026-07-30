@@ -363,6 +363,55 @@ class MasterDataDao extends DatabaseAccessor<AppDatabase>
           ))
           .getSingleOrNull();
 
+  /// Every live *Gudang Cabang* location of one branch, ordered deterministically.
+  ///
+  /// A list rather than a single row, for the reason [warehouseLocations] spells
+  /// out: a Good Receipt posts against exactly one branch store and may not guess
+  /// which (G-G5). The caller counts the result and produces the right failure for
+  /// 0 and for >1 — `getSingleOrNull` would throw a driver error on the second
+  /// case, and a receipt has to be able to *say* that the branch store is
+  /// ambiguous rather than crash on it.
+  ///
+  /// `room_id IS NULL` is part of the predicate as well as the type: a branch's
+  /// room locations also carry its `branch_id`, and a query that forgot this would
+  /// count them as candidate stores.
+  Future<List<StockLocation>> branchStoreLocations(String branchId) =>
+      (select(stockLocations)
+            ..where(
+              (t) =>
+                  t.type.equalsValue(StockLocationType.branchStore) &
+                  t.branchId.equals(branchId) &
+                  t.roomId.isNull() &
+                  t.deletedAt.isNull(),
+            )
+            ..orderBy([
+              (t) => OrderingTerm.asc(t.createdAt),
+              (t) => OrderingTerm.asc(t.id),
+            ]))
+          .get();
+
+  /// The same list **including archived ones**, for completing a receipt that was
+  /// created before an administrator tidied the location away (§7.2).
+  ///
+  /// A live location still wins when both exist, which is why this orders rather
+  /// than filtering: a branch store archived and re-created has two rows, and the
+  /// balances a posting must credit are the ones on the live location.
+  Future<List<StockLocation>> historicalBranchStoreLocations(String branchId) =>
+      (select(stockLocations)
+            ..where(
+              (t) =>
+                  t.type.equalsValue(StockLocationType.branchStore) &
+                  t.branchId.equals(branchId) &
+                  t.roomId.isNull(),
+            )
+            ..orderBy([
+              // `deleted_at IS NULL` is 1 for a live row, so descending puts the
+              // live one first; `created_at` keeps the rest deterministic.
+              (t) => OrderingTerm.desc(t.deletedAt.isNull()),
+              (t) => OrderingTerm.asc(t.createdAt),
+            ]))
+          .get();
+
   Future<MasterDataCounts> counts() async {
     Future<int> countLive(
       TableInfo<Table, Object?> table,

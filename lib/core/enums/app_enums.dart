@@ -289,6 +289,124 @@ enum DeliveryOrderStatus {
   );
 }
 
+/// Lifecycle of a Good Receipt (schema v7, spec §2.3/§3.2).
+///
+/// ```
+/// checking ──▶ posted   (final)
+/// ```
+///
+/// There is no third value and there never will be one on this document: a Good
+/// Receipt is not cancelled, not un-posted and not reopened. A mistake in a
+/// posted receipt is corrected by a new adjusting document — the same rule
+/// `reviewed` and `received` follow (G-S2). Which transitions are permitted, and
+/// who may drive them, is [GoodReceiptStatePolicy]'s to decide; this enum only
+/// answers questions about a single status.
+enum GoodReceiptStatus {
+  checking('checking'),
+  posted('posted');
+
+  const GoodReceiptStatus(this.dbValue);
+
+  final String dbValue;
+
+  bool get isChecking => this == checking;
+
+  bool get isPosted => this == posted;
+
+  /// Only a document still being checked may have its lines decided or revised
+  /// (G-G2). A posted receipt is read-only permanently.
+  bool get isEditable => this == checking;
+
+  /// Read-only permanently (G-S2).
+  bool get isFinal => this == posted;
+
+  /// Whether the branch head may still post this receipt to the ledger (G-G5).
+  ///
+  /// Says nothing about whether every line has been decided — that is a fact
+  /// about the *lines*, which this enum cannot see. `GoodReceiptDetail.canPost`
+  /// asks both halves.
+  bool get canPost => this == checking;
+
+  /// The single source of truth for allowed transitions on one status.
+  /// Everything else — `posted → checking`, `posted → posted`, re-entering
+  /// `checking` — is refused.
+  bool canTransitionTo(GoodReceiptStatus next) => switch (this) {
+    checking => next == posted,
+    posted => false,
+  };
+
+  /// Indonesian label for chips and document timelines (§4.3).
+  String get label => switch (this) {
+    checking => 'Diperiksa',
+    posted => 'Selesai Diposting',
+  };
+
+  static GoodReceiptStatus fromDbValue(String value) => values.firstWhere(
+    (status) => status.dbValue == value,
+    orElse: () =>
+        throw ArgumentError.value(value, 'value', 'Unknown GoodReceiptStatus'),
+  );
+}
+
+/// The decision recorded against one checked position of a Good Receipt (G-G2).
+///
+/// ```
+/// pending ──▶ checked   (✔ sesuai)
+///         └─▶ rejected  (✘ tidak sesuai)
+/// ```
+///
+/// `rejected` is a **decision**, not a deletion. Spec §3.6 spells that out —
+/// *"Hapus yang tidak sesuai" = tandai `rejected` — bukan menghapus record* — so
+/// there is no fourth value for "removed" and no writer anywhere that takes a
+/// line out of a document.
+///
+/// While the parent receipt is `checking` a decision may be revised in either
+/// direction, which is why this enum deliberately does **not** declare `checked`
+/// and `rejected` terminal: what freezes them is the parent's status, not their
+/// own.
+enum GoodReceiptLineStatus {
+  pending('pending'),
+  checked('checked'),
+  rejected('rejected');
+
+  const GoodReceiptLineStatus(this.dbValue);
+
+  final String dbValue;
+
+  bool get isPending => this == pending;
+
+  bool get isChecked => this == checked;
+
+  bool get isRejected => this == rejected;
+
+  /// G-G2 — whether the branch head has said something about this position. A
+  /// receipt cannot be posted while any line answers `false`.
+  bool get isDecided => this != pending;
+
+  /// Whether this decision adds stock to the branch store (G-G5). Only
+  /// `checked` does — and then only for the quantity actually received.
+  bool get addsStock => this == checked;
+
+  /// Whether a stored reject reason is mandatory (G-G4).
+  bool get requiresRejectReason => this == rejected;
+
+  /// Indonesian label for line chips (§4.2).
+  String get label => switch (this) {
+    pending => 'Belum diperiksa',
+    checked => 'Sesuai',
+    rejected => 'Ditolak',
+  };
+
+  static GoodReceiptLineStatus fromDbValue(String value) => values.firstWhere(
+    (status) => status.dbValue == value,
+    orElse: () => throw ArgumentError.value(
+      value,
+      'value',
+      'Unknown GoodReceiptLineStatus',
+    ),
+  );
+}
+
 /// Document types referenced by ledger entries (`ref_doc_type`).
 abstract final class RefDocType {
   static const stockOpname = 'SO';

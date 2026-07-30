@@ -70,6 +70,30 @@ class DeliveryOrderStatusConverter
   String toSql(DeliveryOrderStatus value) => value.dbValue;
 }
 
+class GoodReceiptStatusConverter
+    extends TypeConverter<GoodReceiptStatus, String> {
+  const GoodReceiptStatusConverter();
+
+  @override
+  GoodReceiptStatus fromSql(String fromDb) =>
+      GoodReceiptStatus.fromDbValue(fromDb);
+
+  @override
+  String toSql(GoodReceiptStatus value) => value.dbValue;
+}
+
+class GoodReceiptLineStatusConverter
+    extends TypeConverter<GoodReceiptLineStatus, String> {
+  const GoodReceiptLineStatusConverter();
+
+  @override
+  GoodReceiptLineStatus fromSql(String fromDb) =>
+      GoodReceiptLineStatus.fromDbValue(fromDb);
+
+  @override
+  String toSql(GoodReceiptLineStatus value) => value.dbValue;
+}
+
 class StockMovementTypeConverter
     extends TypeConverter<StockMovementType, String> {
   const StockMovementTypeConverter();

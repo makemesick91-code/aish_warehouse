@@ -462,6 +462,136 @@ class StockPostingService {
     return movements;
   }
 
+  /// Posts every accepted position of a Good Receipt as **one** unit of work
+  /// (G-G5, G-T4).
+  ///
+  /// This method opens no transaction of its own: the caller — the post use case —
+  /// already owns one, and that is precisely the point. Writing the movements,
+  /// increasing the branch store, flipping the receipt to `posted`, marking the
+  /// shipment `received` and, when the order is complete, closing the Purchase
+  /// Request all have to commit or roll back together, so a failure on the last
+  /// position cannot leave the first one's movement behind. Calling [postTransfer]
+  /// per line would make that impossible — it opens a transaction each time — which
+  /// is why no such loop exists anywhere.
+  ///
+  /// ### Why `from_location_id` is NULL
+  ///
+  /// The other leg was already written. When the shipment was posted, the warehouse
+  /// balance dropped and the movement recorded `to_location_id = NULL`: the goods
+  /// were in transit (spec §2.5). This is the matching arrival — one leg out then,
+  /// one leg in now — so it takes no stock from anywhere and must not reduce the
+  /// warehouse a second time. `stock_movements` allows exactly this: its CHECK
+  /// requires *one* of the two locations, not both.
+  ///
+  /// ### What is not here
+  ///
+  /// There is no branch for rejected positions, and there is no `return` movement.
+  /// A refused line leaves the physical goods on the branch's counter and the
+  /// warehouse's balance untouched; what it produces is a row on the selisih/retur
+  /// queue. Crediting the warehouse here would invent stock that nobody has counted
+  /// back in — the phantom the return workflow exists to prevent.
+  ///
+  /// Every position is validated before **any** of them is written: item and batch
+  /// consistency (G-E1/G-E2) and expiry (G-E4 as a floor; the stricter G-E5 rule
+  /// that refuses near-expiry batches outright is the Good Receipt's own and is
+  /// applied by its use case before this is called). Only then does the posting loop
+  /// start, and each balance is re-read as it goes, so two positions of the same
+  /// batch cannot both see the opening quantity. The closing assertion re-reads
+  /// every touched balance and refuses to let the transaction commit if any of them
+  /// came out negative — the invariant G-A2 states, verified rather than assumed,
+  /// because `assert` would be compiled out of a release build and this is exactly
+  /// the check that must hold in production.
+  Future<List<InventoryMovement>> postGoodReceiptInTransaction({
+    required String toLocationId,
+    required List<GoodReceiptPostingLine> lines,
+    required String actorUserId,
+    required String goodReceiptId,
+  }) async {
+    if (lines.isEmpty) {
+      throw const ValidationFailure(
+        'Tidak ada barang yang diterima, sehingga tidak ada stok untuk '
+        'diposting.',
+      );
+    }
+
+    final target = await _requireLocation(toLocationId);
+    if (target.type != StockLocationType.branchStore) {
+      throw InvalidLocationFailure(
+        'Penerimaan barang hanya boleh masuk ke Gudang Cabang, bukan ke '
+        '"${target.name}".',
+      );
+    }
+
+    // --- validate the whole document first -----------------------------------
+    for (final line in lines) {
+      _requirePositiveQty(line.qty);
+      final item = await _requireItem(line.itemId);
+      final batch = await _validateBatch(item: item, batchId: line.batchId);
+      // An expired batch never enters a balance (G-E4). The Good Receipt's own
+      // policy already refused it with a message about rejecting the line; this is
+      // the floor underneath that, so no other caller can post one either.
+      _rejectExpiredBatch(batch);
+    }
+
+    // --- post ----------------------------------------------------------------
+    final movements = <InventoryMovement>[];
+    final touched = <String, ({String itemId, String? batchId})>{};
+    for (final line in lines) {
+      final movement = await _append(
+        MovementDraft(
+          id: _newId(),
+          itemId: line.itemId,
+          batchId: line.batchId,
+          // The shipment already recorded the outbound leg; this is the arrival.
+          fromLocationId: null,
+          toLocationId: toLocationId,
+          qty: line.qty,
+          movementType: StockMovementType.goodReceipt,
+          actorUserId: actorUserId,
+          refDocType: RefDocType.goodReceipt,
+          refDocId: goodReceiptId,
+          note: line.note,
+        ),
+      );
+      movements.add(movement);
+
+      await _increase(
+        locationId: toLocationId,
+        itemId: line.itemId,
+        batchId: line.batchId,
+        qty: line.qty,
+      );
+      touched[_balanceKey(line.itemId, line.batchId)] = (
+        itemId: line.itemId,
+        batchId: line.batchId,
+      );
+    }
+
+    // Post-condition of G-A2, verified rather than assumed. An arrival can only
+    // raise a balance, so a negative one here means something else corrupted it —
+    // and committing on top of that would bake the corruption in.
+    for (final position in touched.values) {
+      final onHand = await _inventory.balanceQty(
+        locationId: toLocationId,
+        itemId: position.itemId,
+        batchId: position.batchId,
+      );
+      if (onHand.isNegative) {
+        throw InsufficientStockFailure(
+          'Saldo Gudang Cabang menjadi negatif setelah penerimaan '
+          '(${onHand.format()}). Penerimaan dibatalkan.',
+          itemId: position.itemId,
+          locationId: toLocationId,
+          batchId: position.batchId,
+          available: Quantity.zero(),
+          requested: -onHand,
+        );
+      }
+    }
+
+    return movements;
+  }
+
   /// The identity of one balance row, as a map key. `item|batch`, with an empty
   /// batch segment for items without expiry.
   static String _balanceKey(String itemId, String? batchId) =>

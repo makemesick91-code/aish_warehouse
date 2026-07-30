@@ -3,6 +3,7 @@ import 'package:aish_warehouse/features/delivery/presentation/pages/delivery_ord
 import 'package:aish_warehouse/features/delivery/presentation/pages/delivery_order_form_page.dart';
 import 'package:aish_warehouse/features/delivery/presentation/pages/warehouse_delivery_order_list_page.dart';
 import 'package:aish_warehouse/features/delivery/presentation/providers/delivery_providers.dart';
+import 'package:aish_warehouse/features/good_receipt/presentation/widgets/good_receipt_entry_action.dart';
 import 'package:aish_warehouse/features/delivery/presentation/widgets/delivery_allocation_card.dart';
 import 'package:aish_warehouse/features/delivery/presentation/widgets/delivery_expiry_badges.dart';
 import 'package:aish_warehouse/features/delivery/presentation/widgets/delivery_order_status_chip.dart';
@@ -201,20 +202,35 @@ void main() {
       await disposeWidget(tester);
     });
 
-    testWidgets('tidak ada kontrol edit, kirim atau terima', (tester) async {
+    testWidgets('tidak ada kontrol ubah alokasi atau kirim', (tester) async {
       final doId = await shippedOrder();
       await pumpAsBranch(tester, '/deliveries/$doId');
 
+      // The shipment itself stays untouchable from the branch: its allocations are
+      // what the ledger was posted from (G-S2).
       expect(find.byKey(DeliveryOrderDetailPage.editKey), findsNothing);
       expect(find.byKey(DeliveryOrderFormPage.shipKey), findsNothing);
       expect(find.byKey(DeliveryOrderFormPage.allocateKey), findsNothing);
-      expect(find.byType(FilledButton), findsNothing);
       expect(find.byType(Checkbox), findsNothing);
       expect(find.byType(TextField), findsNothing);
       expect(find.byType(DeliveryAllocationCard), findsNothing);
-      // And no receive affordance: `shipped → received` belongs to Good Receipt.
-      expect(find.textContaining('Terima'), findsNothing);
       expect(find.textContaining('Good Receipt'), findsOneWidget);
+
+      await disposeWidget(tester);
+    });
+
+    testWidgets('tombol Terima Barang membuka Good Receipt, bukan menandai '
+        'diterima', (tester) async {
+      final doId = await shippedOrder();
+      await pumpAsBranch(tester, '/deliveries/$doId');
+
+      // Milestone 5's entry point. It is a *link* to the document that performs
+      // `shipped → received` as a consequence of being posted — not a button that
+      // performs the transition. Nothing on this page marks a shipment received.
+      expect(find.byKey(GoodReceiptEntryAction.actionKey), findsOneWidget);
+      expect(find.text(GoodReceiptEntryAction.startLabel), findsOneWidget);
+      expect(find.textContaining('Tandai Diterima'), findsNothing);
+      expect(find.textContaining('Mark Received'), findsNothing);
 
       await disposeWidget(tester);
     });

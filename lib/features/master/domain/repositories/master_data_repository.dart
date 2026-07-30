@@ -121,5 +121,17 @@ abstract interface class MasterDataRepository {
   /// posted against one of them (§7.2).
   Future<List<MasterLocation>> historicalWarehouseLocations();
 
+  /// Every live *Gudang Cabang* location of one branch.
+  ///
+  /// The Good Receipt path asks for the list rather than for "the" branch store,
+  /// because it has to be able to tell "there is none" from "there are two". A
+  /// receipt posts against exactly one location and may not guess which (G-G5).
+  Future<List<MasterLocation>> activeBranchStoreLocations(String branchId);
+
+  /// The same list including archived rows, so a receipt created before an
+  /// administrator tidied the location away can still be posted against the exact
+  /// row it was raised for (§7.2).
+  Future<List<MasterLocation>> historicalBranchStoreLocations(String branchId);
+
   Future<MasterSummary> summary();
 }

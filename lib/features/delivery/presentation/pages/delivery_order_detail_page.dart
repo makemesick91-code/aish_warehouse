@@ -10,6 +10,7 @@ import '../../../../core/widgets/historical_master_badge.dart';
 import '../../../../core/widgets/status_card.dart';
 import '../../../../core/widgets/sync_status_tag.dart';
 import '../../domain/models/delivery_models.dart';
+import '../../../good_receipt/presentation/widgets/good_receipt_entry_action.dart';
 import '../providers/delivery_providers.dart';
 import '../widgets/delivery_expiry_badges.dart';
 import '../widgets/delivery_order_status_chip.dart';
@@ -23,14 +24,15 @@ import '../widgets/shipment_progress_bar.dart';
 /// predicate and the status predicate in SQL, so a `preparing` document or another
 /// branch's shipment never reaches this widget tree (§29).
 ///
-/// There is **no edit control and no receive control** on this page for either
-/// reader:
+/// Neither reader can change the shipment from here:
 ///
 /// * editing lives on `DeliveryOrderFormPage`, behind a route whose guard
 ///   additionally requires the document to still be `preparing`;
-/// * `shipped → received` belongs to Good Receipt, and this milestone has no
-///   document that performs it. Rendering a disabled "Terima" button would promise
-///   something no use case can deliver.
+/// * `shipped → received` is still not something this page writes. What it now
+///   offers the *branch* is [GoodReceiptEntryAction] — a link to the Good Receipt
+///   that performs the transition as a consequence of being posted (G-G1). There is
+///   no "Mark Received" button for anybody, and the warehouse sees no receive
+///   affordance at all: they ship, the branch receives (G-R4).
 class DeliveryOrderDetailPage extends ConsumerWidget {
   const DeliveryOrderDetailPage({
     super.key,
@@ -112,6 +114,12 @@ class DeliveryOrderDetailPage extends ConsumerWidget {
                     label: const Text('Ubah alokasi'),
                   ),
                 ),
+              // Good Receipt's entry point, and only on the branch's own view of a
+              // shipment that has actually been sent (G-G1). The warehouse never sees
+              // it: they ship, the branch receives, and offering the button to both
+              // would be the segregated duty G-R4 exists to keep apart.
+              if (branchScoped && order.status.isShipped)
+                GoodReceiptEntryAction(deliveryOrderId: doId),
               const SizedBox(height: AppSpacing.md),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),

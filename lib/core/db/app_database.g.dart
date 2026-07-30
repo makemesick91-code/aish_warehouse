@@ -11016,6 +11016,1433 @@ class DeliveryOrderLinesCompanion
   }
 }
 
+class $GoodReceiptsTable extends GoodReceipts
+    with TableInfo<$GoodReceiptsTable, GoodReceiptRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GoodReceiptsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>($GoodReceiptsTable.$convertersyncStatus);
+  static const VerificationMeta _docNumberMeta = const VerificationMeta(
+    'docNumber',
+  );
+  @override
+  late final GeneratedColumn<String> docNumber = GeneratedColumn<String>(
+    'doc_number',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _doIdMeta = const VerificationMeta('doId');
+  @override
+  late final GeneratedColumn<String> doId = GeneratedColumn<String>(
+    'do_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES delivery_orders (id)',
+    ),
+  );
+  static const VerificationMeta _receivedByMeta = const VerificationMeta(
+    'receivedBy',
+  );
+  @override
+  late final GeneratedColumn<String> receivedBy = GeneratedColumn<String>(
+    'received_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<GoodReceiptStatus, String>
+  status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => GoodReceiptStatus.checking.dbValue,
+  ).withConverter<GoodReceiptStatus>($GoodReceiptsTable.$converterstatus);
+  static const VerificationMeta _postedAtMeta = const VerificationMeta(
+    'postedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> postedAt = GeneratedColumn<DateTime>(
+    'posted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    docNumber,
+    doId,
+    receivedBy,
+    status,
+    postedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'good_receipts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<GoodReceiptRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('doc_number')) {
+      context.handle(
+        _docNumberMeta,
+        docNumber.isAcceptableOrUnknown(data['doc_number']!, _docNumberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_docNumberMeta);
+    }
+    if (data.containsKey('do_id')) {
+      context.handle(
+        _doIdMeta,
+        doId.isAcceptableOrUnknown(data['do_id']!, _doIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_doIdMeta);
+    }
+    if (data.containsKey('received_by')) {
+      context.handle(
+        _receivedByMeta,
+        receivedBy.isAcceptableOrUnknown(data['received_by']!, _receivedByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_receivedByMeta);
+    }
+    if (data.containsKey('posted_at')) {
+      context.handle(
+        _postedAtMeta,
+        postedAt.isAcceptableOrUnknown(data['posted_at']!, _postedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  GoodReceiptRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GoodReceiptRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $GoodReceiptsTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      docNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}doc_number'],
+      )!,
+      doId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}do_id'],
+      )!,
+      receivedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}received_by'],
+      )!,
+      status: $GoodReceiptsTable.$converterstatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}status'],
+        )!,
+      ),
+      postedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}posted_at'],
+      ),
+    );
+  }
+
+  @override
+  $GoodReceiptsTable createAlias(String alias) {
+    return $GoodReceiptsTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+  static TypeConverter<GoodReceiptStatus, String> $converterstatus =
+      const GoodReceiptStatusConverter();
+}
+
+class GoodReceiptRow extends DataClass implements Insertable<GoodReceiptRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+
+  /// Temporary local number `TMP-GR-{uuid}` until a sync backend assigns the
+  /// final `GR-{cabang}-{yyyyMMdd}-{seq}` (G-Y4). Minting a server-shaped number
+  /// offline would collide across devices — and every branch receives on its
+  /// own.
+  final String docNumber;
+
+  /// The shipment being checked in. Unique: see the class note.
+  final String doId;
+
+  /// The Kepala Cabang who checked the goods (G-G1). Their branch must be the
+  /// shipment's destination, which is a cross-table question and therefore the
+  /// use case's to enforce.
+  final String receivedBy;
+  final GoodReceiptStatus status;
+
+  /// UTC instant the receipt was posted and the branch store credited (T-1).
+  final DateTime? postedAt;
+  const GoodReceiptRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.docNumber,
+    required this.doId,
+    required this.receivedBy,
+    required this.status,
+    this.postedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $GoodReceiptsTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    map['doc_number'] = Variable<String>(docNumber);
+    map['do_id'] = Variable<String>(doId);
+    map['received_by'] = Variable<String>(receivedBy);
+    {
+      map['status'] = Variable<String>(
+        $GoodReceiptsTable.$converterstatus.toSql(status),
+      );
+    }
+    if (!nullToAbsent || postedAt != null) {
+      map['posted_at'] = Variable<DateTime>(postedAt);
+    }
+    return map;
+  }
+
+  GoodReceiptsCompanion toCompanion(bool nullToAbsent) {
+    return GoodReceiptsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      docNumber: Value(docNumber),
+      doId: Value(doId),
+      receivedBy: Value(receivedBy),
+      status: Value(status),
+      postedAt: postedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(postedAt),
+    );
+  }
+
+  factory GoodReceiptRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GoodReceiptRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      docNumber: serializer.fromJson<String>(json['docNumber']),
+      doId: serializer.fromJson<String>(json['doId']),
+      receivedBy: serializer.fromJson<String>(json['receivedBy']),
+      status: serializer.fromJson<GoodReceiptStatus>(json['status']),
+      postedAt: serializer.fromJson<DateTime?>(json['postedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'docNumber': serializer.toJson<String>(docNumber),
+      'doId': serializer.toJson<String>(doId),
+      'receivedBy': serializer.toJson<String>(receivedBy),
+      'status': serializer.toJson<GoodReceiptStatus>(status),
+      'postedAt': serializer.toJson<DateTime?>(postedAt),
+    };
+  }
+
+  GoodReceiptRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    String? docNumber,
+    String? doId,
+    String? receivedBy,
+    GoodReceiptStatus? status,
+    Value<DateTime?> postedAt = const Value.absent(),
+  }) => GoodReceiptRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    docNumber: docNumber ?? this.docNumber,
+    doId: doId ?? this.doId,
+    receivedBy: receivedBy ?? this.receivedBy,
+    status: status ?? this.status,
+    postedAt: postedAt.present ? postedAt.value : this.postedAt,
+  );
+  GoodReceiptRow copyWithCompanion(GoodReceiptsCompanion data) {
+    return GoodReceiptRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      docNumber: data.docNumber.present ? data.docNumber.value : this.docNumber,
+      doId: data.doId.present ? data.doId.value : this.doId,
+      receivedBy: data.receivedBy.present
+          ? data.receivedBy.value
+          : this.receivedBy,
+      status: data.status.present ? data.status.value : this.status,
+      postedAt: data.postedAt.present ? data.postedAt.value : this.postedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GoodReceiptRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('docNumber: $docNumber, ')
+          ..write('doId: $doId, ')
+          ..write('receivedBy: $receivedBy, ')
+          ..write('status: $status, ')
+          ..write('postedAt: $postedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    docNumber,
+    doId,
+    receivedBy,
+    status,
+    postedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GoodReceiptRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.docNumber == this.docNumber &&
+          other.doId == this.doId &&
+          other.receivedBy == this.receivedBy &&
+          other.status == this.status &&
+          other.postedAt == this.postedAt);
+}
+
+class GoodReceiptsCompanion extends UpdateCompanion<GoodReceiptRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<String> docNumber;
+  final Value<String> doId;
+  final Value<String> receivedBy;
+  final Value<GoodReceiptStatus> status;
+  final Value<DateTime?> postedAt;
+  final Value<int> rowid;
+  const GoodReceiptsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.docNumber = const Value.absent(),
+    this.doId = const Value.absent(),
+    this.receivedBy = const Value.absent(),
+    this.status = const Value.absent(),
+    this.postedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GoodReceiptsCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String docNumber,
+    required String doId,
+    required String receivedBy,
+    this.status = const Value.absent(),
+    this.postedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : docNumber = Value(docNumber),
+       doId = Value(doId),
+       receivedBy = Value(receivedBy);
+  static Insertable<GoodReceiptRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? docNumber,
+    Expression<String>? doId,
+    Expression<String>? receivedBy,
+    Expression<String>? status,
+    Expression<DateTime>? postedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (docNumber != null) 'doc_number': docNumber,
+      if (doId != null) 'do_id': doId,
+      if (receivedBy != null) 'received_by': receivedBy,
+      if (status != null) 'status': status,
+      if (postedAt != null) 'posted_at': postedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GoodReceiptsCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<String>? docNumber,
+    Value<String>? doId,
+    Value<String>? receivedBy,
+    Value<GoodReceiptStatus>? status,
+    Value<DateTime?>? postedAt,
+    Value<int>? rowid,
+  }) {
+    return GoodReceiptsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      docNumber: docNumber ?? this.docNumber,
+      doId: doId ?? this.doId,
+      receivedBy: receivedBy ?? this.receivedBy,
+      status: status ?? this.status,
+      postedAt: postedAt ?? this.postedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $GoodReceiptsTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (docNumber.present) {
+      map['doc_number'] = Variable<String>(docNumber.value);
+    }
+    if (doId.present) {
+      map['do_id'] = Variable<String>(doId.value);
+    }
+    if (receivedBy.present) {
+      map['received_by'] = Variable<String>(receivedBy.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(
+        $GoodReceiptsTable.$converterstatus.toSql(status.value),
+      );
+    }
+    if (postedAt.present) {
+      map['posted_at'] = Variable<DateTime>(postedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GoodReceiptsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('docNumber: $docNumber, ')
+          ..write('doId: $doId, ')
+          ..write('receivedBy: $receivedBy, ')
+          ..write('status: $status, ')
+          ..write('postedAt: $postedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $GoodReceiptLinesTable extends GoodReceiptLines
+    with TableInfo<$GoodReceiptLinesTable, GoodReceiptLineRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GoodReceiptLinesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>($GoodReceiptLinesTable.$convertersyncStatus);
+  static const VerificationMeta _grIdMeta = const VerificationMeta('grId');
+  @override
+  late final GeneratedColumn<String> grId = GeneratedColumn<String>(
+    'gr_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES good_receipts (id)',
+    ),
+  );
+  static const VerificationMeta _doLineIdMeta = const VerificationMeta(
+    'doLineId',
+  );
+  @override
+  late final GeneratedColumn<String> doLineId = GeneratedColumn<String>(
+    'do_line_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES delivery_order_lines (id)',
+    ),
+  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+    'item_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES items (id)',
+    ),
+  );
+  static const VerificationMeta _batchIdMeta = const VerificationMeta(
+    'batchId',
+  );
+  @override
+  late final GeneratedColumn<String> batchId = GeneratedColumn<String>(
+    'batch_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES item_batches (id)',
+    ),
+  );
+  static const VerificationMeta _shippedQtyMeta = const VerificationMeta(
+    'shippedQty',
+  );
+  @override
+  late final GeneratedColumn<int> shippedQty = GeneratedColumn<int>(
+    'shipped_qty',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _receivedQtyMeta = const VerificationMeta(
+    'receivedQty',
+  );
+  @override
+  late final GeneratedColumn<int> receivedQty = GeneratedColumn<int>(
+    'received_qty',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<GoodReceiptLineStatus, String>
+  lineStatus =
+      GeneratedColumn<String>(
+        'line_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => GoodReceiptLineStatus.pending.dbValue,
+      ).withConverter<GoodReceiptLineStatus>(
+        $GoodReceiptLinesTable.$converterlineStatus,
+      );
+  static const VerificationMeta _rejectReasonMeta = const VerificationMeta(
+    'rejectReason',
+  );
+  @override
+  late final GeneratedColumn<String> rejectReason = GeneratedColumn<String>(
+    'reject_reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    grId,
+    doLineId,
+    itemId,
+    batchId,
+    shippedQty,
+    receivedQty,
+    lineStatus,
+    rejectReason,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'good_receipt_lines';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<GoodReceiptLineRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('gr_id')) {
+      context.handle(
+        _grIdMeta,
+        grId.isAcceptableOrUnknown(data['gr_id']!, _grIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_grIdMeta);
+    }
+    if (data.containsKey('do_line_id')) {
+      context.handle(
+        _doLineIdMeta,
+        doLineId.isAcceptableOrUnknown(data['do_line_id']!, _doLineIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_doLineIdMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('batch_id')) {
+      context.handle(
+        _batchIdMeta,
+        batchId.isAcceptableOrUnknown(data['batch_id']!, _batchIdMeta),
+      );
+    }
+    if (data.containsKey('shipped_qty')) {
+      context.handle(
+        _shippedQtyMeta,
+        shippedQty.isAcceptableOrUnknown(data['shipped_qty']!, _shippedQtyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_shippedQtyMeta);
+    }
+    if (data.containsKey('received_qty')) {
+      context.handle(
+        _receivedQtyMeta,
+        receivedQty.isAcceptableOrUnknown(
+          data['received_qty']!,
+          _receivedQtyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_receivedQtyMeta);
+    }
+    if (data.containsKey('reject_reason')) {
+      context.handle(
+        _rejectReasonMeta,
+        rejectReason.isAcceptableOrUnknown(
+          data['reject_reason']!,
+          _rejectReasonMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  GoodReceiptLineRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GoodReceiptLineRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $GoodReceiptLinesTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      grId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gr_id'],
+      )!,
+      doLineId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}do_line_id'],
+      )!,
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}item_id'],
+      )!,
+      batchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}batch_id'],
+      ),
+      shippedQty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}shipped_qty'],
+      )!,
+      receivedQty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}received_qty'],
+      )!,
+      lineStatus: $GoodReceiptLinesTable.$converterlineStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}line_status'],
+        )!,
+      ),
+      rejectReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reject_reason'],
+      ),
+    );
+  }
+
+  @override
+  $GoodReceiptLinesTable createAlias(String alias) {
+    return $GoodReceiptLinesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+  static TypeConverter<GoodReceiptLineStatus, String> $converterlineStatus =
+      const GoodReceiptLineStatusConverter();
+}
+
+class GoodReceiptLineRow extends DataClass
+    implements Insertable<GoodReceiptLineRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+  final String grId;
+
+  /// The shipped allocation this decision answers.
+  final String doLineId;
+  final String itemId;
+
+  /// The batch the warehouse shipped, verified by the branch head against the
+  /// packaging (spec §2.3). NULL, and only NULL, for an item without expiry
+  /// (G-E2); the use case enforces both directions because the rule depends on
+  /// `items.has_expiry`.
+  final String? batchId;
+
+  /// Snapshot of the Delivery Order line's quantity, in **milli-units** (Q-3).
+  /// Strictly positive, because a shipment never allocates zero.
+  final int shippedQty;
+
+  /// What the branch actually accepted, in **milli-units**. Bounded by
+  /// `0 ≤ received_qty ≤ shipped_qty` (G-G3) in SQL as well as in the domain.
+  final int receivedQty;
+  final GoodReceiptLineStatus lineStatus;
+
+  /// Why the position was refused (G-G4). Mandatory for `rejected`, forbidden
+  /// otherwise — a reason on an accepted line would be an audit trail for a
+  /// decision nobody made.
+  final String? rejectReason;
+  const GoodReceiptLineRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.grId,
+    required this.doLineId,
+    required this.itemId,
+    this.batchId,
+    required this.shippedQty,
+    required this.receivedQty,
+    required this.lineStatus,
+    this.rejectReason,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $GoodReceiptLinesTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    map['gr_id'] = Variable<String>(grId);
+    map['do_line_id'] = Variable<String>(doLineId);
+    map['item_id'] = Variable<String>(itemId);
+    if (!nullToAbsent || batchId != null) {
+      map['batch_id'] = Variable<String>(batchId);
+    }
+    map['shipped_qty'] = Variable<int>(shippedQty);
+    map['received_qty'] = Variable<int>(receivedQty);
+    {
+      map['line_status'] = Variable<String>(
+        $GoodReceiptLinesTable.$converterlineStatus.toSql(lineStatus),
+      );
+    }
+    if (!nullToAbsent || rejectReason != null) {
+      map['reject_reason'] = Variable<String>(rejectReason);
+    }
+    return map;
+  }
+
+  GoodReceiptLinesCompanion toCompanion(bool nullToAbsent) {
+    return GoodReceiptLinesCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      grId: Value(grId),
+      doLineId: Value(doLineId),
+      itemId: Value(itemId),
+      batchId: batchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(batchId),
+      shippedQty: Value(shippedQty),
+      receivedQty: Value(receivedQty),
+      lineStatus: Value(lineStatus),
+      rejectReason: rejectReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rejectReason),
+    );
+  }
+
+  factory GoodReceiptLineRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GoodReceiptLineRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      grId: serializer.fromJson<String>(json['grId']),
+      doLineId: serializer.fromJson<String>(json['doLineId']),
+      itemId: serializer.fromJson<String>(json['itemId']),
+      batchId: serializer.fromJson<String?>(json['batchId']),
+      shippedQty: serializer.fromJson<int>(json['shippedQty']),
+      receivedQty: serializer.fromJson<int>(json['receivedQty']),
+      lineStatus: serializer.fromJson<GoodReceiptLineStatus>(
+        json['lineStatus'],
+      ),
+      rejectReason: serializer.fromJson<String?>(json['rejectReason']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'grId': serializer.toJson<String>(grId),
+      'doLineId': serializer.toJson<String>(doLineId),
+      'itemId': serializer.toJson<String>(itemId),
+      'batchId': serializer.toJson<String?>(batchId),
+      'shippedQty': serializer.toJson<int>(shippedQty),
+      'receivedQty': serializer.toJson<int>(receivedQty),
+      'lineStatus': serializer.toJson<GoodReceiptLineStatus>(lineStatus),
+      'rejectReason': serializer.toJson<String?>(rejectReason),
+    };
+  }
+
+  GoodReceiptLineRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    String? grId,
+    String? doLineId,
+    String? itemId,
+    Value<String?> batchId = const Value.absent(),
+    int? shippedQty,
+    int? receivedQty,
+    GoodReceiptLineStatus? lineStatus,
+    Value<String?> rejectReason = const Value.absent(),
+  }) => GoodReceiptLineRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    grId: grId ?? this.grId,
+    doLineId: doLineId ?? this.doLineId,
+    itemId: itemId ?? this.itemId,
+    batchId: batchId.present ? batchId.value : this.batchId,
+    shippedQty: shippedQty ?? this.shippedQty,
+    receivedQty: receivedQty ?? this.receivedQty,
+    lineStatus: lineStatus ?? this.lineStatus,
+    rejectReason: rejectReason.present ? rejectReason.value : this.rejectReason,
+  );
+  GoodReceiptLineRow copyWithCompanion(GoodReceiptLinesCompanion data) {
+    return GoodReceiptLineRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      grId: data.grId.present ? data.grId.value : this.grId,
+      doLineId: data.doLineId.present ? data.doLineId.value : this.doLineId,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      batchId: data.batchId.present ? data.batchId.value : this.batchId,
+      shippedQty: data.shippedQty.present
+          ? data.shippedQty.value
+          : this.shippedQty,
+      receivedQty: data.receivedQty.present
+          ? data.receivedQty.value
+          : this.receivedQty,
+      lineStatus: data.lineStatus.present
+          ? data.lineStatus.value
+          : this.lineStatus,
+      rejectReason: data.rejectReason.present
+          ? data.rejectReason.value
+          : this.rejectReason,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GoodReceiptLineRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('grId: $grId, ')
+          ..write('doLineId: $doLineId, ')
+          ..write('itemId: $itemId, ')
+          ..write('batchId: $batchId, ')
+          ..write('shippedQty: $shippedQty, ')
+          ..write('receivedQty: $receivedQty, ')
+          ..write('lineStatus: $lineStatus, ')
+          ..write('rejectReason: $rejectReason')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    grId,
+    doLineId,
+    itemId,
+    batchId,
+    shippedQty,
+    receivedQty,
+    lineStatus,
+    rejectReason,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GoodReceiptLineRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.grId == this.grId &&
+          other.doLineId == this.doLineId &&
+          other.itemId == this.itemId &&
+          other.batchId == this.batchId &&
+          other.shippedQty == this.shippedQty &&
+          other.receivedQty == this.receivedQty &&
+          other.lineStatus == this.lineStatus &&
+          other.rejectReason == this.rejectReason);
+}
+
+class GoodReceiptLinesCompanion extends UpdateCompanion<GoodReceiptLineRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<String> grId;
+  final Value<String> doLineId;
+  final Value<String> itemId;
+  final Value<String?> batchId;
+  final Value<int> shippedQty;
+  final Value<int> receivedQty;
+  final Value<GoodReceiptLineStatus> lineStatus;
+  final Value<String?> rejectReason;
+  final Value<int> rowid;
+  const GoodReceiptLinesCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.grId = const Value.absent(),
+    this.doLineId = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.batchId = const Value.absent(),
+    this.shippedQty = const Value.absent(),
+    this.receivedQty = const Value.absent(),
+    this.lineStatus = const Value.absent(),
+    this.rejectReason = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GoodReceiptLinesCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String grId,
+    required String doLineId,
+    required String itemId,
+    this.batchId = const Value.absent(),
+    required int shippedQty,
+    required int receivedQty,
+    this.lineStatus = const Value.absent(),
+    this.rejectReason = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : grId = Value(grId),
+       doLineId = Value(doLineId),
+       itemId = Value(itemId),
+       shippedQty = Value(shippedQty),
+       receivedQty = Value(receivedQty);
+  static Insertable<GoodReceiptLineRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? grId,
+    Expression<String>? doLineId,
+    Expression<String>? itemId,
+    Expression<String>? batchId,
+    Expression<int>? shippedQty,
+    Expression<int>? receivedQty,
+    Expression<String>? lineStatus,
+    Expression<String>? rejectReason,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (grId != null) 'gr_id': grId,
+      if (doLineId != null) 'do_line_id': doLineId,
+      if (itemId != null) 'item_id': itemId,
+      if (batchId != null) 'batch_id': batchId,
+      if (shippedQty != null) 'shipped_qty': shippedQty,
+      if (receivedQty != null) 'received_qty': receivedQty,
+      if (lineStatus != null) 'line_status': lineStatus,
+      if (rejectReason != null) 'reject_reason': rejectReason,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GoodReceiptLinesCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<String>? grId,
+    Value<String>? doLineId,
+    Value<String>? itemId,
+    Value<String?>? batchId,
+    Value<int>? shippedQty,
+    Value<int>? receivedQty,
+    Value<GoodReceiptLineStatus>? lineStatus,
+    Value<String?>? rejectReason,
+    Value<int>? rowid,
+  }) {
+    return GoodReceiptLinesCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      grId: grId ?? this.grId,
+      doLineId: doLineId ?? this.doLineId,
+      itemId: itemId ?? this.itemId,
+      batchId: batchId ?? this.batchId,
+      shippedQty: shippedQty ?? this.shippedQty,
+      receivedQty: receivedQty ?? this.receivedQty,
+      lineStatus: lineStatus ?? this.lineStatus,
+      rejectReason: rejectReason ?? this.rejectReason,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $GoodReceiptLinesTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (grId.present) {
+      map['gr_id'] = Variable<String>(grId.value);
+    }
+    if (doLineId.present) {
+      map['do_line_id'] = Variable<String>(doLineId.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (batchId.present) {
+      map['batch_id'] = Variable<String>(batchId.value);
+    }
+    if (shippedQty.present) {
+      map['shipped_qty'] = Variable<int>(shippedQty.value);
+    }
+    if (receivedQty.present) {
+      map['received_qty'] = Variable<int>(receivedQty.value);
+    }
+    if (lineStatus.present) {
+      map['line_status'] = Variable<String>(
+        $GoodReceiptLinesTable.$converterlineStatus.toSql(lineStatus.value),
+      );
+    }
+    if (rejectReason.present) {
+      map['reject_reason'] = Variable<String>(rejectReason.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GoodReceiptLinesCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('grId: $grId, ')
+          ..write('doLineId: $doLineId, ')
+          ..write('itemId: $itemId, ')
+          ..write('batchId: $batchId, ')
+          ..write('shippedQty: $shippedQty, ')
+          ..write('receivedQty: $receivedQty, ')
+          ..write('lineStatus: $lineStatus, ')
+          ..write('rejectReason: $rejectReason, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   late final $BranchesTable branches = $BranchesTable(this);
@@ -11041,6 +12468,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $DeliveryOrdersTable deliveryOrders = $DeliveryOrdersTable(this);
   late final $DeliveryOrderLinesTable deliveryOrderLines =
       $DeliveryOrderLinesTable(this);
+  late final $GoodReceiptsTable goodReceipts = $GoodReceiptsTable(this);
+  late final $GoodReceiptLinesTable goodReceiptLines = $GoodReceiptLinesTable(
+    this,
+  );
   late final Index idxStockBalancesBatched = Index(
     'idx_stock_balances_batched',
     'CREATE UNIQUE INDEX idx_stock_balances_batched ON stock_balances (location_id, item_id, batch_id) WHERE batch_id IS NOT NULL',
@@ -11181,6 +12612,50 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_delivery_order_lines_unbatched',
     'CREATE UNIQUE INDEX idx_delivery_order_lines_unbatched ON delivery_order_lines (do_id, pr_line_id) WHERE batch_id IS NULL AND deleted_at IS NULL',
   );
+  late final Index idxGoodReceiptsReceivedByStatus = Index(
+    'idx_good_receipts_received_by_status',
+    'CREATE INDEX idx_good_receipts_received_by_status ON good_receipts (received_by, status)',
+  );
+  late final Index idxGoodReceiptsStatusCreated = Index(
+    'idx_good_receipts_status_created',
+    'CREATE INDEX idx_good_receipts_status_created ON good_receipts (status, created_at)',
+  );
+  late final Index idxGoodReceiptsPostedAt = Index(
+    'idx_good_receipts_posted_at',
+    'CREATE INDEX idx_good_receipts_posted_at ON good_receipts (posted_at)',
+  );
+  late final Index idxGoodReceiptsDo = Index(
+    'idx_good_receipts_do',
+    'CREATE UNIQUE INDEX idx_good_receipts_do ON good_receipts (do_id)',
+  );
+  late final Index idxGoodReceiptsDocNumber = Index(
+    'idx_good_receipts_doc_number',
+    'CREATE UNIQUE INDEX idx_good_receipts_doc_number ON good_receipts (doc_number) WHERE deleted_at IS NULL',
+  );
+  late final Index idxGoodReceiptLinesGr = Index(
+    'idx_good_receipt_lines_gr',
+    'CREATE INDEX idx_good_receipt_lines_gr ON good_receipt_lines (gr_id)',
+  );
+  late final Index idxGoodReceiptLinesDoLine = Index(
+    'idx_good_receipt_lines_do_line',
+    'CREATE INDEX idx_good_receipt_lines_do_line ON good_receipt_lines (do_line_id)',
+  );
+  late final Index idxGoodReceiptLinesItem = Index(
+    'idx_good_receipt_lines_item',
+    'CREATE INDEX idx_good_receipt_lines_item ON good_receipt_lines (item_id)',
+  );
+  late final Index idxGoodReceiptLinesBatch = Index(
+    'idx_good_receipt_lines_batch',
+    'CREATE INDEX idx_good_receipt_lines_batch ON good_receipt_lines (batch_id)',
+  );
+  late final Index idxGoodReceiptLinesStatus = Index(
+    'idx_good_receipt_lines_status',
+    'CREATE INDEX idx_good_receipt_lines_status ON good_receipt_lines (line_status)',
+  );
+  late final Index idxGoodReceiptLinesUnique = Index(
+    'idx_good_receipt_lines_unique',
+    'CREATE UNIQUE INDEX idx_good_receipt_lines_unique ON good_receipt_lines (gr_id, do_line_id)',
+  );
   late final MasterDataDao masterDataDao = MasterDataDao(this as AppDatabase);
   late final InventoryDao inventoryDao = InventoryDao(this as AppDatabase);
   late final OpnameDao opnameDao = OpnameDao(this as AppDatabase);
@@ -11188,6 +12663,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this as AppDatabase,
   );
   late final DeliveryOrderDao deliveryOrderDao = DeliveryOrderDao(
+    this as AppDatabase,
+  );
+  late final GoodReceiptDao goodReceiptDao = GoodReceiptDao(
     this as AppDatabase,
   );
   @override
@@ -11211,6 +12689,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     purchaseRequestLines,
     deliveryOrders,
     deliveryOrderLines,
+    goodReceipts,
+    goodReceiptLines,
     idxStockBalancesBatched,
     idxStockBalancesUnbatched,
     idxStockMovementsItem,
@@ -11246,6 +12726,17 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxDeliveryOrderLinesBatch,
     idxDeliveryOrderLinesBatched,
     idxDeliveryOrderLinesUnbatched,
+    idxGoodReceiptsReceivedByStatus,
+    idxGoodReceiptsStatusCreated,
+    idxGoodReceiptsPostedAt,
+    idxGoodReceiptsDo,
+    idxGoodReceiptsDocNumber,
+    idxGoodReceiptLinesGr,
+    idxGoodReceiptLinesDoLine,
+    idxGoodReceiptLinesItem,
+    idxGoodReceiptLinesBatch,
+    idxGoodReceiptLinesStatus,
+    idxGoodReceiptLinesUnique,
   ];
   @override
   DriftDatabaseOptions get options =>

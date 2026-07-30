@@ -173,6 +173,40 @@ class ShipmentPostingLine {
   final String? note;
 }
 
+/// One accepted position to post when a Good Receipt is posted (G-G5).
+///
+/// Carries only what the ledger needs: which physical position entered the branch
+/// store, how much, and a note the movement records. The decision behind it —
+/// `checked` rather than `rejected`, and why — is the Good Receipt's business; the
+/// ledger records that stock arrived, not what the branch head thought of the rest
+/// of the delivery.
+///
+/// **Rejected positions never become one of these.** A refused line moves no stock
+/// anywhere: not into the branch, and not back into the warehouse either. It goes on
+/// the return list and waits for a physical-return document that does not exist yet.
+class GoodReceiptPostingLine {
+  const GoodReceiptPostingLine({
+    required this.lineId,
+    required this.itemId,
+    this.batchId,
+    required this.qty,
+    this.note,
+  });
+
+  /// The Good Receipt line this quantity came from, so a failure can name it.
+  final String lineId;
+
+  final String itemId;
+  final String? batchId;
+
+  /// The **received** quantity, strictly positive. A `checked` line of zero is
+  /// filtered out before it reaches here: the ledger records changes, not
+  /// confirmations (G-A1).
+  final Quantity qty;
+
+  final String? note;
+}
+
 /// Outcome of one adjusted position.
 class OpnameAdjustmentResult {
   const OpnameAdjustmentResult({

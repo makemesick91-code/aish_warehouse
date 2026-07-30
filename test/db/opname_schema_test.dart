@@ -69,7 +69,7 @@ void main() {
   }
 
   group('struktur tabel', () {
-    test('semua tabel schema v6 tersedia', () async {
+    test('semua tabel schema v7 tersedia', () async {
       final rows = await context.database
           .customSelect(
             "SELECT name FROM sqlite_master WHERE type = 'table' "
@@ -95,6 +95,8 @@ void main() {
         'purchase_request_lines',
         'delivery_orders',
         'delivery_order_lines',
+        'good_receipts',
+        'good_receipt_lines',
       });
     });
 
