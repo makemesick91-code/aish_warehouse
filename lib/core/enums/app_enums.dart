@@ -1126,3 +1126,215 @@ enum ReportScopeType {
         throw ArgumentError.value(value, 'value', 'Unknown ReportScopeType'),
   );
 }
+
+// --- Master Data & Template Import (Milestone 11) ----------------------------
+
+/// The six master entities a Super Admin may import (G-M4, §9).
+///
+/// One entity per workbook, deliberately. A multi-entity workbook would have to
+/// decide what happens when sheet 2 fails after sheet 1 validated — and the only
+/// answers are "commit half of it", which G-M3 forbids, or "reject both", which
+/// makes a 3000-row item sheet unusable because one category row was misspelled.
+/// Per-entity files keep the atomic unit and the user's mental unit the same
+/// thing.
+///
+/// The `dbValue`s are the physical table names, so a row in `import_logs` names
+/// the table it touched without a second mapping to keep in step.
+///
+/// ### Why the header lists live here
+///
+/// [headers] is the single ordered source the template generator writes, the
+/// parser validates against and the tests pin. Splitting it — a list in the
+/// generator, a copy in the parser — is how a template stops matching the
+/// importer that reads it, which is the exact failure G-M2 exists to prevent.
+/// What is deliberately **not** here is any parsing, normalization or validation
+/// logic: this enum answers *which columns*, never *what the values mean*.
+enum ImportEntity {
+  items('items'),
+  itemCategories('item_categories'),
+  branches('branches'),
+  rooms('rooms'),
+  users('users'),
+  itemBatches('item_batches');
+
+  const ImportEntity(this.dbValue);
+
+  final String dbValue;
+
+  /// Indonesian label (§9), for cards, dropdowns and audit rows.
+  String get label => switch (this) {
+    items => 'Barang',
+    itemCategories => 'Kategori',
+    branches => 'Cabang',
+    rooms => 'Ruangan',
+    users => 'Pengguna',
+    itemBatches => 'Batch',
+  };
+
+  /// The filename stem of this entity's template, without version or extension.
+  ///
+  /// `template_master_barang` + `_aish-master-v1` + `.xlsx` (§26).
+  String get templateFileStem => switch (this) {
+    items => 'template_master_barang',
+    itemCategories => 'template_master_kategori',
+    branches => 'template_master_cabang',
+    rooms => 'template_master_ruangan',
+    users => 'template_master_pengguna',
+    itemBatches => 'template_master_batch',
+  };
+
+  /// Every column of the Data sheet, **in the exact order** row 1 must carry.
+  List<String> get headers => switch (this) {
+    branches => const ['code', 'name', 'address', 'is_active'],
+    rooms => const ['branch_code', 'code', 'name', 'is_active'],
+    users => const ['full_name', 'email', 'role', 'branch_code', 'is_active'],
+    itemCategories => const ['name'],
+    items => const [
+      'sku',
+      'name',
+      'category_name',
+      'unit',
+      'min_stock_room',
+      'min_stock_branch',
+      'has_expiry',
+      'expiry_alert_days',
+      'is_active',
+    ],
+    itemBatches => const ['item_sku', 'batch_no', 'expiry_date'],
+  };
+
+  /// Columns a row may not leave blank.
+  ///
+  /// `address` is optional on a branch because a clinic genuinely may not have
+  /// one recorded yet; `branch_code` is optional on a user because two of the
+  /// four roles must leave it blank (§14.3) — "optional" here means *the header
+  /// may hold nothing*, and the role rule decides whether nothing is correct.
+  List<String> get requiredHeaders => switch (this) {
+    branches => const ['code', 'name', 'is_active'],
+    rooms => const ['branch_code', 'code', 'name', 'is_active'],
+    users => const ['full_name', 'email', 'role', 'is_active'],
+    itemCategories => const ['name'],
+    items => headers,
+    itemBatches => headers,
+  };
+
+  List<String> get optionalHeaders =>
+      headers.where((header) => !requiredHeaders.contains(header)).toList();
+
+  /// The columns whose normalized values form the natural key (G-M4, §3.1).
+  ///
+  /// A room's key is `branch_code + code` rather than `code` alone: the schema
+  /// already allows `R1` in every branch (`UNIQUE(branch_id, code)`), so a global
+  /// match would make one branch's import silently rewrite another's rooms.
+  List<String> get naturalKeyColumns => switch (this) {
+    branches => const ['code'],
+    rooms => const ['branch_code', 'code'],
+    users => const ['email'],
+    itemCategories => const ['name'],
+    items => const ['sku'],
+    itemBatches => const ['item_sku', 'batch_no'],
+  };
+
+  /// How the natural key reads to a user, e.g. *"Kode cabang + kode ruangan"*.
+  String get naturalKeyLabel => switch (this) {
+    branches => 'Kode cabang',
+    rooms => 'Kode cabang + kode ruangan',
+    users => 'Email',
+    itemCategories => 'Nama kategori',
+    items => 'SKU',
+    itemBatches => 'SKU barang + nomor batch',
+  };
+
+  /// Whether this entity carries an `is_active` column (§3.6).
+  ///
+  /// False for categories and batches, which have no such column in the schema.
+  /// Their lifecycle is `deleted_at` — archived or live — and a column was
+  /// deliberately **not** added just to make all six look alike: that would be a
+  /// schema change to six months of existing rows in service of symmetry.
+  bool get supportsArchiveColumn => switch (this) {
+    branches || rooms || users || items => true,
+    itemCategories || itemBatches => false,
+  };
+
+  /// The sentinel each natural-key column carries in the template's sample row
+  /// (§3.7).
+  ///
+  /// Row 2 must be a *filled* example (G-M2) and must also not be importable by
+  /// accident. A sentinel key solves both: the row is complete and readable, and
+  /// the importer skips exactly the row whose key still says `__CONTOH_…__`. The
+  /// moment a user types over it, it is data like any other.
+  Map<String, String> get sampleSentinels => switch (this) {
+    branches => const {'code': _contohKode},
+    rooms => const {'branch_code': _contohKode, 'code': _contohKode},
+    users => const {'email': _contohEmail},
+    itemCategories => const {'name': _contohKategori},
+    items => const {'sku': _contohSku},
+    itemBatches => const {'item_sku': _contohSku, 'batch_no': _contohBatch},
+  };
+
+  /// The sentinel of the first natural-key column — what a test or a message
+  /// names when it needs one token rather than the map.
+  String get sampleSentinel => sampleSentinels[naturalKeyColumns.first]!;
+
+  static const String _contohSku = '__CONTOH_SKU__';
+  static const String _contohKode = '__CONTOH_KODE__';
+  static const String _contohEmail = '__CONTOH_EMAIL__';
+  static const String _contohKategori = '__CONTOH_KATEGORI__';
+  static const String _contohBatch = '__CONTOH_BATCH__';
+
+  static ImportEntity fromDbValue(String value) => values.firstWhere(
+    (entity) => entity.dbValue == value,
+    orElse: () =>
+        throw ArgumentError.value(value, 'value', 'Unknown ImportEntity'),
+  );
+}
+
+/// The life of one import (§3.4, §10).
+///
+/// ```text
+/// validated → committed
+/// validated → discarded
+/// ```
+///
+/// Both ends are final. There is no `committed → discarded`, because master rows
+/// have already been written and an audit row that walked backwards would claim
+/// they had not; and no `discarded → committed`, because the whole point of
+/// discarding is that the operator looked at the preview and said no.
+///
+/// `validated` is written **after** every row has been checked and before any
+/// master row is touched — the audit side effect §3.3 spells out, not a
+/// master-data mutation.
+enum ImportStatus {
+  validated('validated'),
+  committed('committed'),
+  discarded('discarded');
+
+  const ImportStatus(this.dbValue);
+
+  final String dbValue;
+
+  String get label => switch (this) {
+    validated => 'Tervalidasi',
+    committed => 'Diterapkan',
+    discarded => 'Dibatalkan',
+  };
+
+  bool get isValidated => this == validated;
+
+  bool get isCommitted => this == committed;
+
+  bool get isDiscarded => this == discarded;
+
+  /// Whether nothing may change this import again.
+  bool get isFinal => this == committed || this == discarded;
+
+  bool get canCommit => this == validated;
+
+  bool get canDiscard => this == validated;
+
+  static ImportStatus fromDbValue(String value) => values.firstWhere(
+    (status) => status.dbValue == value,
+    orElse: () =>
+        throw ArgumentError.value(value, 'value', 'Unknown ImportStatus'),
+  );
+}

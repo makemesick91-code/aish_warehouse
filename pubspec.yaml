@@ -62,12 +62,55 @@ dependencies:
   #   platform channel this module touches, and it is reached exclusively
   #   through `ReportShareGateway` so tests never invoke it for real.
   #
+  #   Unchanged in Milestone 11, and that took deciding — see the note on
+  #   `file_selector` below.
+  #
   # `path_provider` was already a dependency; the reporting file store reuses it
   # for the app-private directory files are written to, which is why no storage
   # permission is requested anywhere.
   excel: ^4.0.6
   pdf: ^3.12.0
   share_plus: ^13.3.0
+
+  # --- Master Data & Template Import (Milestone 11) --------------------------
+  #
+  # Two capabilities the import module cannot fake, and one package each. There
+  # is deliberately **no** second spreadsheet package: the template generator and
+  # the workbook parser both use the `excel` above, so the file this application
+  # writes and the file it reads back are the same format understood by the same
+  # code (G-M2).
+  #
+  # * `file_selector` lets a Super Admin choose an `.xlsx` from their device. It
+  #   is reached exclusively through `MasterImportFilePicker`, so no test ever
+  #   invokes the platform channel, and it is configured for a single extension
+  #   and MIME type — no gallery access, no media permission, and no
+  #   `READ_EXTERNAL_STORAGE`: the platform hands back a file the user picked,
+  #   which is the whole point of a document picker.
+  #
+  #   `file_picker` was the obvious choice and does not work here. Every
+  #   **stable** `file_picker` requires `win32 ^5.9.0`; `share_plus` 13 — shipped
+  #   since Milestone 10 — requires `win32 ^6.0.1`, and pub cannot satisfy both.
+  #   Four ways out were considered: (a) a `dependency_override`, which this file
+  #   has never had and which would only hide the conflict from the solver;
+  #   (b) `file_picker 12.0.0-beta`, i.e. a pre-release on the one path that reads
+  #   a user's file; (c) downgrading `share_plus` to the 12.x line, which does
+  #   resolve — and then **fails to compile**, because `share_plus 12.0.2`'s
+  #   Android Kotlin source does not build against this project's toolchain; or
+  #   (d) a different picker. (d) is chosen. `file_selector` is the Flutter team's
+  #   own package from `flutter/packages` and depends on no `win32` at all, so
+  #   both packages stay at their current versions, nothing is overridden, and the
+  #   Milestone 10 reporting stack is untouched.
+  # * `crypto` computes the SHA-256 that `import_logs.file_sha256` stores and
+  #   that the commit re-verifies before it re-parses a single row (§28). It was
+  #   already in `pubspec.lock` transitively, and a package this module `import`s
+  #   directly belongs in this list rather than being relied on through somebody
+  #   else's dependency graph.
+  #
+  # `path_provider` was already a dependency; the audit source-file store reuses
+  # it for the app documents directory, which is why retaining a source file
+  # still requests no storage permission anywhere.
+  file_selector: ^1.1.0
+  crypto: ^3.0.6
 
 dev_dependencies:
   flutter_test:

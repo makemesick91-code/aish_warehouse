@@ -181,3 +181,23 @@ class StockMovementTypeConverter
   @override
   String toSql(StockMovementType value) => value.dbValue;
 }
+
+class ImportEntityConverter extends TypeConverter<ImportEntity, String> {
+  const ImportEntityConverter();
+
+  @override
+  ImportEntity fromSql(String fromDb) => ImportEntity.fromDbValue(fromDb);
+
+  @override
+  String toSql(ImportEntity value) => value.dbValue;
+}
+
+class ImportStatusConverter extends TypeConverter<ImportStatus, String> {
+  const ImportStatusConverter();
+
+  @override
+  ImportStatus fromSql(String fromDb) => ImportStatus.fromDbValue(fromDb);
+
+  @override
+  String toSql(ImportStatus value) => value.dbValue;
+}

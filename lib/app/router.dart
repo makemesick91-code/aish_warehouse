@@ -12,6 +12,7 @@ import '../features/distribution/domain/services/distribution_access_policy.dart
 import '../features/good_receipt/domain/services/good_receipt_access_policy.dart';
 import '../features/opname/domain/services/opname_access_policy.dart';
 import '../features/purchase_request/domain/services/purchase_request_access_policy.dart';
+import '../features/master/domain/services/master_admin_access_policy.dart';
 import '../features/reports/domain/services/report_access_policy.dart';
 import 'guards/consumption_route_guard.dart';
 import 'guards/goods_return_route_guard.dart';
@@ -19,6 +20,7 @@ import 'guards/delivery_order_route_guard.dart';
 import 'guards/disposal_route_guard.dart';
 import 'guards/distribution_route_guard.dart';
 import 'guards/good_receipt_route_guard.dart';
+import 'guards/master_admin_route_guard.dart';
 import 'guards/opname_route_guard.dart';
 import 'guards/purchase_request_route_guard.dart';
 import 'guards/reporting_route_guard.dart';
@@ -48,6 +50,12 @@ import '../features/good_receipt/presentation/pages/good_receipt_detail_page.dar
 import '../features/good_receipt/presentation/pages/good_receipt_start_page.dart';
 import '../features/good_receipt/presentation/pages/warehouse_good_receipt_discrepancy_page.dart';
 import '../features/good_receipt/presentation/pages/warehouse_good_receipt_list_page.dart';
+import '../features/master/presentation/pages/import_log_detail_page.dart';
+import '../features/master/presentation/pages/master_dashboard_page.dart';
+import '../features/master/presentation/pages/master_entity_form_page.dart';
+import '../features/master/presentation/pages/master_entity_list_pages.dart';
+import '../features/master/presentation/pages/master_import_page.dart';
+import '../features/master/domain/models/master_admin_models.dart';
 import '../features/opname/presentation/pages/opname_form_page.dart';
 import '../features/opname/presentation/pages/opname_list_page.dart';
 import '../features/opname/presentation/pages/opname_review_detail_page.dart';
@@ -301,6 +309,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ? null
             : AppRoutes.home;
       }
+      // `/master` and `/imports` are Super Admin-only in their entirety (G-M1),
+      // unlike `/reports` — which every role may enter and whose *contents*
+      // differ. The redirect sends the other three home rather than to a
+      // dedicated refusal path: a distinct URL would confirm, by the address bar
+      // alone, that the section exists and they were kept out of it.
+      //
+      // The policy is asked rather than the role compared, so this and
+      // `MasterAdminSectionGuard` cannot disagree by hand.
+      if (location.startsWith(AppRoutes.master) ||
+          location.startsWith(AppRoutes.imports)) {
+        return MasterAdminAccessPolicy.forSection(
+              user: session.user,
+              kind: location.startsWith(AppRoutes.imports)
+                  ? MasterAdminRouteKind.imports
+                  : MasterAdminRouteKind.master,
+            ).isGranted
+            ? null
+            : AppRoutes.home;
+      }
       return null;
     },
     routes: <RouteBase>[
@@ -326,6 +353,78 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           kind: ReportRouteKind.reports,
           builder: _reportPage,
         ),
+      ),
+      // --- Master Data & Template Import (Milestone 11) ---------------------
+      //
+      // `/imports` is declared before `/master` for no ordering reason — they
+      // share no prefix — but both sit above the workflow routes so the
+      // Super Admin's two sections read together.
+      GoRoute(
+        path: AppRoutes.imports,
+        name: AppRoutes.importsName,
+        builder: (context, state) => const MasterAdminSectionGuard(
+          kind: MasterAdminRouteKind.imports,
+          builder: _masterImportPage,
+        ),
+        routes: [
+          GoRoute(
+            path: AppRoutes.importDetail,
+            name: AppRoutes.importDetailName,
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return MasterAdminSectionGuard(
+                kind: MasterAdminRouteKind.importDetail,
+                builder: (_) => ImportLogDetailPage(importId: id),
+              );
+            },
+          ),
+        ],
+      ),
+      GoRoute(
+        path: AppRoutes.master,
+        name: AppRoutes.masterName,
+        builder: (context, state) => const MasterAdminSectionGuard(
+          kind: MasterAdminRouteKind.master,
+          builder: _masterDashboardPage,
+        ),
+        routes: [
+          _masterEntityRoute(
+            path: AppRoutes.masterBranches,
+            name: AppRoutes.masterBranchesName,
+            entity: MasterEntityType.branches,
+            list: _masterBranchList,
+          ),
+          _masterEntityRoute(
+            path: AppRoutes.masterRooms,
+            name: AppRoutes.masterRoomsName,
+            entity: MasterEntityType.rooms,
+            list: _masterRoomList,
+          ),
+          _masterEntityRoute(
+            path: AppRoutes.masterUsers,
+            name: AppRoutes.masterUsersName,
+            entity: MasterEntityType.users,
+            list: _masterUserList,
+          ),
+          _masterEntityRoute(
+            path: AppRoutes.masterCategories,
+            name: AppRoutes.masterCategoriesName,
+            entity: MasterEntityType.itemCategories,
+            list: _masterCategoryList,
+          ),
+          _masterEntityRoute(
+            path: AppRoutes.masterItems,
+            name: AppRoutes.masterItemsName,
+            entity: MasterEntityType.items,
+            list: _masterItemList,
+          ),
+          _masterEntityRoute(
+            path: AppRoutes.masterBatches,
+            name: AppRoutes.masterBatchesName,
+            entity: MasterEntityType.itemBatches,
+            list: _masterBatchList,
+          ),
+        ],
       ),
       GoRoute(
         path: AppRoutes.opname,
@@ -942,6 +1041,67 @@ Widget _warehouseGoodsReturnList(BuildContext context) =>
 
 // Top-level builders so the section guards above can stay `const`.
 Widget _reportPage(BuildContext context) => const ReportPage();
+
+Widget _masterDashboardPage(BuildContext context) =>
+    const MasterDashboardPage();
+
+Widget _masterImportPage(BuildContext context) => const MasterImportPage();
+
+Widget _masterBranchList(BuildContext context) => const MasterBranchListPage();
+
+Widget _masterRoomList(BuildContext context) => const MasterRoomListPage();
+
+Widget _masterUserList(BuildContext context) => const MasterUserListPage();
+
+Widget _masterCategoryList(BuildContext context) =>
+    const MasterCategoryListPage();
+
+Widget _masterItemList(BuildContext context) => const MasterItemListPage();
+
+Widget _masterBatchList(BuildContext context) => const MasterBatchListPage();
+
+/// One list, one create form and one edit form per master entity (§37).
+///
+/// Built by a helper rather than written out six times, because the ordering
+/// inside it is load-bearing and easy to get wrong once: `new` is declared
+/// **before** `:id`, or the literal segment is matched as a row id and the create
+/// form becomes unreachable.
+///
+/// Every builder is wrapped in [MasterAdminSectionGuard], not only the list. A
+/// nested route is reachable by URL without its parent ever building, so a guard
+/// on the section alone would leave `/master/users/{id}` open.
+RouteBase _masterEntityRoute({
+  required String path,
+  required String name,
+  required MasterEntityType entity,
+  required WidgetBuilder list,
+}) => GoRoute(
+  path: path,
+  name: name,
+  builder: (context, state) =>
+      MasterAdminSectionGuard(kind: MasterAdminRouteKind.master, builder: list),
+  routes: [
+    GoRoute(
+      path: AppRoutes.masterEntityNew,
+      name: '$name-new',
+      builder: (context, state) => MasterAdminSectionGuard(
+        kind: MasterAdminRouteKind.master,
+        builder: (_) => MasterEntityFormPage(entity: entity),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.masterEntityDetail,
+      name: '$name-detail',
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        return MasterAdminSectionGuard(
+          kind: MasterAdminRouteKind.master,
+          builder: (_) => MasterEntityFormPage(entity: entity, entityId: id),
+        );
+      },
+    ),
+  ],
+);
 
 Widget _exportHistoryPage(BuildContext context) => const ExportHistoryPage();
 

@@ -2657,3 +2657,449 @@ final class EmptyReportExportFailure extends AppFailure {
 
   final ReportType reportType;
 }
+
+// --- Master Data & Template Import (Milestone 11) ----------------------------
+//
+// Two families, and the split matters:
+//
+// * `Master…` failures come from CRUD *and* from import, because §23 requires the
+//   two paths to apply the same rules. A SKU that a form refuses to change is a
+//   SKU a workbook refuses to change, and there is one type saying so.
+// * `Import…` failures are about the file — its format, its headers, its rows,
+//   its retained copy, and the state machine of the audit row that describes it.
+//
+// Every message is written for a Super Admin looking at a screen, in Indonesian,
+// and none of them names a file-system path, a table, a column type or an
+// exception. §45 keeps internals out of anything a user reads.
+
+/// The acting user is not an active Super Admin (G-M1).
+///
+/// One type for every master and import refusal, and it deliberately says nothing
+/// about *which* check fired — not the role, not whether the account was
+/// deactivated a minute ago, and not whether the entity in question exists. A
+/// refusal that explained itself would let a Kepala Cabang probe the master
+/// section until the wording changed.
+final class MasterAdminAccessDeniedFailure extends AppFailure {
+  const MasterAdminAccessDeniedFailure(super.message, {this.entity});
+
+  /// Which section was refused, when the caller had one. Never rendered — it is
+  /// here so a log written by a future sync client can be specific.
+  final ImportEntity? entity;
+}
+
+/// A master row named by id or natural key does not exist.
+final class MasterEntityNotFoundFailure extends AppFailure {
+  const MasterEntityNotFoundFailure(
+    super.message, {
+    required this.entity,
+    this.naturalKey,
+  });
+
+  final ImportEntity entity;
+  final String? naturalKey;
+}
+
+/// Creating a row whose natural key another live row already holds (G-M4).
+final class MasterNaturalKeyConflictFailure extends AppFailure {
+  const MasterNaturalKeyConflictFailure(
+    super.message, {
+    required this.entity,
+    required this.naturalKey,
+  });
+
+  final ImportEntity entity;
+  final String naturalKey;
+}
+
+/// Two or more stored rows match one natural key case-insensitively (§17).
+///
+/// Not a conflict to resolve by picking one: `DEN-0001` and `den-0001` are two
+/// rows with two histories, and an import that chose between them would rewrite
+/// whichever it did not choose into a duplicate. The operator has to decide.
+final class MasterNaturalKeyAmbiguousFailure extends AppFailure {
+  const MasterNaturalKeyAmbiguousFailure(
+    super.message, {
+    required this.entity,
+    required this.naturalKey,
+    required this.matchCount,
+  });
+
+  final ImportEntity entity;
+  final String naturalKey;
+  final int matchCount;
+}
+
+/// An edit tried to change the column the row is identified by (§20.1).
+///
+/// Identity is not an attribute. Renaming a SKU is creating a different item, and
+/// the supported path is exactly that: a new row, and the old one deactivated.
+final class MasterNaturalKeyImmutableFailure extends AppFailure {
+  const MasterNaturalKeyImmutableFailure(
+    super.message, {
+    required this.entity,
+    required this.field,
+  });
+
+  final ImportEntity entity;
+  final String field;
+}
+
+/// An edit tried to change a column the row's history depends on (G-M5, §20.2).
+///
+/// Thrown only when the row has actually been referenced. The same field on an
+/// unused row is editable, which is the whole distinction: `unit` on an item
+/// nobody has moved is a typo to fix; `unit` on an item with three months of
+/// movements is the denominator every one of those quantities was recorded in.
+final class MasterHistoricalFieldImmutableFailure extends AppFailure {
+  const MasterHistoricalFieldImmutableFailure(
+    super.message, {
+    required this.entity,
+    required this.field,
+    required this.usage,
+  });
+
+  final ImportEntity entity;
+  final String field;
+
+  /// Where the row is referenced, e.g. *"ledger, 2 dokumen distribusi"*.
+  final String usage;
+}
+
+/// A row may not be deactivated or archived while something active depends on it.
+final class MasterDependencyActiveFailure extends AppFailure {
+  const MasterDependencyActiveFailure(
+    super.message, {
+    required this.entity,
+    required this.dependency,
+  });
+
+  final ImportEntity entity;
+  final String dependency;
+}
+
+/// The change would leave the system with no active Super Admin (§21).
+final class MasterLastSuperAdminFailure extends AppFailure {
+  const MasterLastSuperAdminFailure(super.message);
+}
+
+/// The actor tried to deactivate themselves or drop their own Super Admin role
+/// (§21).
+///
+/// Separate from [MasterLastSuperAdminFailure] because the two are different
+/// mistakes: one locks everybody out, the other locks *you* out mid-session while
+/// the system stays administrable.
+final class MasterSelfDeactivationFailure extends AppFailure {
+  const MasterSelfDeactivationFailure(super.message);
+}
+
+/// `users.branch_id` does not match what the role requires (§21, spec §2.1).
+final class MasterRoleBranchMismatchFailure extends AppFailure {
+  const MasterRoleBranchMismatchFailure(
+    super.message, {
+    required this.role,
+    required this.hasBranch,
+  });
+
+  final UserRole role;
+  final bool hasBranch;
+}
+
+/// A branch or room does not have exactly the one stock location it must (§22).
+///
+/// Creating a branch creates its *Gudang Cabang*; creating a room creates its room
+/// location. Zero means stock has nowhere to go; two means every posting has to
+/// guess which shelf, and §14 already established that guessing is refused.
+final class MasterStockLocationIntegrityFailure extends AppFailure {
+  const MasterStockLocationIntegrityFailure(
+    super.message, {
+    required this.entity,
+    required this.locationCount,
+  });
+
+  final ImportEntity entity;
+  final int locationCount;
+}
+
+// --- the file --------------------------------------------------------------
+
+/// Not an `.xlsx` (§15).
+///
+/// `.xls`, `.xlsm`, `.csv` and anything else are refused by extension before a
+/// byte is read. `.xlsm` in particular is refused *because* it is a workbook: a
+/// macro-enabled file is one an auditor opens and a script runs, and this module
+/// never wants to be the reason that happened.
+final class ImportUnsupportedFileFailure extends AppFailure {
+  const ImportUnsupportedFileFailure(
+    super.message, {
+    required this.fileName,
+    this.extension,
+  });
+
+  final String fileName;
+  final String? extension;
+}
+
+final class ImportFileTooLargeFailure extends AppFailure {
+  const ImportFileTooLargeFailure(
+    super.message, {
+    required this.fileName,
+    required this.sizeBytes,
+    required this.maxBytes,
+  });
+
+  final String fileName;
+  final int sizeBytes;
+  final int maxBytes;
+}
+
+final class ImportFileEmptyFailure extends AppFailure {
+  const ImportFileEmptyFailure(super.message, {required this.fileName});
+
+  final String fileName;
+}
+
+/// The bytes are not a workbook this build can open — truncated, not a ZIP,
+/// password-protected, or corrupt.
+///
+/// The four are one failure on purpose. Telling them apart would mean reporting
+/// what the parser found inside a file the operator already knows is broken, and
+/// the action is the same in every case: export the template again and refill it.
+final class ImportWorkbookCorruptFailure extends AppFailure {
+  const ImportWorkbookCorruptFailure(super.message, {required this.fileName});
+
+  final String fileName;
+}
+
+/// The workbook declares a template version this build does not read (§13).
+final class ImportTemplateVersionFailure extends AppFailure {
+  const ImportTemplateVersionFailure(
+    super.message, {
+    required this.expected,
+    this.found,
+  });
+
+  final String expected;
+
+  /// `null` when the *Petunjuk* sheet carried no version at all — a hand-made
+  /// workbook rather than an old template.
+  final String? found;
+}
+
+final class ImportSheetMissingFailure extends AppFailure {
+  const ImportSheetMissingFailure(super.message, {required this.sheetName});
+
+  final String sheetName;
+}
+
+/// Row 1 is not this entity's header row: a column missing, an unknown one, a
+/// duplicate, or the right names in the wrong order (§15).
+final class ImportHeaderMismatchFailure extends AppFailure {
+  const ImportHeaderMismatchFailure(
+    super.message, {
+    required this.entity,
+    required this.expected,
+    required this.found,
+  });
+
+  final ImportEntity entity;
+  final List<String> expected;
+  final List<String> found;
+}
+
+/// A data cell holds a formula (§15).
+///
+/// Refused rather than evaluated. Nothing in this application executes a
+/// spreadsheet formula: what a cell computes depends on the machine that opened it
+/// last, and an import has to mean what the file says.
+final class ImportFormulaCellFailure extends AppFailure {
+  const ImportFormulaCellFailure(
+    super.message, {
+    required this.rowNumber,
+    required this.column,
+  });
+
+  final int rowNumber;
+  final String column;
+}
+
+final class ImportRowLimitFailure extends AppFailure {
+  const ImportRowLimitFailure(
+    super.message, {
+    required this.rowCount,
+    required this.maxRows,
+  });
+
+  final int rowCount;
+  final int maxRows;
+}
+
+// --- rows ------------------------------------------------------------------
+//
+// These five are *row* problems, and in the normal flow they are collected into
+// `ImportRowIssue`s and reported per row rather than thrown — §29 says validation
+// never early-exits, because an operator who has to fix one error per upload will
+// upload eleven times. They exist as thrown types for the paths that are not a
+// preview: a CRUD form applying the same rule, and a commit-time revalidation
+// discovering that the world moved under a preview.
+
+final class ImportDuplicateNaturalKeyFailure extends AppFailure {
+  const ImportDuplicateNaturalKeyFailure(
+    super.message, {
+    required this.entity,
+    required this.naturalKey,
+    required this.rowNumbers,
+  });
+
+  final ImportEntity entity;
+  final String naturalKey;
+
+  /// **Every** row that carries the key, not just the second one. §17 refuses
+  /// last-row-wins, so all of them are wrong and all of them are named.
+  final List<int> rowNumbers;
+}
+
+final class ImportForeignKeyFailure extends AppFailure {
+  const ImportForeignKeyFailure(
+    super.message, {
+    required this.column,
+    required this.value,
+  });
+
+  final String column;
+  final String value;
+}
+
+final class ImportInvalidDateFailure extends AppFailure {
+  const ImportInvalidDateFailure(
+    super.message, {
+    required this.column,
+    required this.value,
+  });
+
+  final String column;
+  final String value;
+}
+
+final class ImportInvalidBooleanFailure extends AppFailure {
+  const ImportInvalidBooleanFailure(
+    super.message, {
+    required this.column,
+    required this.value,
+  });
+
+  final String column;
+  final String value;
+}
+
+final class ImportInvalidRoleFailure extends AppFailure {
+  const ImportInvalidRoleFailure(super.message, {required this.value});
+
+  final String value;
+}
+
+/// A row would change something the stored row's history depends on (G-M5).
+final class ImportHistoricalConflictFailure extends AppFailure {
+  const ImportHistoricalConflictFailure(
+    super.message, {
+    required this.entity,
+    required this.naturalKey,
+    required this.field,
+  });
+
+  final ImportEntity entity;
+  final String naturalKey;
+  final String field;
+}
+
+// --- the two-stage flow ------------------------------------------------------
+
+/// A commit was asked for on an import that was never validated.
+final class ImportValidationRequiredFailure extends AppFailure {
+  const ImportValidationRequiredFailure(super.message);
+}
+
+/// G-M3's *"hanya bisa dijalankan jika 0 error"*, refused at the use case.
+final class ImportHasErrorsFailure extends AppFailure {
+  const ImportHasErrorsFailure(super.message, {required this.failedRows});
+
+  final int failedRows;
+}
+
+final class ImportSourceFileWriteFailure extends AppFailure {
+  const ImportSourceFileWriteFailure(super.message, {required this.fileName});
+
+  final String fileName;
+}
+
+/// The retained source copy is gone when the commit went to re-read it (§33).
+///
+/// The commit refuses rather than trusting the preview it was handed: the rows a
+/// screen is showing are not evidence of what the file said, and re-parsing is the
+/// only thing that is.
+final class ImportSourceFileMissingFailure extends AppFailure {
+  const ImportSourceFileMissingFailure(super.message, {required this.importId});
+
+  final String importId;
+}
+
+/// The retained copy no longer hashes to what the audit row recorded (§33).
+final class ImportSourceFileHashMismatchFailure extends AppFailure {
+  const ImportSourceFileHashMismatchFailure(
+    super.message, {
+    required this.importId,
+  });
+
+  final String importId;
+}
+
+/// The `import_logs` row could not be written after the source file was stored.
+///
+/// The one failure whose *ordering* is load-bearing: the stored file is deleted
+/// best-effort, because a retained source file that no audit row points at is a
+/// copy of somebody's user list sitting in app storage for no reason (§28).
+final class ImportAuditWriteFailure extends AppFailure {
+  const ImportAuditWriteFailure(super.message, {required this.fileName});
+
+  final String fileName;
+}
+
+/// A transition this import's status does not allow (§3.4).
+final class ImportInvalidStateFailure extends AppFailure {
+  const ImportInvalidStateFailure(
+    super.message, {
+    required this.importId,
+    required this.current,
+  });
+
+  final String importId;
+  final ImportStatus current;
+}
+
+final class ImportAlreadyCommittedFailure extends AppFailure {
+  const ImportAlreadyCommittedFailure(super.message, {required this.importId});
+
+  final String importId;
+}
+
+final class ImportAlreadyDiscardedFailure extends AppFailure {
+  const ImportAlreadyDiscardedFailure(super.message, {required this.importId});
+
+  final String importId;
+}
+
+/// The guarded `validated → committed` UPDATE matched no row (§33).
+///
+/// Which means somebody else's commit won the race. Thrown from inside the
+/// transaction, so it takes every master write of this attempt down with it.
+final class ImportConcurrentUpdateFailure extends AppFailure {
+  const ImportConcurrentUpdateFailure(super.message, {required this.importId});
+
+  final String importId;
+}
+
+/// The commit transaction failed and was rolled back whole (§33).
+final class ImportCommitFailure extends AppFailure {
+  const ImportCommitFailure(super.message, {required this.importId});
+
+  final String importId;
+}

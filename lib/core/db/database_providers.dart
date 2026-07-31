@@ -8,6 +8,7 @@ import 'daos/distribution_dao.dart';
 import 'daos/good_receipt_dao.dart';
 import 'daos/goods_return_dao.dart';
 import 'daos/inventory_dao.dart';
+import 'daos/master_admin_dao.dart';
 import 'daos/master_data_dao.dart';
 import 'daos/opname_dao.dart';
 import 'daos/purchase_request_dao.dart';
@@ -26,6 +27,16 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
 
 final masterDataDaoProvider = Provider<MasterDataDao>(
   (ref) => ref.watch(appDatabaseProvider).masterDataDao,
+);
+
+/// The unrestricted master-administration accessor (§24).
+///
+/// Separate from [masterDataDaoProvider] so "who may read the whole user list" has
+/// one answer: this provider is reached only through Super Admin-guarded
+/// providers and use cases, while the operational DAO stays available to every
+/// feature exactly as it was.
+final masterAdminDaoProvider = Provider<MasterAdminDao>(
+  (ref) => ref.watch(appDatabaseProvider).masterAdminDao,
 );
 
 final inventoryDaoProvider = Provider<InventoryDao>(

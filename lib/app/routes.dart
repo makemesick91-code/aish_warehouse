@@ -284,6 +284,57 @@ abstract final class AppRoutes {
   static const String exportHistory = '/reports/export-history';
   static const String exportHistoryName = 'exportHistory';
 
+  // --- Master Data & Template Import (Milestone 11) -------------------------
+
+  /// The Super Admin's master section (§39). Every path below it is Super
+  /// Admin-only, and unlike `/reports` — which every role may enter and whose
+  /// *contents* differ by role — this whole prefix is refused outright to the
+  /// other three (G-M1).
+  static const String master = '/master';
+  static const String masterName = 'master';
+
+  /// One list per entity, nested under [master] so the section guard covers the
+  /// whole prefix in one place.
+  static const String masterBranches = 'branches';
+  static const String masterBranchesName = 'masterBranches';
+
+  static const String masterRooms = 'rooms';
+  static const String masterRoomsName = 'masterRooms';
+
+  static const String masterUsers = 'users';
+  static const String masterUsersName = 'masterUsers';
+
+  static const String masterCategories = 'categories';
+  static const String masterCategoriesName = 'masterCategories';
+
+  static const String masterItems = 'items';
+  static const String masterItemsName = 'masterItems';
+
+  static const String masterBatches = 'batches';
+  static const String masterBatchesName = 'masterBatches';
+
+  /// `…/new` — the create form. Declared **before** the `:id` pattern in every
+  /// list's `routes`, or the literal segment would be matched as a row id.
+  static const String masterEntityNew = 'new';
+  static const String masterEntityNewName = 'masterEntityNew';
+
+  static const String masterEntityDetail = ':id';
+  static const String masterEntityDetailName = 'masterEntityDetail';
+
+  /// The import module: template download, upload, preview, commit, history
+  /// (§42).
+  ///
+  /// A **top-level** path rather than a child of [master], and the separation is
+  /// deliberate: the two are different surfaces with different state. Nesting the
+  /// import under the master prefix would put a page holding an in-flight preview
+  /// behind the same route that lists entities, and a `pop` from a list would land
+  /// on a preview the operator had already committed.
+  static const String imports = '/imports';
+  static const String importsName = 'imports';
+
+  static const String importDetail = ':id';
+  static const String importDetailName = 'importDetail';
+
   // There is deliberately no `/akses-ditolak` route. A refused document route
   // renders `AccessDeniedPage` *in place*, keeping the URL the user typed:
   // redirecting to a dedicated path would tell them, by the address bar alone,

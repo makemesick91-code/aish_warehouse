@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import '../helpers/source_inspection.dart' show unguardedIdRoutes;
+
 /// Architecture rules, enforced against the source itself.
 ///
 /// These are the invariants that no runtime test can catch, because breaking
@@ -317,17 +319,16 @@ void main() {
         r"pathParameters\['(?:id|deliveryOrderId)'\]",
       ).allMatches(router).length;
       expect(idRoutes, greaterThan(0), reason: 'Pola tes usang.');
-      // Matched by shape rather than by name, so a third module's guard counts
-      // automatically instead of quietly lowering the total. `OpnameRouteGuard(`
-      // and `PurchaseRequestRouteGuard(` both match; an import of the file does
-      // not.
-      final guards = RegExp(r'\w*RouteGuard\(').allMatches(router).length;
+      // Checked per occurrence rather than by comparing two counts. The count
+      // matched guards by *shape* so a third module's guard counted
+      // automatically, and that stopped working once a section guard began
+      // covering an `:id` route — see [unguardedIdRoutes].
       expect(
-        guards,
-        idRoutes,
+        unguardedIdRoutes(router),
+        isEmpty,
         reason:
-            'Ditemukan $idRoutes rute ber-:id tetapi hanya $guards penjaga '
-            'dokumen. Setiap rute dokumen harus dibungkus penjaga.',
+            'Ada rute ber-:id yang tidak dibungkus penjaga akses. Setiap rute '
+            'dokumen harus dibungkus penjaga.',
       );
       expect(router, contains('OpnameRouteKind.document'));
       expect(router, contains('OpnameRouteKind.reviewDocument'));

@@ -296,7 +296,7 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 12);
+      expect(row.read<int>('user_version'), 13);
 
       await database.close();
     });
@@ -321,6 +321,7 @@ void main() {
         // Opening an older database migrates it to the current schema, so
         // v12's export audit table is present too.
         'export_logs',
+        'import_logs',
       });
 
       await database.close();
@@ -554,7 +555,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 12);
+      expect(version.read<int>('user_version'), 13);
 
       final tables = await objectNames(second, 'table');
       expect(tables, containsAll(purchaseRequestTables));
@@ -627,7 +628,7 @@ void main() {
       final version = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 12);
+      expect(version.read<int>('user_version'), 13);
 
       // `10` whole units became `10000` milli-units — scaled once, not twice. A
       // second application of the `from < 2` block would leave `10000000`.
@@ -679,7 +680,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 12);
+        expect(version.read<int>('user_version'), 13);
 
         // v4's rebuild must still have happened on the way through.
         final row = await database

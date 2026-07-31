@@ -232,15 +232,15 @@ void main() {
       final idRoutes = RegExp(
         r"pathParameters\['(?:id|deliveryOrderId)'\]",
       ).allMatches(router).length;
-      final guards = RegExp(r'\w*RouteGuard\(').allMatches(router).length;
 
       expect(idRoutes, greaterThan(0), reason: 'Pola tes usang.');
+      // Checked per occurrence rather than by comparing two counts — see
+      // [unguardedIdRoutes] for why the count stopped being able to express
+      // this once a section guard began covering an `:id` route.
       expect(
-        guards,
-        idRoutes,
-        reason:
-            'Ditemukan $idRoutes rute ber-:id tetapi hanya $guards penjaga '
-            'dokumen.',
+        unguardedIdRoutes(router),
+        isEmpty,
+        reason: 'Ada rute ber-:id yang tidak dibungkus penjaga akses.',
       );
       for (final kind in [
         'DeliveryRouteKind.warehouseDocument',
@@ -650,7 +650,7 @@ void main() {
       expect(source, contains('if (from < 6)'));
       // Bumped by every later milestone; what this test is really pinning is
       // that the v6 *step* is still there, still frozen, and still additive.
-      expect(source, contains('int get schemaVersion => 12;'));
+      expect(source, contains('int get schemaVersion => 13;'));
       expect(
         source.contains('allSchemaEntities'),
         isFalse,

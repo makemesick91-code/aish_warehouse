@@ -282,11 +282,11 @@ void main() {
     });
 
     test('schemaVersion adalah 12', () async {
-      expect(database.schemaVersion, 12);
+      expect(database.schemaVersion, 13);
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 12);
+      expect(row.read<int>('user_version'), 13);
     });
 
     test('qty adalah INTEGER, bukan REAL', () async {

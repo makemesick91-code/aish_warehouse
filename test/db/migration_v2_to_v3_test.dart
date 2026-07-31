@@ -137,7 +137,7 @@ void main() {
     // A v2 file reaches the head in one open: `from < 3` adds the opname
     // tables and `from < 4` rebuilds `stock_opnames` without the lexical
     // timestamp CHECK.
-    expect(row.read<int>('user_version'), 12);
+    expect(row.read<int>('user_version'), 13);
 
     await database.close();
   });
@@ -322,7 +322,7 @@ void main() {
     final version = await database
         .customSelect('PRAGMA user_version;')
         .getSingle();
-    expect(version.read<int>('user_version'), 12);
+    expect(version.read<int>('user_version'), 13);
 
     // v1 → v2 scaling ran exactly once...
     final balance = await database
@@ -398,7 +398,7 @@ void main() {
     final version = await again
         .customSelect('PRAGMA user_version;')
         .getSingle();
-    expect(version.read<int>('user_version'), 12);
+    expect(version.read<int>('user_version'), 13);
 
     // And the quantities were still not rescaled by the replay.
     final balance = await again

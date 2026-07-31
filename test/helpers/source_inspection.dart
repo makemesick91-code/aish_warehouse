@@ -43,3 +43,55 @@ List<String> importsOf(String path) {
       .map((match) => match.group(1)!)
       .toList(growable: false);
 }
+
+/// Every document-specific route builder in `router.dart` that is **not** wrapped
+/// in a guard.
+///
+/// ### Why this replaced a count
+///
+/// Until Milestone 11 the invariant *"every `:id` route is guarded"* was checked
+/// by comparing two counts: occurrences of `pathParameters['id']` against
+/// occurrences of `…RouteGuard(`. That worked while every guarded route used a
+/// per-document guard, and it broke the moment a **section** guard covered an
+/// `:id` route — which `/master/{entity}/{id}` and `/imports/{id}` are the first
+/// to do, because a Super Admin's reach over master data has no per-document
+/// scope to check (G-M1).
+///
+/// Widening the count to include section guards would have made the totals
+/// meaningless: a section guard also wraps routes that carry no id at all. So the
+/// check became the thing the count was standing in for — for **each** id read,
+/// is there a guard in the builder that reads it?
+///
+/// The shape every route in this application uses is:
+///
+/// ```dart
+/// builder: (context, state) {
+///   final id = state.pathParameters['id']!;
+///   return SomethingGuard(…);
+/// }
+/// ```
+///
+/// so the guard appears within a few lines *after* the read. [window] is how far
+/// after; the default is generous enough for the longest builder in the file and
+/// far short of the next route.
+///
+/// Returns the offending snippets, so a failure names what is unguarded rather
+/// than only that something is.
+List<String> unguardedIdRoutes(
+  String routerSource, {
+  List<String> idParameters = const ['id', 'deliveryOrderId'],
+  int window = 400,
+}) {
+  final pattern = RegExp("pathParameters\\['(?:${idParameters.join('|')})'\\]");
+  final guard = RegExp(r'\w*(?:RouteGuard|SectionGuard)\(');
+  final offenders = <String>[];
+
+  for (final match in pattern.allMatches(routerSource)) {
+    final end = (match.end + window).clamp(0, routerSource.length);
+    final following = routerSource.substring(match.end, end);
+    if (guard.hasMatch(following)) continue;
+    final start = (match.start - 120).clamp(0, routerSource.length);
+    offenders.add(routerSource.substring(start, match.end).trim());
+  }
+  return offenders;
+}

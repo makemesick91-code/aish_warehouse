@@ -182,10 +182,16 @@ void main() {
       final idRoutes = RegExp(
         r"pathParameters\['(?:id|deliveryOrderId)'\]",
       ).allMatches(router).length;
-      final guards = RegExp(r'\w*RouteGuard\(').allMatches(router).length;
 
       expect(idRoutes, greaterThan(0), reason: 'Pola tes usang.');
-      expect(guards, idRoutes);
+      // Checked per occurrence rather than by comparing two counts — see
+      // [unguardedIdRoutes] for why the count stopped being able to express
+      // this once a section guard began covering an `:id` route.
+      expect(
+        unguardedIdRoutes(router),
+        isEmpty,
+        reason: 'Ada rute ber-:id yang tidak dibungkus penjaga akses.',
+      );
       for (final kind in [
         'GoodReceiptRouteKind.branchDocument',
         'GoodReceiptRouteKind.warehouseDocument',
@@ -656,7 +662,7 @@ void main() {
 
       expect(source, contains('_v7GoodReceiptIndexes'));
       expect(source, contains('if (from < 7)'));
-      expect(source, contains('int get schemaVersion => 12;'));
+      expect(source, contains('int get schemaVersion => 13;'));
       expect(
         source.contains('allSchemaEntities'),
         isFalse,

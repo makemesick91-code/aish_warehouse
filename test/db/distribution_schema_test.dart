@@ -83,8 +83,8 @@ void main() {
       final row = await context.database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 12);
-      expect(context.database.schemaVersion, 12);
+      expect(row.read<int>('user_version'), 13);
+      expect(context.database.schemaVersion, 13);
     });
 
     test('dua tabel Distribusi tersedia', () async {

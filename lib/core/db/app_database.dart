@@ -10,6 +10,7 @@ import 'daos/distribution_dao.dart';
 import 'daos/good_receipt_dao.dart';
 import 'daos/goods_return_dao.dart';
 import 'daos/inventory_dao.dart';
+import 'daos/master_admin_dao.dart';
 import 'daos/master_data_dao.dart';
 import 'daos/opname_dao.dart';
 import 'daos/purchase_request_dao.dart';
@@ -21,6 +22,7 @@ import 'tables/disposal_tables.dart';
 import 'tables/distribution_tables.dart';
 import 'tables/good_receipt_tables.dart';
 import 'tables/goods_return_tables.dart';
+import 'tables/import_tables.dart';
 import 'tables/inventory_tables.dart';
 import 'tables/master_tables.dart';
 import 'tables/opname_tables.dart';
@@ -58,9 +60,11 @@ part 'app_database.g.dart';
     GoodsReturns,
     GoodsReturnLines,
     ExportLogs,
+    ImportLogs,
   ],
   daos: [
     MasterDataDao,
+    MasterAdminDao,
     InventoryDao,
     OpnameDao,
     PurchaseRequestDao,
@@ -93,8 +97,9 @@ class AppDatabase extends _$AppDatabase {
   /// * v10 — Milestone 8, Pemakaian (`consumptions`, `consumption_lines`).
   /// * v11 — Milestone 9, Retur Barang (`goods_returns`, `goods_return_lines`).
   /// * v12 — Milestone 10, Reporting export audit (`export_logs`).
+  /// * v13 — Milestone 11, Master import audit (`import_logs`).
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -398,6 +403,42 @@ class AppDatabase extends _$AppDatabase {
         // foreign key, so that trap stays shut.
         await m.createTable(exportLogs);
         for (final statement in _v12ExportLogIndexes) {
+          await customStatement(statement);
+        }
+      }
+      if (from < 13) {
+        // Milestone 11, purely additive in the sense the `from < 3` block
+        // established: one new table and its indexes, and not one statement
+        // touching an existing column.
+        //
+        // This step is the one in the whole sequence with the strongest reason to
+        // reach into master data — it is the master-data milestone — and it
+        // deliberately does not. `branches`, `rooms`, `users`, `item_categories`,
+        // `items` and `item_batches` come through byte-for-byte: no column added,
+        // no default rewritten, no row normalized. An import may only ever change
+        // master data by *being run*, by a named Super Admin, with a preview they
+        // looked at (G-M3) — and a migration that tidied a SKU or lower-cased an
+        // email would be doing exactly what G-M5 forbids the import itself to do,
+        // with nobody's name on it.
+        //
+        // It writes **no import log for anything already on the device**, for the
+        // reason the `from < 12` block spells out about export logs and more so:
+        // every invented row would claim a named person uploaded a named file
+        // whose SHA-256 this migration would have to fabricate, and it would then
+        // be indistinguishable from a real one in the audit screen. The table
+        // comes up empty, which is the honest outcome — before v13 nothing could
+        // import, so nothing did. No source file is created either: `import_logs`
+        // points at retained bytes, and a row pointing at a path that was never
+        // written would fail its own hash check the first time anyone looked.
+        //
+        // It also has to leave `stock_opnames` alone for the second reason the
+        // `from < 5` block spells out: the `from < 4` block reads the *current*
+        // Dart definition of that table through `alterTable`, so a v13 that
+        // changed its shape would make a v3 → v13 upgrade land on the v13 shape at
+        // step 4 and then apply steps 5 to 13 on top. `import_logs` only
+        // references `users` by foreign key, so that trap stays shut.
+        await m.createTable(importLogs);
+        for (final statement in _v13ImportLogIndexes) {
           await customStatement(statement);
         }
       }
@@ -833,5 +874,42 @@ class AppDatabase extends _$AppDatabase {
         'ON export_logs (item_id, created_at);',
     'CREATE INDEX IF NOT EXISTS idx_export_logs_created_at '
         'ON export_logs (created_at);',
+  ];
+
+  /// The import audit indexes **exactly as schema v13 defined them**.
+  ///
+  /// Frozen as literal SQL for the reason [_v3OpnameIndexes] spells out: a migration
+  /// step must keep doing what it did the day it shipped, so this list must not be
+  /// derived from `allSchemaEntities` — that getter always describes the current
+  /// schema, and a v14 index added to this table would silently change what the
+  /// `from < 13` block creates.
+  ///
+  /// Not one of them is unique, and — as with `export_logs` — that is the design
+  /// rather than an oversight. An import is an *event*: the same file uploaded twice
+  /// produced two previews, by possibly two people, against data that had moved on,
+  /// and both must appear. The tempting unique index is on `file_sha256`, and it is
+  /// exactly the one that would collapse the second import out of the trail.
+  ///
+  /// `idx_import_logs_sha256` is therefore a plain lookup index: it answers *"has
+  /// this file been imported before?"* — a question worth asking a user before they
+  /// commit — without deciding the answer for them.
+  ///
+  /// Every other index is `(column, created_at)` rather than `(column)` alone,
+  /// because every history screen sorts newest-first within whatever it filtered by,
+  /// and that ordering is on the UTC timestamp column rather than on any rendered
+  /// string (§36).
+  static const List<String> _v13ImportLogIndexes = [
+    'CREATE INDEX IF NOT EXISTS idx_import_logs_entity_status '
+        'ON import_logs (entity, status, created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_import_logs_status '
+        'ON import_logs (status, created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_import_logs_actor '
+        'ON import_logs (imported_by, created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_import_logs_created_at '
+        'ON import_logs (created_at);',
+    'CREATE INDEX IF NOT EXISTS idx_import_logs_sha256 '
+        'ON import_logs (file_sha256);',
+    'CREATE INDEX IF NOT EXISTS idx_import_logs_sync '
+        'ON import_logs (sync_status, created_at);',
   ];
 }

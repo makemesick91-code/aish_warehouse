@@ -348,6 +348,7 @@ void main() {
       // Opening an older database migrates it to the current schema, so
       // v12's export audit table is present too.
       'export_logs',
+      'import_logs',
       ...consumptionTables,
       ...disposalTables,
     ]) {
@@ -398,7 +399,7 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 12);
+      expect(row.read<int>('user_version'), 13);
 
       await database.close();
     });
@@ -418,6 +419,7 @@ void main() {
         // Opening an older database migrates it to the current schema, so
         // v12's export audit table is present too.
         'export_logs',
+        'import_logs',
       });
 
       await database.close();
@@ -607,7 +609,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 12);
+      expect(version.read<int>('user_version'), 13);
       expect(await objectNames(second, 'table'), containsAll(disposalTables));
       await second.close();
     });
@@ -692,7 +694,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 12);
+        expect(version.read<int>('user_version'), 13);
 
         final tables = await objectNames(database, 'table');
         expect(tables, containsAll(disposalTables));

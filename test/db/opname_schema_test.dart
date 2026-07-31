@@ -106,6 +106,7 @@ void main() {
         'goods_returns',
         'goods_return_lines',
         'export_logs',
+        'import_logs',
       });
     });
 

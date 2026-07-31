@@ -19385,6 +19385,1078 @@ class ExportLogsCompanion extends UpdateCompanion<ExportLogRow> {
   }
 }
 
+class $ImportLogsTable extends ImportLogs
+    with TableInfo<$ImportLogsTable, ImportLogRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ImportLogsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<SyncStatus, String> syncStatus =
+      GeneratedColumn<String>(
+        'sync_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => SyncStatus.pending.dbValue,
+      ).withConverter<SyncStatus>($ImportLogsTable.$convertersyncStatus);
+  @override
+  late final GeneratedColumnWithTypeConverter<ImportEntity, String> entity =
+      GeneratedColumn<String>(
+        'entity',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<ImportEntity>($ImportLogsTable.$converterentity);
+  static const VerificationMeta _fileNameMeta = const VerificationMeta(
+    'fileName',
+  );
+  @override
+  late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
+    'file_name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 255,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _totalRowsMeta = const VerificationMeta(
+    'totalRows',
+  );
+  @override
+  late final GeneratedColumn<int> totalRows = GeneratedColumn<int>(
+    'total_rows',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _insertedRowsMeta = const VerificationMeta(
+    'insertedRows',
+  );
+  @override
+  late final GeneratedColumn<int> insertedRows = GeneratedColumn<int>(
+    'inserted_rows',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedRowsMeta = const VerificationMeta(
+    'updatedRows',
+  );
+  @override
+  late final GeneratedColumn<int> updatedRows = GeneratedColumn<int>(
+    'updated_rows',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _failedRowsMeta = const VerificationMeta(
+    'failedRows',
+  );
+  @override
+  late final GeneratedColumn<int> failedRows = GeneratedColumn<int>(
+    'failed_rows',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _errorDetailMeta = const VerificationMeta(
+    'errorDetail',
+  );
+  @override
+  late final GeneratedColumn<String> errorDetail = GeneratedColumn<String>(
+    'error_detail',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<ImportStatus, String> status =
+      GeneratedColumn<String>(
+        'status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<ImportStatus>($ImportLogsTable.$converterstatus);
+  static const VerificationMeta _importedByMeta = const VerificationMeta(
+    'importedBy',
+  );
+  @override
+  late final GeneratedColumn<String> importedBy = GeneratedColumn<String>(
+    'imported_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _storedFilePathMeta = const VerificationMeta(
+    'storedFilePath',
+  );
+  @override
+  late final GeneratedColumn<String> storedFilePath = GeneratedColumn<String>(
+    'stored_file_path',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 1024,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileSha256Meta = const VerificationMeta(
+    'fileSha256',
+  );
+  @override
+  late final GeneratedColumn<String> fileSha256 = GeneratedColumn<String>(
+    'file_sha256',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 64,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileSizeBytesMeta = const VerificationMeta(
+    'fileSizeBytes',
+  );
+  @override
+  late final GeneratedColumn<int> fileSizeBytes = GeneratedColumn<int>(
+    'file_size_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _templateVersionMeta = const VerificationMeta(
+    'templateVersion',
+  );
+  @override
+  late final GeneratedColumn<String> templateVersion = GeneratedColumn<String>(
+    'template_version',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    entity,
+    fileName,
+    totalRows,
+    insertedRows,
+    updatedRows,
+    failedRows,
+    errorDetail,
+    status,
+    importedBy,
+    storedFilePath,
+    fileSha256,
+    fileSizeBytes,
+    templateVersion,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'import_logs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ImportLogRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('file_name')) {
+      context.handle(
+        _fileNameMeta,
+        fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileNameMeta);
+    }
+    if (data.containsKey('total_rows')) {
+      context.handle(
+        _totalRowsMeta,
+        totalRows.isAcceptableOrUnknown(data['total_rows']!, _totalRowsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_totalRowsMeta);
+    }
+    if (data.containsKey('inserted_rows')) {
+      context.handle(
+        _insertedRowsMeta,
+        insertedRows.isAcceptableOrUnknown(
+          data['inserted_rows']!,
+          _insertedRowsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_insertedRowsMeta);
+    }
+    if (data.containsKey('updated_rows')) {
+      context.handle(
+        _updatedRowsMeta,
+        updatedRows.isAcceptableOrUnknown(
+          data['updated_rows']!,
+          _updatedRowsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedRowsMeta);
+    }
+    if (data.containsKey('failed_rows')) {
+      context.handle(
+        _failedRowsMeta,
+        failedRows.isAcceptableOrUnknown(data['failed_rows']!, _failedRowsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_failedRowsMeta);
+    }
+    if (data.containsKey('error_detail')) {
+      context.handle(
+        _errorDetailMeta,
+        errorDetail.isAcceptableOrUnknown(
+          data['error_detail']!,
+          _errorDetailMeta,
+        ),
+      );
+    }
+    if (data.containsKey('imported_by')) {
+      context.handle(
+        _importedByMeta,
+        importedBy.isAcceptableOrUnknown(data['imported_by']!, _importedByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_importedByMeta);
+    }
+    if (data.containsKey('stored_file_path')) {
+      context.handle(
+        _storedFilePathMeta,
+        storedFilePath.isAcceptableOrUnknown(
+          data['stored_file_path']!,
+          _storedFilePathMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_storedFilePathMeta);
+    }
+    if (data.containsKey('file_sha256')) {
+      context.handle(
+        _fileSha256Meta,
+        fileSha256.isAcceptableOrUnknown(data['file_sha256']!, _fileSha256Meta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileSha256Meta);
+    }
+    if (data.containsKey('file_size_bytes')) {
+      context.handle(
+        _fileSizeBytesMeta,
+        fileSizeBytes.isAcceptableOrUnknown(
+          data['file_size_bytes']!,
+          _fileSizeBytesMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fileSizeBytesMeta);
+    }
+    if (data.containsKey('template_version')) {
+      context.handle(
+        _templateVersionMeta,
+        templateVersion.isAcceptableOrUnknown(
+          data['template_version']!,
+          _templateVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_templateVersionMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ImportLogRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ImportLogRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: $ImportLogsTable.$convertersyncStatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}sync_status'],
+        )!,
+      ),
+      entity: $ImportLogsTable.$converterentity.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}entity'],
+        )!,
+      ),
+      fileName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_name'],
+      )!,
+      totalRows: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_rows'],
+      )!,
+      insertedRows: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}inserted_rows'],
+      )!,
+      updatedRows: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_rows'],
+      )!,
+      failedRows: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}failed_rows'],
+      )!,
+      errorDetail: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}error_detail'],
+      ),
+      status: $ImportLogsTable.$converterstatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}status'],
+        )!,
+      ),
+      importedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}imported_by'],
+      )!,
+      storedFilePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}stored_file_path'],
+      )!,
+      fileSha256: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_sha256'],
+      )!,
+      fileSizeBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}file_size_bytes'],
+      )!,
+      templateVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}template_version'],
+      )!,
+    );
+  }
+
+  @override
+  $ImportLogsTable createAlias(String alias) {
+    return $ImportLogsTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<SyncStatus, String> $convertersyncStatus =
+      const SyncStatusConverter();
+  static TypeConverter<ImportEntity, String> $converterentity =
+      const ImportEntityConverter();
+  static TypeConverter<ImportStatus, String> $converterstatus =
+      const ImportStatusConverter();
+}
+
+class ImportLogRow extends DataClass implements Insertable<ImportLogRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final SyncStatus syncStatus;
+
+  /// Which master entity was imported. Stored as the enum's `dbValue`, which is
+  /// the physical table name — so the audit row names the table it touched.
+  final ImportEntity entity;
+
+  /// The name the user's file had when they picked it. Not a path.
+  final String fileName;
+
+  /// Data rows the workbook held, blank rows and the template's sample row
+  /// excluded. Zero is legitimate: an empty-but-valid template is a thing a user
+  /// can upload, and an import of nothing is exactly what the audit should say.
+  final int totalRows;
+  final int insertedRows;
+  final int updatedRows;
+  final int failedRows;
+
+  /// Structured JSON, one object per issue, deterministically ordered (§32).
+  ///
+  /// NULL when nothing failed. Never the raw rows: a workbook of users would put
+  /// every full name and email into a column that outlives the file.
+  final String? errorDetail;
+  final ImportStatus status;
+
+  /// Who ran it (G-M6). Never nullable: an import with no actor is not an audit
+  /// record.
+  final String importedBy;
+
+  /// Absolute path of the retained source copy under app documents (§3.8).
+  ///
+  /// **Never rendered to a user.** An app-private path tells an administrator
+  /// nothing they can act on, and §36 keeps paths out of every screen.
+  final String storedFilePath;
+
+  /// Lowercase hex SHA-256 of the source bytes.
+  final String fileSha256;
+  final int fileSizeBytes;
+
+  /// The template generation the workbook declared, e.g. `aish-master-v1`.
+  final String templateVersion;
+  const ImportLogRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.entity,
+    required this.fileName,
+    required this.totalRows,
+    required this.insertedRows,
+    required this.updatedRows,
+    required this.failedRows,
+    this.errorDetail,
+    required this.status,
+    required this.importedBy,
+    required this.storedFilePath,
+    required this.fileSha256,
+    required this.fileSizeBytes,
+    required this.templateVersion,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    {
+      map['sync_status'] = Variable<String>(
+        $ImportLogsTable.$convertersyncStatus.toSql(syncStatus),
+      );
+    }
+    {
+      map['entity'] = Variable<String>(
+        $ImportLogsTable.$converterentity.toSql(entity),
+      );
+    }
+    map['file_name'] = Variable<String>(fileName);
+    map['total_rows'] = Variable<int>(totalRows);
+    map['inserted_rows'] = Variable<int>(insertedRows);
+    map['updated_rows'] = Variable<int>(updatedRows);
+    map['failed_rows'] = Variable<int>(failedRows);
+    if (!nullToAbsent || errorDetail != null) {
+      map['error_detail'] = Variable<String>(errorDetail);
+    }
+    {
+      map['status'] = Variable<String>(
+        $ImportLogsTable.$converterstatus.toSql(status),
+      );
+    }
+    map['imported_by'] = Variable<String>(importedBy);
+    map['stored_file_path'] = Variable<String>(storedFilePath);
+    map['file_sha256'] = Variable<String>(fileSha256);
+    map['file_size_bytes'] = Variable<int>(fileSizeBytes);
+    map['template_version'] = Variable<String>(templateVersion);
+    return map;
+  }
+
+  ImportLogsCompanion toCompanion(bool nullToAbsent) {
+    return ImportLogsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      entity: Value(entity),
+      fileName: Value(fileName),
+      totalRows: Value(totalRows),
+      insertedRows: Value(insertedRows),
+      updatedRows: Value(updatedRows),
+      failedRows: Value(failedRows),
+      errorDetail: errorDetail == null && nullToAbsent
+          ? const Value.absent()
+          : Value(errorDetail),
+      status: Value(status),
+      importedBy: Value(importedBy),
+      storedFilePath: Value(storedFilePath),
+      fileSha256: Value(fileSha256),
+      fileSizeBytes: Value(fileSizeBytes),
+      templateVersion: Value(templateVersion),
+    );
+  }
+
+  factory ImportLogRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ImportLogRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<SyncStatus>(json['syncStatus']),
+      entity: serializer.fromJson<ImportEntity>(json['entity']),
+      fileName: serializer.fromJson<String>(json['fileName']),
+      totalRows: serializer.fromJson<int>(json['totalRows']),
+      insertedRows: serializer.fromJson<int>(json['insertedRows']),
+      updatedRows: serializer.fromJson<int>(json['updatedRows']),
+      failedRows: serializer.fromJson<int>(json['failedRows']),
+      errorDetail: serializer.fromJson<String?>(json['errorDetail']),
+      status: serializer.fromJson<ImportStatus>(json['status']),
+      importedBy: serializer.fromJson<String>(json['importedBy']),
+      storedFilePath: serializer.fromJson<String>(json['storedFilePath']),
+      fileSha256: serializer.fromJson<String>(json['fileSha256']),
+      fileSizeBytes: serializer.fromJson<int>(json['fileSizeBytes']),
+      templateVersion: serializer.fromJson<String>(json['templateVersion']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'syncStatus': serializer.toJson<SyncStatus>(syncStatus),
+      'entity': serializer.toJson<ImportEntity>(entity),
+      'fileName': serializer.toJson<String>(fileName),
+      'totalRows': serializer.toJson<int>(totalRows),
+      'insertedRows': serializer.toJson<int>(insertedRows),
+      'updatedRows': serializer.toJson<int>(updatedRows),
+      'failedRows': serializer.toJson<int>(failedRows),
+      'errorDetail': serializer.toJson<String?>(errorDetail),
+      'status': serializer.toJson<ImportStatus>(status),
+      'importedBy': serializer.toJson<String>(importedBy),
+      'storedFilePath': serializer.toJson<String>(storedFilePath),
+      'fileSha256': serializer.toJson<String>(fileSha256),
+      'fileSizeBytes': serializer.toJson<int>(fileSizeBytes),
+      'templateVersion': serializer.toJson<String>(templateVersion),
+    };
+  }
+
+  ImportLogRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    SyncStatus? syncStatus,
+    ImportEntity? entity,
+    String? fileName,
+    int? totalRows,
+    int? insertedRows,
+    int? updatedRows,
+    int? failedRows,
+    Value<String?> errorDetail = const Value.absent(),
+    ImportStatus? status,
+    String? importedBy,
+    String? storedFilePath,
+    String? fileSha256,
+    int? fileSizeBytes,
+    String? templateVersion,
+  }) => ImportLogRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    entity: entity ?? this.entity,
+    fileName: fileName ?? this.fileName,
+    totalRows: totalRows ?? this.totalRows,
+    insertedRows: insertedRows ?? this.insertedRows,
+    updatedRows: updatedRows ?? this.updatedRows,
+    failedRows: failedRows ?? this.failedRows,
+    errorDetail: errorDetail.present ? errorDetail.value : this.errorDetail,
+    status: status ?? this.status,
+    importedBy: importedBy ?? this.importedBy,
+    storedFilePath: storedFilePath ?? this.storedFilePath,
+    fileSha256: fileSha256 ?? this.fileSha256,
+    fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
+    templateVersion: templateVersion ?? this.templateVersion,
+  );
+  ImportLogRow copyWithCompanion(ImportLogsCompanion data) {
+    return ImportLogRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      entity: data.entity.present ? data.entity.value : this.entity,
+      fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      totalRows: data.totalRows.present ? data.totalRows.value : this.totalRows,
+      insertedRows: data.insertedRows.present
+          ? data.insertedRows.value
+          : this.insertedRows,
+      updatedRows: data.updatedRows.present
+          ? data.updatedRows.value
+          : this.updatedRows,
+      failedRows: data.failedRows.present
+          ? data.failedRows.value
+          : this.failedRows,
+      errorDetail: data.errorDetail.present
+          ? data.errorDetail.value
+          : this.errorDetail,
+      status: data.status.present ? data.status.value : this.status,
+      importedBy: data.importedBy.present
+          ? data.importedBy.value
+          : this.importedBy,
+      storedFilePath: data.storedFilePath.present
+          ? data.storedFilePath.value
+          : this.storedFilePath,
+      fileSha256: data.fileSha256.present
+          ? data.fileSha256.value
+          : this.fileSha256,
+      fileSizeBytes: data.fileSizeBytes.present
+          ? data.fileSizeBytes.value
+          : this.fileSizeBytes,
+      templateVersion: data.templateVersion.present
+          ? data.templateVersion.value
+          : this.templateVersion,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ImportLogRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('entity: $entity, ')
+          ..write('fileName: $fileName, ')
+          ..write('totalRows: $totalRows, ')
+          ..write('insertedRows: $insertedRows, ')
+          ..write('updatedRows: $updatedRows, ')
+          ..write('failedRows: $failedRows, ')
+          ..write('errorDetail: $errorDetail, ')
+          ..write('status: $status, ')
+          ..write('importedBy: $importedBy, ')
+          ..write('storedFilePath: $storedFilePath, ')
+          ..write('fileSha256: $fileSha256, ')
+          ..write('fileSizeBytes: $fileSizeBytes, ')
+          ..write('templateVersion: $templateVersion')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    syncStatus,
+    entity,
+    fileName,
+    totalRows,
+    insertedRows,
+    updatedRows,
+    failedRows,
+    errorDetail,
+    status,
+    importedBy,
+    storedFilePath,
+    fileSha256,
+    fileSizeBytes,
+    templateVersion,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ImportLogRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.entity == this.entity &&
+          other.fileName == this.fileName &&
+          other.totalRows == this.totalRows &&
+          other.insertedRows == this.insertedRows &&
+          other.updatedRows == this.updatedRows &&
+          other.failedRows == this.failedRows &&
+          other.errorDetail == this.errorDetail &&
+          other.status == this.status &&
+          other.importedBy == this.importedBy &&
+          other.storedFilePath == this.storedFilePath &&
+          other.fileSha256 == this.fileSha256 &&
+          other.fileSizeBytes == this.fileSizeBytes &&
+          other.templateVersion == this.templateVersion);
+}
+
+class ImportLogsCompanion extends UpdateCompanion<ImportLogRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<SyncStatus> syncStatus;
+  final Value<ImportEntity> entity;
+  final Value<String> fileName;
+  final Value<int> totalRows;
+  final Value<int> insertedRows;
+  final Value<int> updatedRows;
+  final Value<int> failedRows;
+  final Value<String?> errorDetail;
+  final Value<ImportStatus> status;
+  final Value<String> importedBy;
+  final Value<String> storedFilePath;
+  final Value<String> fileSha256;
+  final Value<int> fileSizeBytes;
+  final Value<String> templateVersion;
+  final Value<int> rowid;
+  const ImportLogsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.entity = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.totalRows = const Value.absent(),
+    this.insertedRows = const Value.absent(),
+    this.updatedRows = const Value.absent(),
+    this.failedRows = const Value.absent(),
+    this.errorDetail = const Value.absent(),
+    this.status = const Value.absent(),
+    this.importedBy = const Value.absent(),
+    this.storedFilePath = const Value.absent(),
+    this.fileSha256 = const Value.absent(),
+    this.fileSizeBytes = const Value.absent(),
+    this.templateVersion = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ImportLogsCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required ImportEntity entity,
+    required String fileName,
+    required int totalRows,
+    required int insertedRows,
+    required int updatedRows,
+    required int failedRows,
+    this.errorDetail = const Value.absent(),
+    required ImportStatus status,
+    required String importedBy,
+    required String storedFilePath,
+    required String fileSha256,
+    required int fileSizeBytes,
+    required String templateVersion,
+    this.rowid = const Value.absent(),
+  }) : entity = Value(entity),
+       fileName = Value(fileName),
+       totalRows = Value(totalRows),
+       insertedRows = Value(insertedRows),
+       updatedRows = Value(updatedRows),
+       failedRows = Value(failedRows),
+       status = Value(status),
+       importedBy = Value(importedBy),
+       storedFilePath = Value(storedFilePath),
+       fileSha256 = Value(fileSha256),
+       fileSizeBytes = Value(fileSizeBytes),
+       templateVersion = Value(templateVersion);
+  static Insertable<ImportLogRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? entity,
+    Expression<String>? fileName,
+    Expression<int>? totalRows,
+    Expression<int>? insertedRows,
+    Expression<int>? updatedRows,
+    Expression<int>? failedRows,
+    Expression<String>? errorDetail,
+    Expression<String>? status,
+    Expression<String>? importedBy,
+    Expression<String>? storedFilePath,
+    Expression<String>? fileSha256,
+    Expression<int>? fileSizeBytes,
+    Expression<String>? templateVersion,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (entity != null) 'entity': entity,
+      if (fileName != null) 'file_name': fileName,
+      if (totalRows != null) 'total_rows': totalRows,
+      if (insertedRows != null) 'inserted_rows': insertedRows,
+      if (updatedRows != null) 'updated_rows': updatedRows,
+      if (failedRows != null) 'failed_rows': failedRows,
+      if (errorDetail != null) 'error_detail': errorDetail,
+      if (status != null) 'status': status,
+      if (importedBy != null) 'imported_by': importedBy,
+      if (storedFilePath != null) 'stored_file_path': storedFilePath,
+      if (fileSha256 != null) 'file_sha256': fileSha256,
+      if (fileSizeBytes != null) 'file_size_bytes': fileSizeBytes,
+      if (templateVersion != null) 'template_version': templateVersion,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ImportLogsCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<SyncStatus>? syncStatus,
+    Value<ImportEntity>? entity,
+    Value<String>? fileName,
+    Value<int>? totalRows,
+    Value<int>? insertedRows,
+    Value<int>? updatedRows,
+    Value<int>? failedRows,
+    Value<String?>? errorDetail,
+    Value<ImportStatus>? status,
+    Value<String>? importedBy,
+    Value<String>? storedFilePath,
+    Value<String>? fileSha256,
+    Value<int>? fileSizeBytes,
+    Value<String>? templateVersion,
+    Value<int>? rowid,
+  }) {
+    return ImportLogsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      entity: entity ?? this.entity,
+      fileName: fileName ?? this.fileName,
+      totalRows: totalRows ?? this.totalRows,
+      insertedRows: insertedRows ?? this.insertedRows,
+      updatedRows: updatedRows ?? this.updatedRows,
+      failedRows: failedRows ?? this.failedRows,
+      errorDetail: errorDetail ?? this.errorDetail,
+      status: status ?? this.status,
+      importedBy: importedBy ?? this.importedBy,
+      storedFilePath: storedFilePath ?? this.storedFilePath,
+      fileSha256: fileSha256 ?? this.fileSha256,
+      fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
+      templateVersion: templateVersion ?? this.templateVersion,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(
+        $ImportLogsTable.$convertersyncStatus.toSql(syncStatus.value),
+      );
+    }
+    if (entity.present) {
+      map['entity'] = Variable<String>(
+        $ImportLogsTable.$converterentity.toSql(entity.value),
+      );
+    }
+    if (fileName.present) {
+      map['file_name'] = Variable<String>(fileName.value);
+    }
+    if (totalRows.present) {
+      map['total_rows'] = Variable<int>(totalRows.value);
+    }
+    if (insertedRows.present) {
+      map['inserted_rows'] = Variable<int>(insertedRows.value);
+    }
+    if (updatedRows.present) {
+      map['updated_rows'] = Variable<int>(updatedRows.value);
+    }
+    if (failedRows.present) {
+      map['failed_rows'] = Variable<int>(failedRows.value);
+    }
+    if (errorDetail.present) {
+      map['error_detail'] = Variable<String>(errorDetail.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(
+        $ImportLogsTable.$converterstatus.toSql(status.value),
+      );
+    }
+    if (importedBy.present) {
+      map['imported_by'] = Variable<String>(importedBy.value);
+    }
+    if (storedFilePath.present) {
+      map['stored_file_path'] = Variable<String>(storedFilePath.value);
+    }
+    if (fileSha256.present) {
+      map['file_sha256'] = Variable<String>(fileSha256.value);
+    }
+    if (fileSizeBytes.present) {
+      map['file_size_bytes'] = Variable<int>(fileSizeBytes.value);
+    }
+    if (templateVersion.present) {
+      map['template_version'] = Variable<String>(templateVersion.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ImportLogsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('entity: $entity, ')
+          ..write('fileName: $fileName, ')
+          ..write('totalRows: $totalRows, ')
+          ..write('insertedRows: $insertedRows, ')
+          ..write('updatedRows: $updatedRows, ')
+          ..write('failedRows: $failedRows, ')
+          ..write('errorDetail: $errorDetail, ')
+          ..write('status: $status, ')
+          ..write('importedBy: $importedBy, ')
+          ..write('storedFilePath: $storedFilePath, ')
+          ..write('fileSha256: $fileSha256, ')
+          ..write('fileSizeBytes: $fileSizeBytes, ')
+          ..write('templateVersion: $templateVersion, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   late final $BranchesTable branches = $BranchesTable(this);
@@ -19428,6 +20500,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $ExportLogsTable exportLogs = $ExportLogsTable(this);
+  late final $ImportLogsTable importLogs = $ImportLogsTable(this);
   late final Index idxStockBalancesBatched = Index(
     'idx_stock_balances_batched',
     'CREATE UNIQUE INDEX idx_stock_balances_batched ON stock_balances (location_id, item_id, batch_id) WHERE batch_id IS NOT NULL',
@@ -19840,7 +20913,34 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_export_logs_created_at',
     'CREATE INDEX idx_export_logs_created_at ON export_logs (created_at)',
   );
+  late final Index idxImportLogsEntityStatus = Index(
+    'idx_import_logs_entity_status',
+    'CREATE INDEX idx_import_logs_entity_status ON import_logs (entity, status, created_at)',
+  );
+  late final Index idxImportLogsStatus = Index(
+    'idx_import_logs_status',
+    'CREATE INDEX idx_import_logs_status ON import_logs (status, created_at)',
+  );
+  late final Index idxImportLogsActor = Index(
+    'idx_import_logs_actor',
+    'CREATE INDEX idx_import_logs_actor ON import_logs (imported_by, created_at)',
+  );
+  late final Index idxImportLogsCreatedAt = Index(
+    'idx_import_logs_created_at',
+    'CREATE INDEX idx_import_logs_created_at ON import_logs (created_at)',
+  );
+  late final Index idxImportLogsSha256 = Index(
+    'idx_import_logs_sha256',
+    'CREATE INDEX idx_import_logs_sha256 ON import_logs (file_sha256)',
+  );
+  late final Index idxImportLogsSync = Index(
+    'idx_import_logs_sync',
+    'CREATE INDEX idx_import_logs_sync ON import_logs (sync_status, created_at)',
+  );
   late final MasterDataDao masterDataDao = MasterDataDao(this as AppDatabase);
+  late final MasterAdminDao masterAdminDao = MasterAdminDao(
+    this as AppDatabase,
+  );
   late final InventoryDao inventoryDao = InventoryDao(this as AppDatabase);
   late final OpnameDao opnameDao = OpnameDao(this as AppDatabase);
   late final PurchaseRequestDao purchaseRequestDao = PurchaseRequestDao(
@@ -19895,6 +20995,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     goodsReturns,
     goodsReturnLines,
     exportLogs,
+    importLogs,
     idxStockBalancesBatched,
     idxStockBalancesUnbatched,
     idxStockMovementsItem,
@@ -19998,6 +21099,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxExportLogsCategory,
     idxExportLogsItem,
     idxExportLogsCreatedAt,
+    idxImportLogsEntityStatus,
+    idxImportLogsStatus,
+    idxImportLogsActor,
+    idxImportLogsCreatedAt,
+    idxImportLogsSha256,
+    idxImportLogsSync,
   ];
   @override
   DriftDatabaseOptions get options =>

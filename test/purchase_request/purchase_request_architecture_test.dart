@@ -176,15 +176,15 @@ void main() {
       final idRoutes = RegExp(
         r"pathParameters\['(?:id|deliveryOrderId)'\]",
       ).allMatches(router).length;
-      final guards = RegExp(r'\w*RouteGuard\(').allMatches(router).length;
 
       expect(idRoutes, greaterThan(0), reason: 'Pola tes usang.');
+      // Checked per occurrence rather than by comparing two counts — see
+      // [unguardedIdRoutes] for why the count stopped being able to express
+      // this once a section guard began covering an `:id` route.
       expect(
-        guards,
-        idRoutes,
-        reason:
-            'Ditemukan $idRoutes rute ber-:id tetapi hanya $guards penjaga '
-            'dokumen.',
+        unguardedIdRoutes(router),
+        isEmpty,
+        reason: 'Ada rute ber-:id yang tidak dibungkus penjaga akses.',
       );
       expect(router, contains('PurchaseRequestRouteKind.branchDocument'));
       expect(router, contains('PurchaseRequestRouteKind.branchDraft'));
