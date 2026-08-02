@@ -1,0 +1,14 @@
+{
+  "name": "aish-warehouse-supabase",
+  "private": true,
+  "scripts": {
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:reset": "supabase db reset",
+    "supabase:test": "supabase test db"
+  },
+  "devDependencies": {
+    "supabase": "2.111.0"
+  }
+}

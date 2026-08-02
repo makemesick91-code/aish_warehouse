@@ -6,6 +6,12 @@
 /// library means a page can navigate without importing the router that builds
 /// it, so there is no import cycle between the two.
 abstract final class AppRoutes {
+  static const String login = '/login';
+  static const String loginName = 'login';
+
+  static const String authLoading = '/auth-loading';
+  static const String authLoadingName = 'authLoading';
+
   static const String home = '/';
   static const String homeName = 'home';
 

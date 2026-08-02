@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/routes.dart';
 import '../../../../app/theme.dart';
 import '../../../../core/errors/failure_presenter.dart';
+import '../../../../core/supabase/supabase_client_provider.dart';
 import '../../../../core/session/current_user_session.dart';
 import '../../../../core/time/app_date_time_formatter.dart';
 import '../../../../core/widgets/status_card.dart';
@@ -17,6 +19,7 @@ import '../../../consumption/presentation/widgets/consumption_dashboard_cards.da
 import '../../../disposal/presentation/widgets/disposal_dashboard_cards.dart';
 import '../../../distribution/presentation/widgets/distribution_dashboard_cards.dart';
 import '../../../reports/presentation/widgets/reporting_dashboard_cards.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../providers/development_home_providers.dart';
 
 /// Development screen that proves the foundation works end to end: the local
@@ -27,6 +30,8 @@ class DevelopmentHomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final developmentHarness =
+        kDebugMode && !ref.watch(supabaseConfigProvider).enabled;
     final summary = ref.watch(masterSummaryProvider);
     final seedState = ref.watch(seedControllerProvider);
 
@@ -64,7 +69,10 @@ class DevelopmentHomePage extends ConsumerWidget {
           children: [
             const _DatabaseStatusCard(),
             const SizedBox(height: AppSpacing.md),
-            const _SessionCard(),
+            if (developmentHarness)
+              const _SessionCard()
+            else
+              const ProductionSessionCard(),
             const SizedBox(height: AppSpacing.md),
             // G-G6's reminder and §33's selisih card. Both render nothing for a role
             // they do not belong to, and both are scoped by the acting session, so
@@ -82,8 +90,9 @@ class DevelopmentHomePage extends ConsumerWidget {
               data: (data) => _SummarySection(
                 summary: data,
                 isSeeding: seedState.isLoading,
-                onSeed: () =>
-                    ref.read(seedControllerProvider.notifier).runSeed(),
+                onSeed: developmentHarness
+                    ? () => ref.read(seedControllerProvider.notifier).runSeed()
+                    : null,
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -480,6 +489,54 @@ class _SessionCard extends ConsumerWidget {
   }
 }
 
+class ProductionSessionCard extends ConsumerWidget {
+  const ProductionSessionCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(currentSessionValueProvider);
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.verified_user_outlined),
+        title: Text(session?.displayName ?? 'Sesi terverifikasi'),
+        subtitle: Text(session?.roleLabel ?? 'Memuat profil…'),
+        trailing: IconButton(
+          key: const ValueKey('logoutButton'),
+          tooltip: 'Keluar',
+          icon: const Icon(Icons.logout),
+          onPressed: session == null
+              ? null
+              : () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Keluar dari aplikasi?'),
+                      content: const Text(
+                        'Sesi pada perangkat ini akan dihapus.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Batal'),
+                        ),
+                        FilledButton(
+                          key: const ValueKey('confirmLogout'),
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Keluar'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true) {
+                    await ref.read(authStateProvider.notifier).signOut();
+                  }
+                },
+        ),
+      ),
+    );
+  }
+}
+
 class _SummarySection extends StatelessWidget {
   const _SummarySection({
     required this.summary,
@@ -489,7 +546,7 @@ class _SummarySection extends StatelessWidget {
 
   final MasterSummary summary;
   final bool isSeeding;
-  final Future<void> Function() onSeed;
+  final Future<void> Function()? onSeed;
 
   @override
   Widget build(BuildContext context) {
@@ -505,27 +562,32 @@ class _SummarySection extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: AppSpacing.sm),
-              const Text(
-                'Database lokal masih kosong. Jalankan seed pengembangan '
-                'untuk membuat cabang, ruangan, pengguna, barang, batch, dan '
-                'saldo awal Warehouse Pusat melalui ledger.',
+              Text(
+                onSeed == null
+                    ? 'Data lokal belum tersedia. Hubungkan perangkat dan '
+                          'tunggu sinkronisasi pada milestone berikutnya.'
+                    : 'Database lokal masih kosong. Jalankan seed pengembangan '
+                          'untuk membuat cabang, ruangan, pengguna, barang, batch, '
+                          'dan saldo awal Warehouse Pusat melalui ledger.',
               ),
-              const SizedBox(height: AppSpacing.md),
-              FilledButton.icon(
-                onPressed: isSeeding ? null : onSeed,
-                icon: isSeeding
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.play_arrow),
-                label: Text(
-                  isSeeding
-                      ? 'Menjalankan seed…'
-                      : 'Jalankan Seed Pengembangan',
+              if (onSeed != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                FilledButton.icon(
+                  onPressed: isSeeding ? null : onSeed,
+                  icon: isSeeding
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.play_arrow),
+                  label: Text(
+                    isSeeding
+                        ? 'Menjalankan seed…'
+                        : 'Jalankan Seed Pengembangan',
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

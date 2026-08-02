@@ -3,7 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/enums/app_enums.dart';
+import '../core/supabase/supabase_client_provider.dart';
 import '../core/session/current_user_session.dart';
+import '../features/auth/domain/models/auth_models.dart';
+import '../features/auth/presentation/pages/login_page.dart';
+import '../features/auth/presentation/providers/auth_providers.dart';
 import '../features/delivery/domain/services/delivery_order_access_policy.dart';
 import '../features/consumption/domain/services/consumption_access_policy.dart';
 import '../features/goods_return/domain/services/goods_return_access_policy.dart';
@@ -93,18 +97,39 @@ import '../features/reports/presentation/pages/report_page.dart';
 /// When real authentication lands, only [currentSessionProvider] changes; both
 /// passes keep working as written.
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final productionAuthEnabled = ref.read(supabaseConfigProvider).enabled;
   return GoRouter(
-    initialLocation: AppRoutes.home,
+    initialLocation: productionAuthEnabled
+        ? AppRoutes.authLoading
+        : AppRoutes.home,
     debugLogDiagnostics: false,
     // Re-evaluate the guards whenever the acting user changes.
     refreshListenable: _SessionRefreshListenable(ref),
     redirect: (context, state) {
+      final location = state.matchedLocation;
+      if (productionAuthEnabled) {
+        final auth = ref.read(authStateProvider);
+        if (auth.isLoading) {
+          return location == AppRoutes.authLoading
+              ? null
+              : AppRoutes.authLoading;
+        }
+        if (auth.hasError) {
+          return location == AppRoutes.login ? null : AppRoutes.login;
+        }
+        final authState = auth.value;
+        if (authState is! AuthAuthenticated) {
+          return location == AppRoutes.login ? null : AppRoutes.login;
+        }
+        if (location == AppRoutes.login || location == AppRoutes.authLoading) {
+          return AppRoutes.home;
+        }
+      }
+
       final session = ref.read(currentSessionValueProvider);
       // Still loading, or master data has not been seeded: let the page render
       // its own empty state rather than bouncing the user around.
       if (session == null) return null;
-
-      final location = state.matchedLocation;
 
       // The role rule is [OpnameAccessPolicy]'s, not the router's. Restating
       // it here as `session.canReviewOpname` would be a second copy that has
@@ -331,6 +356,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: <RouteBase>[
+      GoRoute(
+        path: AppRoutes.login,
+        name: AppRoutes.loginName,
+        builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.authLoading,
+        name: AppRoutes.authLoadingName,
+        builder: (context, state) => const AuthLoadingPage(),
+      ),
       GoRoute(
         path: AppRoutes.home,
         name: AppRoutes.homeName,
@@ -1145,14 +1180,20 @@ class _SessionRefreshListenable extends ChangeNotifier {
       currentSessionValueProvider,
       (_, _) => notifyListeners(),
     );
+    _authSubscription = ref.listen<AsyncValue<AuthState>>(
+      authStateProvider,
+      (_, _) => notifyListeners(),
+    );
     ref.onDispose(dispose);
   }
 
   late final ProviderSubscription<CurrentUserSession?> _subscription;
+  late final ProviderSubscription<AsyncValue<AuthState>> _authSubscription;
 
   @override
   void dispose() {
     _subscription.close();
+    _authSubscription.close();
     super.dispose();
   }
 }

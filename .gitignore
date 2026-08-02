@@ -32,6 +32,19 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+node_modules/
+
+# Environment and Supabase local state. The example contract remains tracked.
+.env
+.env.*
+!.env.example
+config/supabase.dev.json
+config/supabase.staging.json
+config/supabase.production.json
+supabase/.env
+supabase/functions/.env
+supabase/.temp/
+supabase/.branches/
 
 # Graphify dependency-graph output (build artifact, regenerate with
 # `graphify update .`)

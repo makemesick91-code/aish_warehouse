@@ -111,6 +111,7 @@ dependencies:
   # still requests no storage permission anywhere.
   file_selector: ^1.1.0
   crypto: ^3.0.6
+  supabase_flutter: ^2.16.0
 
 dev_dependencies:
   flutter_test:
