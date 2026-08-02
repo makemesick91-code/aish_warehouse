@@ -1,6 +1,8 @@
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/time/document_timestamp_policy.dart';
+import '../../../../core/sync/sync_contracts.dart';
+import '../../../../core/sync/sync_outbox_writer.dart';
 import '../../../master/domain/repositories/master_data_repository.dart';
 import '../models/purchase_request_models.dart';
 import '../repositories/purchase_request_repository.dart';
@@ -32,12 +34,14 @@ class CancelPurchaseRequestUseCase {
   CancelPurchaseRequestUseCase({
     required this._requests,
     required MasterDataRepository master,
+    this._outbox = const NoopSyncOutboxWriter(),
     DateTime Function()? clock,
   }) : _guards = PurchaseRequestGuards(master),
        _clock = clock ?? _defaultClock;
 
   final PurchaseRequestRepository _requests;
   final PurchaseRequestGuards _guards;
+  final SyncOutboxWriter _outbox;
   final DateTime Function() _clock;
 
   static DateTime _defaultClock() => DateTime.now().toUtc();
@@ -102,6 +106,19 @@ class CancelPurchaseRequestUseCase {
         reason: trimmedReason,
       );
       if (!moved) _guards.concurrentUpdate(request);
+
+      // A draft has never existed on the server (G-Y2). Cancelling it is a
+      // local terminal action, not a server transition. A submitted request,
+      // on the other hand, must be cancelled by its original actor remotely.
+      if (request.status == PurchaseRequestStatus.submitted) {
+        await _outbox.enqueueCurrentAggregate(
+          operation: SyncOperationType.cancelPurchaseRequest,
+          aggregateType: SyncAggregateType.purchaseRequest,
+          aggregateId: prId,
+          actorUserId: actor.id,
+          occurredAtUtc: cancelledAt,
+        );
+      }
 
       final updated = await _requests.getById(prId);
       if (updated == null) {

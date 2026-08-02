@@ -1,6 +1,8 @@
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/time/document_timestamp_policy.dart';
+import '../../../../core/sync/sync_contracts.dart';
+import '../../../../core/sync/sync_outbox_writer.dart';
 import '../../../delivery/domain/repositories/delivery_order_repository.dart';
 import '../../../inventory/domain/models/inventory_models.dart';
 import '../../../inventory/domain/services/stock_posting_service.dart';
@@ -102,6 +104,7 @@ class PostGoodReceiptUseCase {
     required this._requests,
     required MasterDataRepository master,
     required this._posting,
+    this._outbox = const NoopSyncOutboxWriter(),
     DateTime Function()? clock,
   }) : _guards = GoodReceiptGuards(master),
        _clock = clock ?? _defaultClock;
@@ -111,6 +114,7 @@ class PostGoodReceiptUseCase {
   final PurchaseRequestRepository _requests;
   final GoodReceiptGuards _guards;
   final StockPostingService _posting;
+  final SyncOutboxWriter _outbox;
   final DateTime Function() _clock;
 
   static DateTime _defaultClock() => DateTime.now().toUtc();
@@ -342,6 +346,14 @@ class PostGoodReceiptUseCase {
         closeRequest: closesRequest,
       );
       if (!posted) _guards.concurrentUpdate(receipt);
+
+      await _outbox.enqueueCurrentAggregate(
+        operation: SyncOperationType.postGoodReceipt,
+        aggregateType: SyncAggregateType.goodReceipt,
+        aggregateId: receipt.id,
+        actorUserId: actor.id,
+        occurredAtUtc: nowUtc,
+      );
 
       final updated = await _receipts.getById(receipt.id);
       if (updated == null) {

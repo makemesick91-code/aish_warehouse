@@ -30,6 +30,10 @@ class DriftReportingRepository implements ReportingRepository {
 
   final ReportingDao _dao;
 
+  @override
+  Future<T> transaction<T>(Future<T> Function() action) =>
+      _dao.attachedDatabase.transaction(action);
+
   // --- scope ----------------------------------------------------------------
 
   @override

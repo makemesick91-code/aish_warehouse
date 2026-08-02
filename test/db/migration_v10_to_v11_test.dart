@@ -497,7 +497,7 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 13);
+      expect(row.read<int>('user_version'), 14);
 
       await database.close();
     });
@@ -516,6 +516,12 @@ void main() {
         ...goodsReturnTables,
         'export_logs',
         'import_logs',
+        'sync_devices',
+        'sync_outbox',
+        'sync_entity_states',
+        'sync_attempt_logs',
+        'sync_conflict_logs',
+        'sync_file_uploads',
       });
 
       await database.close();
@@ -773,7 +779,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 13);
+      expect(version.read<int>('user_version'), 14);
       expect(
         await objectNames(second, 'table'),
         containsAll(goodsReturnTables),
@@ -979,7 +985,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 13);
+        expect(version.read<int>('user_version'), 14);
 
         final tables = await objectNames(database, 'table');
         expect(tables, containsAll(goodsReturnTables));

@@ -2,6 +2,8 @@ import '../../../../core/enums/app_enums.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/quantity/quantity.dart';
 import '../../../../core/time/document_timestamp_policy.dart';
+import '../../../../core/sync/sync_contracts.dart';
+import '../../../../core/sync/sync_outbox_writer.dart';
 import '../../../inventory/domain/models/inventory_models.dart';
 import '../../../inventory/domain/services/stock_posting_service.dart';
 import '../../../master/domain/models/master_models.dart';
@@ -108,6 +110,7 @@ class PostDisposalUseCase {
     required MasterDataRepository master,
     required this._posting,
     required this._stock,
+    this._outbox = const NoopSyncOutboxWriter(),
     DateTime Function()? clock,
   }) : _guards = DisposalGuards(master),
        _clock = clock ?? _defaultClock;
@@ -116,6 +119,7 @@ class PostDisposalUseCase {
   final DisposalGuards _guards;
   final StockPostingService _posting;
   final DisposalStockReader _stock;
+  final SyncOutboxWriter _outbox;
   final DateTime Function() _clock;
 
   static DateTime _defaultClock() => DateTime.now().toUtc();
@@ -316,6 +320,14 @@ class PostDisposalUseCase {
         postedBy: actor.id,
       );
       if (!posted) _guards.concurrentUpdate(disposal);
+
+      await _outbox.enqueueCurrentAggregate(
+        operation: SyncOperationType.postDisposal,
+        aggregateType: SyncAggregateType.disposal,
+        aggregateId: disposal.id,
+        actorUserId: actor.id,
+        occurredAtUtc: nowUtc,
+      );
 
       final updated = await _disposals.getById(disposal.id);
       if (updated == null) {

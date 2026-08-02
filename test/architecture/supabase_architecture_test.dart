@@ -10,10 +10,10 @@ Iterable<File> _dartFiles(String root) => Directory(root)
     .where((file) => file.path.endsWith('.dart'));
 
 void main() {
-  test('Drift remains schema v13', () {
+  test('Drift schema is v14', () {
     expect(
       _read('lib/core/db/app_database.dart'),
-      contains('schemaVersion => 13'),
+      contains('schemaVersion => 14'),
     );
   });
 
@@ -39,9 +39,25 @@ void main() {
       final source = _dartFiles(
         'lib',
       ).map((file) => file.readAsStringSync()).join('\n').toLowerCase();
-      expect(source, isNot(contains('sb_secret_')));
+      expect(
+        source,
+        isNot(
+          contains(
+            'sb_'
+            'secret_',
+          ),
+        ),
+      );
       expect(source, isNot(contains('service_role')));
-      expect(source, isNot(contains('postgresql://')));
+      expect(
+        source,
+        isNot(
+          contains(
+            'postgresql'
+            '://',
+          ),
+        ),
+      );
       expect(source, isNot(contains('supabase_db_url')));
     },
   );

@@ -26,6 +26,7 @@ import '../../../../core/enums/app_enums.dart';
 import '../../../../core/errors/failure_presenter.dart';
 import '../../../../core/session/acting_user_providers.dart';
 import '../../../../core/session/current_user_session.dart';
+import '../../../../core/sync/sync_providers.dart';
 import '../../../../core/time/app_time_zone.dart';
 import '../../../../core/time/date_only.dart';
 import '../../../master/domain/models/master_models.dart';
@@ -96,6 +97,8 @@ final exportReportUseCaseProvider = Provider<ExportReportUseCase>(
     pdfExporter: ref.watch(reportPdfExporterProvider),
     fileStore: ref.watch(reportFileStoreProvider),
     shareGateway: ref.watch(reportShareGatewayProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
+    fileUploadQueue: ref.watch(syncFileUploadQueueProvider),
     clock: ref.watch(reportClockProvider),
   ),
 );

@@ -1,9 +1,13 @@
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/sync/sync_contracts.dart';
+import '../../../../core/sync/sync_file_upload_queue.dart';
+import '../../../../core/sync/sync_outbox_writer.dart';
 import '../../../master/domain/repositories/master_data_repository.dart';
 import '../gateways/report_gateways.dart';
 import '../models/reporting_models.dart';
@@ -62,6 +66,8 @@ class ExportReportUseCase {
     required this._pdfExporter,
     required this._fileStore,
     required this._shareGateway,
+    this._outboxWriter = const NoopSyncOutboxWriter(),
+    this._fileUploadQueue = const NoopSyncFileUploadQueue(),
     DateTime Function()? clock,
     String Function()? idGenerator,
   }) : _reporting = reporting,
@@ -78,6 +84,8 @@ class ExportReportUseCase {
   final ReportPdfExporter _pdfExporter;
   final ReportFileStore _fileStore;
   final ReportShareGateway _shareGateway;
+  final SyncOutboxWriter _outboxWriter;
+  final SyncFileUploadQueue _fileUploadQueue;
   final String Function() _idGenerator;
   final ReportDocumentAssembler _assembler;
 
@@ -130,22 +138,47 @@ class ExportReportUseCase {
 
     final ExportLog log;
     try {
-      log = await _reporting.insertExportLog(
-        reportType: draft.reportType,
-        format: format,
-        scopeType: draft.scopeType,
-        locationId: result.request.scope.locationId,
-        categoryId: result.category?.id,
-        branchId: result.request.scope.branchId,
-        itemId: result.item?.id,
-        periodStart: result.request.period.periodStart,
-        periodEnd: result.request.period.periodEnd,
-        exportedBy: actor.id,
-        fileName: fileName,
-        dataCutoffAtUtc: document.header.generatedAtUtc,
-        syncSummary: document.header.syncSnapshot.label,
-        rowCount: document.rowCount,
-      );
+      log = await _reporting.transaction(() async {
+        final inserted = await _reporting.insertExportLog(
+          reportType: draft.reportType,
+          format: format,
+          scopeType: draft.scopeType,
+          locationId: result.request.scope.locationId,
+          categoryId: result.category?.id,
+          branchId: result.request.scope.branchId,
+          itemId: result.item?.id,
+          periodStart: result.request.period.periodStart,
+          periodEnd: result.request.period.periodEnd,
+          exportedBy: actor.id,
+          fileName: fileName,
+          dataCutoffAtUtc: document.header.generatedAtUtc,
+          syncSummary: document.header.syncSnapshot.label,
+          rowCount: document.rowCount,
+        );
+        await _outboxWriter.enqueueCurrentAggregate(
+          operation: SyncOperationType.appendExportAudit,
+          aggregateType: SyncAggregateType.exportAudit,
+          aggregateId: inserted.id,
+          actorUserId: actor.id,
+          occurredAtUtc: document.header.generatedAtUtc,
+        );
+        await _fileUploadQueue.enqueue(
+          entityType: 'report_artifact',
+          entityId: inserted.id,
+          actorUserId: actor.id,
+          localFilePath: handle.path,
+          originalFileName: fileName,
+          sha256: sha256.convert(bytes).toString(),
+          sizeBytes: handle.byteLength,
+          mimeType: switch (format) {
+            ReportFormat.xlsx =>
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ReportFormat.pdf => 'application/pdf',
+          },
+          remoteBucket: 'report-artifacts',
+        );
+        return inserted;
+      });
     } catch (_) {
       // No audit row means no export. Remove the artifact so nothing untracked is
       // left behind, and refuse — see the class note's third table row.

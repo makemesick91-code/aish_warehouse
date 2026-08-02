@@ -10,6 +10,7 @@ import '../../domain/models/auth_models.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/use_cases/auth_use_cases.dart';
 import '../../../../core/session/current_user_session.dart';
+import '../../../../core/sync/sync_providers.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final client = ref.watch(supabaseClientProvider);
@@ -127,6 +128,14 @@ class ProductionAuthController extends AsyncNotifier<AuthState> {
     final health = await ref.read(supabaseHealthGatewayProvider).check();
     if (!health.isCompatible || health.status != 'ok') {
       throw const AuthServerIncompatibleFailure();
+    }
+    // Tests can replace Auth and health without constructing the SDK client.
+    // Push bootstrap belongs only to a genuine production-client session.
+    if (ref.read(supabaseClientProvider) != null) {
+      await ref.read(rebuildPendingOutboxProvider).call();
+      unawaited(
+        ref.read(pushSyncCoordinatorProvider)?.trigger(actorUserId: profile.id),
+      );
     }
     return AuthAuthenticated(session: session, profile: profile);
   }

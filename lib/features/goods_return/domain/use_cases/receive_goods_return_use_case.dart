@@ -1,4 +1,6 @@
 import '../../../../core/enums/app_enums.dart';
+import '../../../../core/sync/sync_contracts.dart';
+import '../../../../core/sync/sync_outbox_writer.dart';
 import '../../../inventory/domain/models/inventory_models.dart';
 import '../../../inventory/domain/services/stock_posting_service.dart';
 import '../../../master/domain/repositories/master_data_repository.dart';
@@ -47,6 +49,7 @@ class ReceiveGoodsReturnUseCase {
     required this._returns,
     required MasterDataRepository master,
     required this._posting,
+    this._outbox = const NoopSyncOutboxWriter(),
     DateTime Function()? clock,
   }) : _guards = GoodsReturnGuards(master),
        _clock = clock ?? _defaultClock;
@@ -54,6 +57,7 @@ class ReceiveGoodsReturnUseCase {
   final GoodsReturnRepository _returns;
   final GoodsReturnGuards _guards;
   final StockPostingService _posting;
+  final SyncOutboxWriter _outbox;
   final DateTime Function() _clock;
 
   static DateTime _defaultClock() => DateTime.now().toUtc();
@@ -210,6 +214,14 @@ class ReceiveGoodsReturnUseCase {
           'perangkat lain. Muat ulang dokumen lalu coba lagi.',
         );
       }
+
+      await _outbox.enqueueCurrentAggregate(
+        operation: SyncOperationType.receiveGoodsReturn,
+        aggregateType: SyncAggregateType.goodsReturn,
+        aggregateId: goodsReturn.id,
+        actorUserId: actor.id,
+        occurredAtUtc: nowUtc,
+      );
 
       // 28. Read back through the *unscoped* detail, because the caller is a use case
       // and has already authorised itself. The screens use the scoped reads.

@@ -1,4 +1,6 @@
 import '../../../../core/errors/failures.dart';
+import '../../../../core/sync/sync_contracts.dart';
+import '../../../../core/sync/sync_outbox_writer.dart';
 import '../models/master_admin_models.dart';
 import '../models/master_models.dart';
 import '../repositories/master_admin_repository.dart';
@@ -8,10 +10,14 @@ import 'master_admin_guard.dart';
 
 /// Creates an item.
 class CreateItemUseCase with MasterAdminGuard {
-  CreateItemUseCase({required this.repository});
+  CreateItemUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<MasterItem> call({
     required String actorUserId,
@@ -63,7 +69,7 @@ class CreateItemUseCase with MasterAdminGuard {
         );
       }
 
-      return repository.insertItem(
+      final item = await repository.insertItem(
         sku: normalizedSku,
         name: normalizedName,
         categoryId: categoryId,
@@ -74,6 +80,14 @@ class CreateItemUseCase with MasterAdminGuard {
         expiryAlertDays: expiryAlertDays,
         isActive: isActive,
       );
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.item,
+        aggregateId: item.id,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
+      );
+      return item;
     });
   }
 }
@@ -98,10 +112,14 @@ class CreateItemUseCase with MasterAdminGuard {
 /// of such an item; an item with orphaned batches would accept movements with a
 /// batch and movements without, and no query could tell which were right.
 class UpdateItemUseCase with MasterAdminGuard {
-  UpdateItemUseCase({required this.repository});
+  UpdateItemUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<MasterItem> call({
     required String actorUserId,
@@ -178,6 +196,13 @@ class UpdateItemUseCase with MasterAdminGuard {
         'Barang gagal diperbarui karena datanya baru saja berubah. Muat ulang '
         'lalu coba lagi.',
       );
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.item,
+        aggregateId: itemId,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
+      );
       return (await repository.itemById(itemId))!;
     });
   }
@@ -189,10 +214,14 @@ class UpdateItemUseCase with MasterAdminGuard {
 /// the field G-A4 designates for retiring master data, and a deactivated item
 /// keeps every movement, balance and document line it ever appeared on.
 class SetItemActiveUseCase with MasterAdminGuard {
-  SetItemActiveUseCase({required this.repository});
+  SetItemActiveUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<void> call({
     required String actorUserId,
@@ -216,6 +245,13 @@ class SetItemActiveUseCase with MasterAdminGuard {
       requireRowsAffected(
         rows,
         'Status barang gagal diubah. Muat ulang lalu coba lagi.',
+      );
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.item,
+        aggregateId: itemId,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
       );
     });
   }

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/db/database_providers.dart';
+import '../../../../core/sync/sync_providers.dart';
 import '../../../../core/quantity/quantity.dart';
 import '../../../../core/session/current_user_session.dart';
 import '../../../../core/time/app_time_zone.dart';
@@ -59,6 +60,7 @@ final submitStockOpnameUseCaseProvider = Provider<SubmitStockOpnameUseCase>(
   (ref) => SubmitStockOpnameUseCase(
     opnames: ref.watch(opnameRepositoryProvider),
     master: ref.watch(masterDataRepositoryProvider),
+    outbox: ref.watch(syncOutboxWriterProvider),
   ),
 );
 
@@ -67,6 +69,7 @@ final reviewStockOpnameUseCaseProvider = Provider<ReviewStockOpnameUseCase>(
     opnames: ref.watch(opnameRepositoryProvider),
     master: ref.watch(masterDataRepositoryProvider),
     posting: ref.watch(stockPostingServiceProvider),
+    outbox: ref.watch(syncOutboxWriterProvider),
   ),
 );
 

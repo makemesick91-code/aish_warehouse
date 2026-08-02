@@ -197,7 +197,7 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 13);
+      expect(row.read<int>('user_version'), 14);
 
       await database.close();
     });
@@ -211,7 +211,17 @@ void main() {
       // Exhaustive: v12 adds one table, no more. `import_logs` is v13's, and it
       // is here because opening a v11 database migrates it all the way to the
       // current schema rather than stopping at the step under test.
-      expect(tables, {...v11Tables, ...exportLogTables, 'import_logs'});
+      expect(tables, {
+        ...v11Tables,
+        ...exportLogTables,
+        'import_logs',
+        'sync_devices',
+        'sync_outbox',
+        'sync_entity_states',
+        'sync_attempt_logs',
+        'sync_conflict_logs',
+        'sync_file_uploads',
+      });
 
       await database.close();
     });
@@ -360,7 +370,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 13);
+      expect(version.read<int>('user_version'), 14);
       await second.close();
     });
 
@@ -520,7 +530,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 13);
+        expect(version.read<int>('user_version'), 14);
 
         final tables = await objectNames(database, 'table');
         expect(tables, containsAll(exportLogTables));

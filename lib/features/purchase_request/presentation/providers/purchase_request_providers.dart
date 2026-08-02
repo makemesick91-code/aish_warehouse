@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/db/database_providers.dart';
+import '../../../../core/sync/sync_providers.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/quantity/quantity.dart';
 import '../../../../core/session/acting_user_providers.dart';
@@ -109,6 +110,7 @@ final submitPurchaseRequestUseCaseProvider =
       (ref) => SubmitPurchaseRequestUseCase(
         requests: ref.watch(purchaseRequestRepositoryProvider),
         master: ref.watch(masterDataRepositoryProvider),
+        outbox: ref.watch(syncOutboxWriterProvider),
         clock: ref.watch(purchaseRequestClockProvider),
       ),
     );
@@ -118,6 +120,7 @@ final cancelPurchaseRequestUseCaseProvider =
       (ref) => CancelPurchaseRequestUseCase(
         requests: ref.watch(purchaseRequestRepositoryProvider),
         master: ref.watch(masterDataRepositoryProvider),
+        outbox: ref.watch(syncOutboxWriterProvider),
         clock: ref.watch(purchaseRequestClockProvider),
       ),
     );
@@ -127,6 +130,7 @@ final markPurchaseRequestProcessingUseCaseProvider =
       (ref) => MarkPurchaseRequestProcessingUseCase(
         requests: ref.watch(purchaseRequestRepositoryProvider),
         master: ref.watch(masterDataRepositoryProvider),
+        outbox: ref.watch(syncOutboxWriterProvider),
         clock: ref.watch(purchaseRequestClockProvider),
       ),
     );
@@ -136,6 +140,7 @@ final rejectPurchaseRequestUseCaseProvider =
       (ref) => RejectPurchaseRequestUseCase(
         requests: ref.watch(purchaseRequestRepositoryProvider),
         master: ref.watch(masterDataRepositoryProvider),
+        outbox: ref.watch(syncOutboxWriterProvider),
         clock: ref.watch(purchaseRequestClockProvider),
       ),
     );

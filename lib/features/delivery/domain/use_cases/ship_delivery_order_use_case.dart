@@ -2,6 +2,8 @@ import '../../../../core/enums/app_enums.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/quantity/quantity.dart';
 import '../../../../core/time/document_timestamp_policy.dart';
+import '../../../../core/sync/sync_contracts.dart';
+import '../../../../core/sync/sync_outbox_writer.dart';
 import '../../../inventory/domain/models/inventory_models.dart';
 import '../../../inventory/domain/services/stock_posting_service.dart';
 import '../../../master/domain/models/master_models.dart';
@@ -81,6 +83,7 @@ class ShipDeliveryOrderUseCase {
     required MasterDataRepository master,
     required this._posting,
     required this._stock,
+    this._outbox = const NoopSyncOutboxWriter(),
     DateTime Function()? clock,
   }) : _guards = DeliveryOrderGuards(master),
        _clock = clock ?? _defaultClock;
@@ -90,6 +93,7 @@ class ShipDeliveryOrderUseCase {
   final DeliveryOrderGuards _guards;
   final StockPostingService _posting;
   final DeliveryWarehouseStockReader _stock;
+  final SyncOutboxWriter _outbox;
   final DateTime Function() _clock;
 
   static DateTime _defaultClock() => DateTime.now().toUtc();
@@ -329,6 +333,14 @@ class ShipDeliveryOrderUseCase {
       // the write. Throwing here rolls the movements above back — which is exactly
       // why they had to be in the same transaction.
       if (!shipped) _guards.concurrentUpdate(order);
+
+      await _outbox.enqueueCurrentAggregate(
+        operation: SyncOperationType.shipDeliveryOrder,
+        aggregateType: SyncAggregateType.deliveryOrder,
+        aggregateId: order.id,
+        actorUserId: actor.id,
+        occurredAtUtc: nowUtc,
+      );
 
       final updated = await _deliveries.getById(order.id);
       if (updated == null) {

@@ -1,6 +1,6 @@
 # Supabase Remote Deployment Handoff
 
-Milestone 12A tidak melakukan remote write. Langkah berikut dijalankan manual
+Milestone 12B ini tidak melakukan remote write. Langkah berikut dijalankan manual
 setelah project dibuat dan izin deployment diberikan.
 
 ## 1. Buat project
@@ -72,23 +72,25 @@ perintah Flutter.
 - Email/password login berhasil; public signup ditolak.
 - `get_my_domain_profile()` hanya mengembalikan profil tertaut sendiri.
 - Missing link dan inactive domain user ditolak aplikasi dan RLS.
-- `get_server_health()` mengembalikan `aish-supabase-001`.
+- `get_server_health()` mengembalikan `aish-supabase-002`.
 - Anonymous tidak membaca business table/RPC.
 - Uji silang nurse/head/warehouse/admin dan dua branch.
 - Direct INSERT/UPDATE/DELETE ledger serta balance ditolak.
 - Seluruh business table forced RLS dan tidak ada blanket policy.
 - Bucket `import-audit` serta `report-artifacts` tetap private.
-- Client upload masih ditolak pada 12A.
+- Generic client upload tetap ditolak; signed one-object upload berhasil.
 
 ## 7. Secrets dan Edge Functions
 
-12A tidak membuat Edge Function dan tidak membutuhkan function secret. Bila 12B
-menambahnya, gunakan Dashboard secret manager atau file env yang di-ignore:
+12B menambahkan `trusted-upload-intent` dan `trusted-upload-finalize`. Gunakan
+Dashboard secret manager atau file env yang di-ignore:
 
 ```bash
 npx supabase secrets set --env-file <IGNORED_ENV_FILE> \
   --project-ref <PROJECT_REF>
-npx supabase functions deploy <FUNCTION_NAME> \
+npx supabase functions deploy trusted-upload-intent \
+  --project-ref <PROJECT_REF>
+npx supabase functions deploy trusted-upload-finalize \
   --project-ref <PROJECT_REF>
 ```
 
@@ -104,3 +106,10 @@ Jangan menaruh value secret langsung di command history. Referensi resmi:
 - Jangan menjalankan `supabase db reset --linked` pada production.
 - Untuk insiden akses, cabut key terdampak, nonaktifkan user, dan audit policies
   sebelum memulihkan traffic.
+# Revision 002 deployment handoff
+
+Tidak ada remote command dijalankan pada Milestone 12B. Deployment memerlukan
+`SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, `ALLOW_REMOTE_SUPABASE_WRITE=true`, dan
+izin eksplisit pemilik. Urutan: backup → migrations 005–009 → deploy dua Edge Functions →
+set function secrets → smoke test health/register/replay/upload. Rollback aplikasi adalah
+mematikan worker; migration tetap forward-only dan tabel audit tidak dihapus.

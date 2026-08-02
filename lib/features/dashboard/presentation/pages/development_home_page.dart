@@ -9,6 +9,7 @@ import '../../../../core/errors/failure_presenter.dart';
 import '../../../../core/supabase/supabase_client_provider.dart';
 import '../../../../core/session/current_user_session.dart';
 import '../../../../core/time/app_date_time_formatter.dart';
+import '../../../../core/widgets/offline_banner.dart';
 import '../../../../core/widgets/status_card.dart';
 import '../../../inventory/domain/models/inventory_models.dart';
 import '../../../inventory/presentation/widgets/expiry_badge.dart';
@@ -20,6 +21,7 @@ import '../../../disposal/presentation/widgets/disposal_dashboard_cards.dart';
 import '../../../distribution/presentation/widgets/distribution_dashboard_cards.dart';
 import '../../../reports/presentation/widgets/reporting_dashboard_cards.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../sync/presentation/providers/sync_center_providers.dart';
 import '../providers/development_home_providers.dart';
 
 /// Development screen that proves the foundation works end to end: the local
@@ -73,6 +75,8 @@ class DevelopmentHomePage extends ConsumerWidget {
               const _SessionCard()
             else
               const ProductionSessionCard(),
+            const SizedBox(height: AppSpacing.sm),
+            const _HomeSyncCard(),
             const SizedBox(height: AppSpacing.md),
             // G-G6's reminder and §33's selisih card. Both render nothing for a role
             // they do not belong to, and both are scoped by the acting session, so
@@ -109,6 +113,32 @@ class DevelopmentHomePage extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _HomeSyncCard extends ConsumerWidget {
+  const _HomeSyncCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pending = ref.watch(syncPendingCountProvider).value ?? 0;
+    final processing = ref.watch(syncProcessingCountProvider).value ?? 0;
+    final conflicts = ref.watch(syncConflictCountProvider).value ?? 0;
+    final lastError = ref.watch(syncLastSafeErrorProvider).value;
+    final state = conflicts > 0
+        ? SyncPresentationState.conflict
+        : processing > 0
+        ? SyncPresentationState.syncing
+        : lastError != null && pending > 0
+        ? SyncPresentationState.retryableError
+        : pending > 0
+        ? SyncPresentationState.pending
+        : SyncPresentationState.synced;
+    return InkWell(
+      key: const ValueKey('homeSyncCenter'),
+      onTap: () => context.pushNamed(AppRoutes.syncName),
+      child: OfflineBanner(state: state),
     );
   }
 }

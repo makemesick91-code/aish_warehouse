@@ -1,6 +1,8 @@
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/time/document_timestamp_policy.dart';
+import '../../../../core/sync/sync_contracts.dart';
+import '../../../../core/sync/sync_outbox_writer.dart';
 import '../../../master/domain/repositories/master_data_repository.dart';
 import '../models/purchase_request_models.dart';
 import '../repositories/purchase_request_repository.dart';
@@ -33,12 +35,14 @@ class MarkPurchaseRequestProcessingUseCase {
   MarkPurchaseRequestProcessingUseCase({
     required this._requests,
     required MasterDataRepository master,
+    this._outbox = const NoopSyncOutboxWriter(),
     DateTime Function()? clock,
   }) : _guards = PurchaseRequestGuards(master),
        _clock = clock ?? _defaultClock;
 
   final PurchaseRequestRepository _requests;
   final PurchaseRequestGuards _guards;
+  final SyncOutboxWriter _outbox;
   final DateTime Function() _clock;
 
   static DateTime _defaultClock() => DateTime.now().toUtc();
@@ -97,6 +101,14 @@ class MarkPurchaseRequestProcessingUseCase {
         processingAtUtc: processingAt,
       );
       if (!moved) _guards.concurrentUpdate(request);
+
+      await _outbox.enqueueCurrentAggregate(
+        operation: SyncOperationType.processPurchaseRequest,
+        aggregateType: SyncAggregateType.purchaseRequest,
+        aggregateId: prId,
+        actorUserId: actor.id,
+        occurredAtUtc: processingAt,
+      );
 
       final updated = await _requests.getById(prId);
       if (updated == null) {

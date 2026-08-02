@@ -1,6 +1,8 @@
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/time/document_timestamp_policy.dart';
+import '../../../../core/sync/sync_contracts.dart';
+import '../../../../core/sync/sync_outbox_writer.dart';
 import '../../../inventory/domain/models/inventory_models.dart';
 import '../../../inventory/domain/services/stock_posting_service.dart';
 import '../../../master/domain/repositories/master_data_repository.dart';
@@ -55,6 +57,7 @@ class ReviewStockOpnameUseCase {
     required this._opnames,
     required MasterDataRepository master,
     required this._posting,
+    this._outbox = const NoopSyncOutboxWriter(),
     DateTime Function()? clock,
   }) : _guards = OpnameGuards(master),
        _clock = clock ?? _defaultClock;
@@ -62,6 +65,7 @@ class ReviewStockOpnameUseCase {
   final OpnameRepository _opnames;
   final StockPostingService _posting;
   final OpnameGuards _guards;
+  final SyncOutboxWriter _outbox;
   final DateTime Function() _clock;
 
   static DateTime _defaultClock() => DateTime.now().toUtc();
@@ -215,6 +219,14 @@ class ReviewStockOpnameUseCase {
       // rolls back the movements posted moments ago, which is exactly right:
       // their document was reviewed, not ours.
       if (!moved) _guards.concurrentUpdate(opname);
+
+      await _outbox.enqueueCurrentAggregate(
+        operation: SyncOperationType.reviewOpname,
+        aggregateType: SyncAggregateType.stockOpname,
+        aggregateId: opnameId,
+        actorUserId: actor.id,
+        occurredAtUtc: reviewedAt,
+      );
 
       final updated = await _opnames.getById(opnameId);
       if (updated == null) {

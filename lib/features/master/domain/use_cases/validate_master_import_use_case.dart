@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/errors/failures.dart';
+import '../../../../core/sync/sync_file_upload_queue.dart';
 import '../gateways/master_import_gateways.dart';
 import '../models/import_models.dart';
 import '../models/master_admin_models.dart';
@@ -75,6 +76,7 @@ class ValidateMasterImportUseCase with MasterAdminGuard {
     required this.repository,
     required this.workbookReader,
     required this.sourceFileStore,
+    this.fileUploadQueue = const NoopSyncFileUploadQueue(),
     DateTime Function()? clock,
     String Function()? idGenerator,
   }) : _clock = clock ?? (() => DateTime.now().toUtc()),
@@ -85,6 +87,7 @@ class ValidateMasterImportUseCase with MasterAdminGuard {
 
   final MasterImportWorkbookReader workbookReader;
   final ImportSourceFileStore sourceFileStore;
+  final SyncFileUploadQueue fileUploadQueue;
   final DateTime Function() _clock;
   final String Function() _newId;
 
@@ -136,24 +139,39 @@ class ValidateMasterImportUseCase with MasterAdminGuard {
 
     final ImportLog log;
     try {
-      log = await repository.insertValidatedImportLog(
-        id: importId,
-        entity: entity,
-        // The name as the operator saw it in the picker, not the sanitized name
-        // the copy was written under — they have to recognise their own upload.
-        fileName: file.originalFileName,
-        totalRows: result.summary.totalRows,
-        insertedRows: result.summary.insertedRows,
-        updatedRows: result.summary.updatedRows,
-        failedRows: result.summary.failedRows,
-        errorDetail: ImportErrorDetail.encode(result.issues),
-        importedBy: actor.id,
-        storedFilePath: sourceFile.path,
-        fileSha256: sourceFile.sha256,
-        fileSizeBytes: sourceFile.sizeBytes,
-        templateVersion: workbook.templateVersion,
-        nowUtc: nowUtc,
-      );
+      log = await repository.transaction(() async {
+        final inserted = await repository.insertValidatedImportLog(
+          id: importId,
+          entity: entity,
+          // The name as the operator saw it in the picker, not the sanitized
+          // name the copy was written under — they have to recognise it.
+          fileName: file.originalFileName,
+          totalRows: result.summary.totalRows,
+          insertedRows: result.summary.insertedRows,
+          updatedRows: result.summary.updatedRows,
+          failedRows: result.summary.failedRows,
+          errorDetail: ImportErrorDetail.encode(result.issues),
+          importedBy: actor.id,
+          storedFilePath: sourceFile.path,
+          fileSha256: sourceFile.sha256,
+          fileSizeBytes: sourceFile.sizeBytes,
+          templateVersion: workbook.templateVersion,
+          nowUtc: nowUtc,
+        );
+        await fileUploadQueue.enqueue(
+          entityType: 'import_audit',
+          entityId: importId,
+          actorUserId: actor.id,
+          localFilePath: sourceFile.path,
+          originalFileName: file.originalFileName,
+          sha256: sourceFile.sha256,
+          sizeBytes: sourceFile.sizeBytes,
+          mimeType:
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          remoteBucket: 'import-audit',
+        );
+        return inserted;
+      });
     } catch (error) {
       // The one ordering §28 makes load-bearing.
       await sourceFileStore.deleteBestEffortForFailedAudit(sourceFile.path);

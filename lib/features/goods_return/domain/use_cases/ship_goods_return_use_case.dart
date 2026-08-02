@@ -1,4 +1,6 @@
 import '../../../../core/enums/app_enums.dart';
+import '../../../../core/sync/sync_contracts.dart';
+import '../../../../core/sync/sync_outbox_writer.dart';
 import '../../../master/domain/repositories/master_data_repository.dart';
 import '../models/goods_return_models.dart';
 import '../repositories/goods_return_repository.dart';
@@ -34,12 +36,14 @@ class ShipGoodsReturnUseCase {
   ShipGoodsReturnUseCase({
     required this._returns,
     required MasterDataRepository master,
+    this._outbox = const NoopSyncOutboxWriter(),
     DateTime Function()? clock,
   }) : _guards = GoodsReturnGuards(master),
        _clock = clock ?? _defaultClock;
 
   final GoodsReturnRepository _returns;
   final GoodsReturnGuards _guards;
+  final SyncOutboxWriter _outbox;
   final DateTime Function() _clock;
 
   static DateTime _defaultClock() => DateTime.now().toUtc();
@@ -121,6 +125,14 @@ class ShipGoodsReturnUseCase {
           'perangkat lain. Muat ulang dokumen lalu coba lagi.',
         );
       }
+
+      await _outbox.enqueueCurrentAggregate(
+        operation: SyncOperationType.shipGoodsReturn,
+        aggregateType: SyncAggregateType.goodsReturn,
+        aggregateId: goodsReturn.id,
+        actorUserId: actor.id,
+        occurredAtUtc: nowUtc,
+      );
 
       return _guards.requireDocument(
         goodsReturn: await _returns.getById(goodsReturn.id),

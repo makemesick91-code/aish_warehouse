@@ -183,6 +183,10 @@ class AuditFailingReportingRepository implements ReportingRepository {
   final ReportingRepository _delegate;
 
   @override
+  Future<T> transaction<T>(Future<T> Function() action) =>
+      _delegate.transaction(action);
+
+  @override
   Future<ExportLog> insertExportLog({
     required reportType,
     required format,

@@ -1,5 +1,7 @@
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/sync/sync_contracts.dart';
+import '../../../../core/sync/sync_outbox_writer.dart';
 import '../gateways/master_import_gateways.dart';
 import '../models/import_models.dart';
 import '../models/master_admin_models.dart';
@@ -60,6 +62,7 @@ class CommitMasterImportUseCase with MasterAdminGuard {
     required this.repository,
     required this.workbookReader,
     required this.sourceFileStore,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
     DateTime Function()? clock,
   }) : _clock = clock ?? (() => DateTime.now().toUtc());
 
@@ -68,6 +71,7 @@ class CommitMasterImportUseCase with MasterAdminGuard {
 
   final MasterImportWorkbookReader workbookReader;
   final ImportSourceFileStore sourceFileStore;
+  final SyncOutboxWriter outboxWriter;
   final DateTime Function() _clock;
 
   /// How many row writes are issued before the loop yields.
@@ -218,6 +222,23 @@ class CommitMasterImportUseCase with MasterAdminGuard {
         );
       }
 
+      for (final aggregateId in applied.aggregateIds) {
+        await outboxWriter.enqueueCurrentAggregate(
+          operation: SyncOperationType.upsertMaster,
+          aggregateType: _syncAggregateType(log.entity),
+          aggregateId: aggregateId,
+          actorUserId: actorUserId,
+          occurredAtUtc: nowUtc,
+        );
+      }
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.appendImportAudit,
+        aggregateType: SyncAggregateType.importAudit,
+        aggregateId: importLogId,
+        actorUserId: actorUserId,
+        occurredAtUtc: nowUtc,
+      );
+
       return ImportCommitResult(
         importId: importLogId,
         entity: log.entity,
@@ -265,7 +286,7 @@ class CommitMasterImportUseCase with MasterAdminGuard {
   // import creates master data and — for branches and rooms — the one stock
   // location §22 requires, and nothing else (§30, §57).
 
-  Future<({int inserted, int updated})> _apply({
+  Future<({int inserted, int updated, List<String> aggregateIds})> _apply({
     required MasterEntityType entity,
     required List<ValidatedImportRow> rows,
     required MasterImportReferenceSnapshot snapshot,
@@ -273,22 +294,18 @@ class CommitMasterImportUseCase with MasterAdminGuard {
     var inserted = 0;
     var updated = 0;
     var sinceYield = 0;
+    final aggregateIds = <String>[];
 
     for (final planned in rows) {
-      switch (entity) {
-        case MasterEntityType.branches:
-          await _applyBranch(planned);
-        case MasterEntityType.rooms:
-          await _applyRoom(planned, snapshot);
-        case MasterEntityType.users:
-          await _applyUser(planned, snapshot);
-        case MasterEntityType.itemCategories:
-          await _applyCategory(planned);
-        case MasterEntityType.items:
-          await _applyItem(planned, snapshot);
-        case MasterEntityType.itemBatches:
-          await _applyBatch(planned, snapshot);
-      }
+      final aggregateId = switch (entity) {
+        MasterEntityType.branches => await _applyBranch(planned),
+        MasterEntityType.rooms => await _applyRoom(planned, snapshot),
+        MasterEntityType.users => await _applyUser(planned, snapshot),
+        MasterEntityType.itemCategories => await _applyCategory(planned),
+        MasterEntityType.items => await _applyItem(planned, snapshot),
+        MasterEntityType.itemBatches => await _applyBatch(planned, snapshot),
+      };
+      aggregateIds.add(aggregateId);
       if (planned.action == ImportRowAction.insert) {
         inserted++;
       } else {
@@ -303,10 +320,14 @@ class CommitMasterImportUseCase with MasterAdminGuard {
       }
     }
 
-    return (inserted: inserted, updated: updated);
+    return (
+      inserted: inserted,
+      updated: updated,
+      aggregateIds: List<String>.unmodifiable(aggregateIds),
+    );
   }
 
-  Future<void> _applyBranch(ValidatedImportRow planned) async {
+  Future<String> _applyBranch(ValidatedImportRow planned) async {
     final row = planned.row as BranchImportRow;
     if (planned.action == ImportRowAction.insert) {
       final branch = await repository.insertBranch(
@@ -327,7 +348,7 @@ class CommitMasterImportUseCase with MasterAdminGuard {
         await repository.branchStoreLocationCount(branch.id),
         MasterEntityType.branches,
       );
-      return;
+      return branch.id;
     }
 
     final id = planned.existingId!;
@@ -342,9 +363,10 @@ class CommitMasterImportUseCase with MasterAdminGuard {
       branchId: id,
       branchName: row.name,
     );
+    return id;
   }
 
-  Future<void> _applyRoom(
+  Future<String> _applyRoom(
     ValidatedImportRow planned,
     MasterImportReferenceSnapshot snapshot,
   ) async {
@@ -368,7 +390,7 @@ class CommitMasterImportUseCase with MasterAdminGuard {
         await repository.roomLocationCount(room.id),
         MasterEntityType.rooms,
       );
-      return;
+      return room.id;
     }
 
     final id = planned.existingId!;
@@ -379,9 +401,10 @@ class CommitMasterImportUseCase with MasterAdminGuard {
     );
     _requireRowWritten(rowsAffected);
     await repository.renameRoomLocation(roomId: id, roomName: row.name);
+    return id;
   }
 
-  Future<void> _applyUser(
+  Future<String> _applyUser(
     ValidatedImportRow planned,
     MasterImportReferenceSnapshot snapshot,
   ) async {
@@ -393,14 +416,14 @@ class CommitMasterImportUseCase with MasterAdminGuard {
     }
 
     if (planned.action == ImportRowAction.insert) {
-      await repository.insertUser(
+      final user = await repository.insertUser(
         fullName: row.fullName,
         email: row.email,
         role: row.role,
         branchId: branchId,
         isActive: row.isActive,
       );
-      return;
+      return user.id;
     }
 
     final rowsAffected = await repository.updateUser(
@@ -411,13 +434,14 @@ class CommitMasterImportUseCase with MasterAdminGuard {
       isActive: row.isActive,
     );
     _requireRowWritten(rowsAffected);
+    return planned.existingId!;
   }
 
-  Future<void> _applyCategory(ValidatedImportRow planned) async {
+  Future<String> _applyCategory(ValidatedImportRow planned) async {
     final row = planned.row as CategoryImportRow;
     if (planned.action == ImportRowAction.insert) {
-      await repository.insertCategory(row.name);
-      return;
+      final category = await repository.insertCategory(row.name);
+      return category.id;
     }
 
     final id = planned.existingId!;
@@ -430,9 +454,10 @@ class CommitMasterImportUseCase with MasterAdminGuard {
       name: row.name,
     );
     _requireRowWritten(rowsAffected);
+    return id;
   }
 
-  Future<void> _applyItem(
+  Future<String> _applyItem(
     ValidatedImportRow planned,
     MasterImportReferenceSnapshot snapshot,
   ) async {
@@ -441,7 +466,7 @@ class CommitMasterImportUseCase with MasterAdminGuard {
     final category = snapshot.categoriesByName[categoryKey]!.single;
 
     if (planned.action == ImportRowAction.insert) {
-      await repository.insertItem(
+      final item = await repository.insertItem(
         sku: row.sku,
         name: row.name,
         categoryId: category.id,
@@ -452,7 +477,7 @@ class CommitMasterImportUseCase with MasterAdminGuard {
         expiryAlertDays: row.expiryAlertDays,
         isActive: row.isActive,
       );
-      return;
+      return item.id;
     }
 
     // Only the fields the historical policy allowed — the revalidation above
@@ -470,9 +495,10 @@ class CommitMasterImportUseCase with MasterAdminGuard {
       isActive: row.isActive,
     );
     _requireRowWritten(rowsAffected);
+    return planned.existingId!;
   }
 
-  Future<void> _applyBatch(
+  Future<String> _applyBatch(
     ValidatedImportRow planned,
     MasterImportReferenceSnapshot snapshot,
   ) async {
@@ -483,12 +509,12 @@ class CommitMasterImportUseCase with MasterAdminGuard {
     if (planned.action == ImportRowAction.insert) {
       // A batch, and nothing else. No balance row, no inbound movement — stock
       // arrives through a document somebody raises (§30).
-      await repository.insertBatch(
+      final batch = await repository.insertBatch(
         itemId: item.id,
         batchNo: row.batchNo,
         expiryDate: row.expiryDate,
       );
-      return;
+      return batch.id;
     }
 
     final id = planned.existingId!;
@@ -498,7 +524,18 @@ class CommitMasterImportUseCase with MasterAdminGuard {
       expiryDate: row.expiryDate,
     );
     _requireRowWritten(rowsAffected);
+    return id;
   }
+
+  static SyncAggregateType _syncAggregateType(MasterEntityType type) =>
+      switch (type) {
+        MasterEntityType.branches => SyncAggregateType.branch,
+        MasterEntityType.rooms => SyncAggregateType.room,
+        MasterEntityType.users => SyncAggregateType.user,
+        MasterEntityType.itemCategories => SyncAggregateType.category,
+        MasterEntityType.items => SyncAggregateType.item,
+        MasterEntityType.itemBatches => SyncAggregateType.batch,
+      };
 
   void _requireRowWritten(int rowsAffected) {
     if (rowsAffected > 0) return;
@@ -535,11 +572,13 @@ class CommitMasterImportUseCase with MasterAdminGuard {
 class DiscardMasterImportUseCase with MasterAdminGuard {
   DiscardMasterImportUseCase({
     required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
     DateTime Function()? clock,
   }) : _clock = clock ?? (() => DateTime.now().toUtc());
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   final DateTime Function() _clock;
 
@@ -584,6 +623,14 @@ class DiscardMasterImportUseCase with MasterAdminGuard {
           importId: importLogId,
         );
       }
+
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.appendImportAudit,
+        aggregateType: SyncAggregateType.importAudit,
+        aggregateId: importLogId,
+        actorUserId: actorUserId,
+        occurredAtUtc: _clock().toUtc(),
+      );
 
       return (await repository.importLogById(importLogId))!;
     });

@@ -57,6 +57,6 @@ class FakeHealthGateway implements SupabaseHealthGateway {
   Future<ServerHealth> check() async => ServerHealth(
     status: 'ok',
     serverTimeUtc: DateTime.utc(2026, 8, 2),
-    schemaRevision: compatible ? 'aish-supabase-001' : 'old-revision',
+    schemaRevision: compatible ? 'aish-supabase-002' : 'old-revision',
   );
 }

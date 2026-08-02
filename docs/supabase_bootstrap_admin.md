@@ -61,7 +61,7 @@ commit;
    `branch_id`, `is_active`.
 4. Pastikan role `super_admin`, branch null, active true.
 5. Panggil `get_server_health()` dan verifikasi revision
-   `aish-supabase-001`.
+   `aish-supabase-002`.
 
 Menghapus Auth user hanya menghapus `user_auth_links`; domain user historical
 tidak ikut terhapus. Nonaktifkan akses dengan `public.users.is_active=false` dan

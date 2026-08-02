@@ -24,6 +24,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/db/database_providers.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/session/acting_user_providers.dart';
+import '../../../../core/sync/sync_providers.dart';
 import '../../data/files/file_selector_master_import_file_picker.dart';
 import '../../data/files/local_import_source_file_store.dart';
 import '../../data/files/local_master_template_file_store.dart';
@@ -111,108 +112,135 @@ final masterAdminActorIdProvider = Provider<String?>((ref) {
 // --- use cases -------------------------------------------------------------------
 
 final createBranchUseCaseProvider = Provider<CreateBranchUseCase>(
-  (ref) =>
-      CreateBranchUseCase(repository: ref.watch(masterAdminRepositoryProvider)),
+  (ref) => CreateBranchUseCase(
+    repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
+  ),
 );
 
 final updateBranchUseCaseProvider = Provider<UpdateBranchUseCase>(
-  (ref) =>
-      UpdateBranchUseCase(repository: ref.watch(masterAdminRepositoryProvider)),
+  (ref) => UpdateBranchUseCase(
+    repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
+  ),
 );
 
 final setBranchActiveUseCaseProvider = Provider<SetBranchActiveUseCase>(
   (ref) => SetBranchActiveUseCase(
     repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
   ),
 );
 
 final createRoomUseCaseProvider = Provider<CreateRoomUseCase>(
-  (ref) =>
-      CreateRoomUseCase(repository: ref.watch(masterAdminRepositoryProvider)),
+  (ref) => CreateRoomUseCase(
+    repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
+  ),
 );
 
 final updateRoomUseCaseProvider = Provider<UpdateRoomUseCase>(
-  (ref) =>
-      UpdateRoomUseCase(repository: ref.watch(masterAdminRepositoryProvider)),
+  (ref) => UpdateRoomUseCase(
+    repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
+  ),
 );
 
 final setRoomActiveUseCaseProvider = Provider<SetRoomActiveUseCase>(
   (ref) => SetRoomActiveUseCase(
     repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
   ),
 );
 
 final createUserUseCaseProvider = Provider<CreateUserUseCase>(
-  (ref) =>
-      CreateUserUseCase(repository: ref.watch(masterAdminRepositoryProvider)),
+  (ref) => CreateUserUseCase(
+    repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
+  ),
 );
 
 final updateUserUseCaseProvider = Provider<UpdateUserUseCase>(
-  (ref) =>
-      UpdateUserUseCase(repository: ref.watch(masterAdminRepositoryProvider)),
+  (ref) => UpdateUserUseCase(
+    repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
+  ),
 );
 
 final setUserActiveUseCaseProvider = Provider<SetUserActiveUseCase>(
   (ref) => SetUserActiveUseCase(
     repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
   ),
 );
 
 final createCategoryUseCaseProvider = Provider<CreateItemCategoryUseCase>(
   (ref) => CreateItemCategoryUseCase(
     repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
   ),
 );
 
 final archiveCategoryUseCaseProvider = Provider<ArchiveItemCategoryUseCase>(
   (ref) => ArchiveItemCategoryUseCase(
     repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
   ),
 );
 
 final restoreCategoryUseCaseProvider = Provider<RestoreItemCategoryUseCase>(
   (ref) => RestoreItemCategoryUseCase(
     repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
   ),
 );
 
 final createItemUseCaseProvider = Provider<CreateItemUseCase>(
-  (ref) =>
-      CreateItemUseCase(repository: ref.watch(masterAdminRepositoryProvider)),
+  (ref) => CreateItemUseCase(
+    repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
+  ),
 );
 
 final updateItemUseCaseProvider = Provider<UpdateItemUseCase>(
-  (ref) =>
-      UpdateItemUseCase(repository: ref.watch(masterAdminRepositoryProvider)),
+  (ref) => UpdateItemUseCase(
+    repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
+  ),
 );
 
 final setItemActiveUseCaseProvider = Provider<SetItemActiveUseCase>(
   (ref) => SetItemActiveUseCase(
     repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
   ),
 );
 
 final createBatchUseCaseProvider = Provider<CreateItemBatchUseCase>(
   (ref) => CreateItemBatchUseCase(
     repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
   ),
 );
 
 final updateBatchUseCaseProvider = Provider<UpdateItemBatchUseCase>(
   (ref) => UpdateItemBatchUseCase(
     repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
   ),
 );
 
 final archiveBatchUseCaseProvider = Provider<ArchiveItemBatchUseCase>(
   (ref) => ArchiveItemBatchUseCase(
     repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
   ),
 );
 
 final restoreBatchUseCaseProvider = Provider<RestoreItemBatchUseCase>(
   (ref) => RestoreItemBatchUseCase(
     repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
   ),
 );
 
@@ -230,6 +258,7 @@ final validateImportUseCaseProvider = Provider<ValidateMasterImportUseCase>(
     repository: ref.watch(masterAdminRepositoryProvider),
     workbookReader: ref.watch(masterImportWorkbookReaderProvider),
     sourceFileStore: ref.watch(importSourceFileStoreProvider),
+    fileUploadQueue: ref.watch(syncFileUploadQueueProvider),
   ),
 );
 
@@ -238,12 +267,14 @@ final commitImportUseCaseProvider = Provider<CommitMasterImportUseCase>(
     repository: ref.watch(masterAdminRepositoryProvider),
     workbookReader: ref.watch(masterImportWorkbookReaderProvider),
     sourceFileStore: ref.watch(importSourceFileStoreProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
   ),
 );
 
 final discardImportUseCaseProvider = Provider<DiscardMasterImportUseCase>(
   (ref) => DiscardMasterImportUseCase(
     repository: ref.watch(masterAdminRepositoryProvider),
+    outboxWriter: ref.watch(syncOutboxWriterProvider),
   ),
 );
 

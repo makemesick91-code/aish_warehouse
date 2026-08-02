@@ -1,4 +1,6 @@
 import '../../../../core/errors/failures.dart';
+import '../../../../core/sync/sync_contracts.dart';
+import '../../../../core/sync/sync_outbox_writer.dart';
 import '../../../../core/time/date_only.dart';
 import '../models/master_admin_models.dart';
 import '../models/master_models.dart';
@@ -23,10 +25,14 @@ import 'master_admin_guard.dart';
 /// Good Receipt or a warehouse inbound, both of which are documents somebody
 /// raises.
 class CreateItemBatchUseCase with MasterAdminGuard {
-  CreateItemBatchUseCase({required this.repository});
+  CreateItemBatchUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<MasterBatch> call({
     required String actorUserId,
@@ -73,11 +79,19 @@ class CreateItemBatchUseCase with MasterAdminGuard {
         );
       }
 
-      return repository.insertBatch(
+      final batch = await repository.insertBatch(
         itemId: itemId,
         batchNo: normalizedBatchNo,
         expiryDate: civilDate,
       );
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.batch,
+        aggregateId: batch.id,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
+      );
+      return batch;
     });
   }
 }
@@ -90,10 +104,14 @@ class CreateItemBatchUseCase with MasterAdminGuard {
 /// that expires on the stored date, and rewriting it silently rewrites which of
 /// those postings were of expired goods.
 class UpdateItemBatchUseCase with MasterAdminGuard {
-  UpdateItemBatchUseCase({required this.repository});
+  UpdateItemBatchUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<MasterBatch> call({
     required String actorUserId,
@@ -131,6 +149,13 @@ class UpdateItemBatchUseCase with MasterAdminGuard {
         'Batch gagal diperbarui karena datanya baru saja berubah. Muat ulang '
         'lalu coba lagi.',
       );
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.batch,
+        aggregateId: batchId,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
+      );
       return (await repository.batchById(batchId))!;
     });
   }
@@ -143,10 +168,14 @@ class UpdateItemBatchUseCase with MasterAdminGuard {
 /// movement, balance and document line that ever named it still resolves — which
 /// is what keeps a Kartu Stok readable after the lot is gone.
 class ArchiveItemBatchUseCase with MasterAdminGuard {
-  ArchiveItemBatchUseCase({required this.repository});
+  ArchiveItemBatchUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<void> call({
     required String actorUserId,
@@ -168,6 +197,13 @@ class ArchiveItemBatchUseCase with MasterAdminGuard {
         'Batch gagal diarsipkan — mungkin sudah diarsipkan sebelumnya. Muat '
         'ulang lalu coba lagi.',
       );
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.batch,
+        aggregateId: batchId,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
+      );
     });
   }
 }
@@ -178,10 +214,14 @@ class ArchiveItemBatchUseCase with MasterAdminGuard {
 /// tracking expiry while this batch was archived must not silently regain an
 /// orphaned lot.
 class RestoreItemBatchUseCase with MasterAdminGuard {
-  RestoreItemBatchUseCase({required this.repository});
+  RestoreItemBatchUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<void> call({
     required String actorUserId,
@@ -211,6 +251,13 @@ class RestoreItemBatchUseCase with MasterAdminGuard {
         rows,
         'Batch gagal dipulihkan — mungkin sudah aktif. Muat ulang lalu coba '
         'lagi.',
+      );
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.batch,
+        aggregateId: batchId,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
       );
     });
   }

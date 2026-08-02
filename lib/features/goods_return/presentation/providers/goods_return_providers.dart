@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/db/database_providers.dart';
+import '../../../../core/sync/sync_providers.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/errors/failure_presenter.dart';
 import '../../../../core/errors/failures.dart';
@@ -77,6 +78,7 @@ final shipGoodsReturnUseCaseProvider = Provider<ShipGoodsReturnUseCase>(
   (ref) => ShipGoodsReturnUseCase(
     returns: ref.watch(goodsReturnRepositoryProvider),
     master: ref.watch(masterDataRepositoryProvider),
+    outbox: ref.watch(syncOutboxWriterProvider),
     clock: ref.watch(goodsReturnClockProvider),
   ),
 );
@@ -86,6 +88,7 @@ final receiveGoodsReturnUseCaseProvider = Provider<ReceiveGoodsReturnUseCase>(
     returns: ref.watch(goodsReturnRepositoryProvider),
     master: ref.watch(masterDataRepositoryProvider),
     posting: ref.watch(goodsReturnStockPostingServiceProvider),
+    outbox: ref.watch(syncOutboxWriterProvider),
     clock: ref.watch(goodsReturnClockProvider),
   ),
 );

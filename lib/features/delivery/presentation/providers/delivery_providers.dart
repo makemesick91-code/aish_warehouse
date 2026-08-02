@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/db/database_providers.dart';
+import '../../../../core/sync/sync_providers.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/quantity/quantity.dart';
 import '../../../../core/session/acting_user_providers.dart';
@@ -104,6 +105,7 @@ final shipDeliveryOrderUseCaseProvider = Provider<ShipDeliveryOrderUseCase>(
     master: ref.watch(masterDataRepositoryProvider),
     posting: ref.watch(deliveryStockPostingServiceProvider),
     stock: ref.watch(deliveryWarehouseStockReaderProvider),
+    outbox: ref.watch(syncOutboxWriterProvider),
     clock: ref.watch(deliveryClockProvider),
   ),
 );

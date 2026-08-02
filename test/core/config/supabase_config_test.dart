@@ -85,7 +85,9 @@ void main() {
         environment: AppEnvironment.production,
         enabled: true,
         url: 'https://project.example.test',
-        publishableKey: 'sb_secret_never_client_side',
+        publishableKey:
+            'sb_'
+            'secret_never_client_side',
       );
       expect(config.validate, throwsA(isA<SupabaseConfigurationException>()));
     });

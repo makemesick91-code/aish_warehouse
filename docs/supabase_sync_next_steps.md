@@ -1,7 +1,8 @@
 # Supabase Sync Next Steps
 
-12A hanya membuat boundary server; `SyncGateway` existing tetap no-op dan tidak
-ada klaim push/pull production.
+Revision 002 menyediakan push-only transactional outbox, typed RPC, server
+idempotency/numbering, atomic ledger helpers, conflict logging, dan trusted upload.
+General pull sengaja belum aktif.
 
 ## Milestone 12B — trusted writes dan push
 
@@ -37,7 +38,7 @@ tepat sekali. `created_at`, quantity, dan status bisnis tidak disentuh trigger.
   terotorisasi, bukan dipercaya dari payload signal.
 - Signed/trusted cached profile policy bila read-only offline production dibuka.
 
-## Gates sebelum mulai 12B
+## Gates sebelum remote rollout 12B
 
 - Remote project dan Auth Dashboard tersedia.
 - Role/branch matrix diterima pemilik produk.

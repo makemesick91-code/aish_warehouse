@@ -96,8 +96,8 @@ void main() {
       final row = await context.database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 13);
-      expect(context.database.schemaVersion, 13);
+      expect(row.read<int>('user_version'), 14);
+      expect(context.database.schemaVersion, 14);
     });
 
     test('dua tabel Pemusnahan tersedia', () async {

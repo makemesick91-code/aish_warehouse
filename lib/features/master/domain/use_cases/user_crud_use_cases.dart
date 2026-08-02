@@ -1,5 +1,7 @@
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/sync/sync_contracts.dart';
+import '../../../../core/sync/sync_outbox_writer.dart';
 import '../models/master_admin_models.dart';
 import '../models/master_models.dart';
 import '../repositories/master_admin_repository.dart';
@@ -19,10 +21,14 @@ import 'master_admin_guard.dart';
 /// button would be a button that resets nothing; both are deferred to Milestone 12
 /// and neither is simulated.
 class CreateUserUseCase with MasterAdminGuard {
-  CreateUserUseCase({required this.repository});
+  CreateUserUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<MasterUser> call({
     required String actorUserId,
@@ -78,7 +84,7 @@ class CreateUserUseCase with MasterAdminGuard {
         }
       }
 
-      return repository.insertUser(
+      final user = await repository.insertUser(
         fullName: normalizedName,
         // Lower-cased, so the stored value and the natural key are one string and
         // the same person cannot be created twice under two spellings (§16).
@@ -87,6 +93,14 @@ class CreateUserUseCase with MasterAdminGuard {
         branchId: branchId,
         isActive: isActive,
       );
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.user,
+        aggregateId: user.id,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
+      );
+      return user;
     });
   }
 }
@@ -102,10 +116,14 @@ class CreateUserUseCase with MasterAdminGuard {
 /// fact about a moment that has passed, which is exactly what two devices
 /// demoting the last two administrators concurrently would exploit.
 class UpdateUserUseCase with MasterAdminGuard {
-  UpdateUserUseCase({required this.repository});
+  UpdateUserUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<MasterUser> call({
     required String actorUserId,
@@ -174,6 +192,14 @@ class UpdateUserUseCase with MasterAdminGuard {
         'ulang lalu coba lagi.',
       );
 
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.user,
+        aggregateId: userId,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
+      );
+
       return (await repository.adminUserById(userId))!;
     });
   }
@@ -181,10 +207,14 @@ class UpdateUserUseCase with MasterAdminGuard {
 
 /// Deactivates or reactivates a user (G-A4), with the same three safeguards.
 class SetUserActiveUseCase with MasterAdminGuard {
-  SetUserActiveUseCase({required this.repository});
+  SetUserActiveUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<void> call({
     required String actorUserId,
@@ -222,6 +252,13 @@ class SetUserActiveUseCase with MasterAdminGuard {
       requireRowsAffected(
         rows,
         'Status pengguna gagal diubah. Muat ulang lalu coba lagi.',
+      );
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.user,
+        aggregateId: userId,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
       );
     });
   }

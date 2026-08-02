@@ -2,6 +2,8 @@ import '../../../../core/enums/app_enums.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/quantity/quantity.dart';
 import '../../../../core/time/document_timestamp_policy.dart';
+import '../../../../core/sync/sync_contracts.dart';
+import '../../../../core/sync/sync_outbox_writer.dart';
 import '../../../inventory/domain/models/inventory_models.dart';
 import '../../../inventory/domain/services/stock_posting_service.dart';
 import '../../../master/domain/models/master_models.dart';
@@ -108,6 +110,7 @@ class PostDistributionUseCase {
     required MasterDataRepository master,
     required this._posting,
     required this._stock,
+    this._outbox = const NoopSyncOutboxWriter(),
     DateTime Function()? clock,
   }) : _guards = DistributionGuards(master),
        _clock = clock ?? _defaultClock;
@@ -116,6 +119,7 @@ class PostDistributionUseCase {
   final DistributionGuards _guards;
   final StockPostingService _posting;
   final DistributionBranchStockReader _stock;
+  final SyncOutboxWriter _outbox;
   final DateTime Function() _clock;
 
   static DateTime _defaultClock() => DateTime.now().toUtc();
@@ -408,6 +412,14 @@ class PostDistributionUseCase {
         postedAtUtc: nowUtc,
       );
       if (!posted) _guards.concurrentUpdate(distribution);
+
+      await _outbox.enqueueCurrentAggregate(
+        operation: SyncOperationType.postDistribution,
+        aggregateType: SyncAggregateType.distribution,
+        aggregateId: distribution.id,
+        actorUserId: actor.id,
+        occurredAtUtc: nowUtc,
+      );
 
       final updated = await _distributions.getById(distribution.id);
       if (updated == null) {

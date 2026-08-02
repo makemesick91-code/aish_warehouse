@@ -1,4 +1,6 @@
 import '../../../../core/errors/failures.dart';
+import '../../../../core/sync/sync_contracts.dart';
+import '../../../../core/sync/sync_outbox_writer.dart';
 import '../models/master_admin_models.dart';
 import '../models/master_models.dart';
 import '../repositories/master_admin_repository.dart';
@@ -15,10 +17,14 @@ import 'master_admin_guard.dart';
 /// created here, in the same transaction, and the count is verified before the
 /// transaction is allowed to close.
 class CreateRoomUseCase with MasterAdminGuard {
-  CreateRoomUseCase({required this.repository});
+  CreateRoomUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<MasterRoom> call({
     required String actorUserId,
@@ -91,6 +97,13 @@ class CreateRoomUseCase with MasterAdminGuard {
           locationCount: locations,
         );
       }
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.room,
+        aggregateId: room.id,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
+      );
       return room;
     });
   }
@@ -104,10 +117,14 @@ class CreateRoomUseCase with MasterAdminGuard {
 /// the room would leave the location behind — the exact split-brain §22 exists to
 /// prevent.
 class UpdateRoomUseCase with MasterAdminGuard {
-  UpdateRoomUseCase({required this.repository});
+  UpdateRoomUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<MasterRoom> call({
     required String actorUserId,
@@ -148,6 +165,14 @@ class UpdateRoomUseCase with MasterAdminGuard {
         roomName: normalizedName,
       );
 
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.room,
+        aggregateId: roomId,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
+      );
+
       return (await repository.roomById(roomId))!;
     });
   }
@@ -160,10 +185,14 @@ class UpdateRoomUseCase with MasterAdminGuard {
 /// last month still renders (§49) — `is_active` only decides what a new document
 /// may choose.
 class SetRoomActiveUseCase with MasterAdminGuard {
-  SetRoomActiveUseCase({required this.repository});
+  SetRoomActiveUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<void> call({
     required String actorUserId,
@@ -200,6 +229,13 @@ class SetRoomActiveUseCase with MasterAdminGuard {
       requireRowsAffected(
         rows,
         'Status ruangan gagal diubah. Muat ulang lalu coba lagi.',
+      );
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.room,
+        aggregateId: roomId,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
       );
     });
   }

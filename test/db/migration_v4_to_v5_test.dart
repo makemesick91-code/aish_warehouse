@@ -296,7 +296,7 @@ void main() {
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 13);
+      expect(row.read<int>('user_version'), 14);
 
       await database.close();
     });
@@ -322,6 +322,12 @@ void main() {
         // v12's export audit table is present too.
         'export_logs',
         'import_logs',
+        'sync_devices',
+        'sync_outbox',
+        'sync_entity_states',
+        'sync_attempt_logs',
+        'sync_conflict_logs',
+        'sync_file_uploads',
       });
 
       await database.close();
@@ -555,7 +561,7 @@ void main() {
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 13);
+      expect(version.read<int>('user_version'), 14);
 
       final tables = await objectNames(second, 'table');
       expect(tables, containsAll(purchaseRequestTables));
@@ -628,7 +634,7 @@ void main() {
       final version = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 13);
+      expect(version.read<int>('user_version'), 14);
 
       // `10` whole units became `10000` milli-units — scaled once, not twice. A
       // second application of the `from < 2` block would leave `10000000`.
@@ -680,7 +686,7 @@ void main() {
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 13);
+        expect(version.read<int>('user_version'), 14);
 
         // v4's rebuild must still have happened on the way through.
         final row = await database

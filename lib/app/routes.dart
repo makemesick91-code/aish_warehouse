@@ -15,6 +15,9 @@ abstract final class AppRoutes {
   static const String home = '/';
   static const String homeName = 'home';
 
+  static const String sync = '/sync';
+  static const String syncName = 'sync';
+
   static const String opname = '/opname';
   static const String opnameName = 'opname';
 

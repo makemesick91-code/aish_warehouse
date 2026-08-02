@@ -72,6 +72,7 @@ import '../features/purchase_request/presentation/pages/warehouse_purchase_reque
 import '../features/purchase_request/presentation/pages/warehouse_purchase_request_list_page.dart';
 import '../features/reports/presentation/pages/export_history_page.dart';
 import '../features/reports/presentation/pages/report_page.dart';
+import '../features/sync/presentation/pages/sync_center_page.dart';
 
 /// Root router.
 ///
@@ -370,6 +371,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.home,
         name: AppRoutes.homeName,
         builder: (context, state) => const DevelopmentHomePage(),
+      ),
+      GoRoute(
+        path: AppRoutes.sync,
+        name: AppRoutes.syncName,
+        builder: (context, state) => const SyncCenterPage(),
       ),
       // Declared before `/reports`, so the literal `export-history` segment is
       // never matched as part of the reporting section's own path.

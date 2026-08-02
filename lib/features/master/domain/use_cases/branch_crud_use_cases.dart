@@ -1,4 +1,6 @@
 import '../../../../core/errors/failures.dart';
+import '../../../../core/sync/sync_contracts.dart';
+import '../../../../core/sync/sync_outbox_writer.dart';
 import '../models/master_admin_models.dart';
 import '../models/master_models.dart';
 import '../repositories/master_admin_repository.dart';
@@ -20,10 +22,14 @@ import 'master_admin_guard.dart';
 /// Exactly one, never two. [MasterAdminRepository.ensureBranchStoreLocation] is
 /// idempotent on the branch, so a retried commit cannot produce a second store.
 class CreateBranchUseCase with MasterAdminGuard {
-  CreateBranchUseCase({required this.repository});
+  CreateBranchUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<MasterBranch> call({
     required String actorUserId,
@@ -77,6 +83,13 @@ class CreateBranchUseCase with MasterAdminGuard {
           locationCount: locations,
         );
       }
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.branch,
+        aggregateId: branch.id,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
+      );
       return branch;
     });
   }
@@ -92,10 +105,14 @@ class CreateBranchUseCase with MasterAdminGuard {
 /// keeps pointing at the same location row, so a branch renamed after a year of
 /// history is still the same shelf.
 class UpdateBranchUseCase with MasterAdminGuard {
-  UpdateBranchUseCase({required this.repository});
+  UpdateBranchUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<MasterBranch> call({
     required String actorUserId,
@@ -140,6 +157,14 @@ class UpdateBranchUseCase with MasterAdminGuard {
         branchName: normalizedName,
       );
 
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.branch,
+        aggregateId: branchId,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
+      );
+
       return (await repository.branchById(branchId))!;
     });
   }
@@ -152,10 +177,14 @@ class UpdateBranchUseCase with MasterAdminGuard {
 /// went through it: `is_active` decides what a *new* document may choose, and
 /// nothing else. Historical reports still read all of it (§49).
 class SetBranchActiveUseCase with MasterAdminGuard {
-  SetBranchActiveUseCase({required this.repository});
+  SetBranchActiveUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<void> call({
     required String actorUserId,
@@ -179,6 +208,13 @@ class SetBranchActiveUseCase with MasterAdminGuard {
       requireRowsAffected(
         rows,
         'Status cabang gagal diubah. Muat ulang lalu coba lagi.',
+      );
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.branch,
+        aggregateId: branchId,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
       );
     });
   }

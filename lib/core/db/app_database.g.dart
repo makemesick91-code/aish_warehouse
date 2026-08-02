@@ -20457,6 +20457,4493 @@ class ImportLogsCompanion extends UpdateCompanion<ImportLogRow> {
   }
 }
 
+class $SyncDevicesTable extends SyncDevices
+    with TableInfo<$SyncDevicesTable, SyncDeviceRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncDevicesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _lastSeenAtMeta = const VerificationMeta(
+    'lastSeenAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastSeenAt = GeneratedColumn<DateTime>(
+    'last_seen_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _appInstallIdMeta = const VerificationMeta(
+    'appInstallId',
+  );
+  @override
+  late final GeneratedColumn<String> appInstallId = GeneratedColumn<String>(
+    'app_install_id',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 128,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _displayLabelMeta = const VerificationMeta(
+    'displayLabel',
+  );
+  @override
+  late final GeneratedColumn<String> displayLabel = GeneratedColumn<String>(
+    'display_label',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 128),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    lastSeenAt,
+    appInstallId,
+    displayLabel,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_devices';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncDeviceRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('last_seen_at')) {
+      context.handle(
+        _lastSeenAtMeta,
+        lastSeenAt.isAcceptableOrUnknown(
+          data['last_seen_at']!,
+          _lastSeenAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('app_install_id')) {
+      context.handle(
+        _appInstallIdMeta,
+        appInstallId.isAcceptableOrUnknown(
+          data['app_install_id']!,
+          _appInstallIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_appInstallIdMeta);
+    }
+    if (data.containsKey('display_label')) {
+      context.handle(
+        _displayLabelMeta,
+        displayLabel.isAcceptableOrUnknown(
+          data['display_label']!,
+          _displayLabelMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncDeviceRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncDeviceRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      lastSeenAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_seen_at'],
+      )!,
+      appInstallId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}app_install_id'],
+      )!,
+      displayLabel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_label'],
+      ),
+    );
+  }
+
+  @override
+  $SyncDevicesTable createAlias(String alias) {
+    return $SyncDevicesTable(attachedDatabase, alias);
+  }
+}
+
+class SyncDeviceRow extends DataClass implements Insertable<SyncDeviceRow> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime lastSeenAt;
+  final String appInstallId;
+  final String? displayLabel;
+  const SyncDeviceRow({
+    required this.id,
+    required this.createdAt,
+    required this.lastSeenAt,
+    required this.appInstallId,
+    this.displayLabel,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['last_seen_at'] = Variable<DateTime>(lastSeenAt);
+    map['app_install_id'] = Variable<String>(appInstallId);
+    if (!nullToAbsent || displayLabel != null) {
+      map['display_label'] = Variable<String>(displayLabel);
+    }
+    return map;
+  }
+
+  SyncDevicesCompanion toCompanion(bool nullToAbsent) {
+    return SyncDevicesCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      lastSeenAt: Value(lastSeenAt),
+      appInstallId: Value(appInstallId),
+      displayLabel: displayLabel == null && nullToAbsent
+          ? const Value.absent()
+          : Value(displayLabel),
+    );
+  }
+
+  factory SyncDeviceRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncDeviceRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      lastSeenAt: serializer.fromJson<DateTime>(json['lastSeenAt']),
+      appInstallId: serializer.fromJson<String>(json['appInstallId']),
+      displayLabel: serializer.fromJson<String?>(json['displayLabel']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'lastSeenAt': serializer.toJson<DateTime>(lastSeenAt),
+      'appInstallId': serializer.toJson<String>(appInstallId),
+      'displayLabel': serializer.toJson<String?>(displayLabel),
+    };
+  }
+
+  SyncDeviceRow copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? lastSeenAt,
+    String? appInstallId,
+    Value<String?> displayLabel = const Value.absent(),
+  }) => SyncDeviceRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+    appInstallId: appInstallId ?? this.appInstallId,
+    displayLabel: displayLabel.present ? displayLabel.value : this.displayLabel,
+  );
+  SyncDeviceRow copyWithCompanion(SyncDevicesCompanion data) {
+    return SyncDeviceRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      lastSeenAt: data.lastSeenAt.present
+          ? data.lastSeenAt.value
+          : this.lastSeenAt,
+      appInstallId: data.appInstallId.present
+          ? data.appInstallId.value
+          : this.appInstallId,
+      displayLabel: data.displayLabel.present
+          ? data.displayLabel.value
+          : this.displayLabel,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncDeviceRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastSeenAt: $lastSeenAt, ')
+          ..write('appInstallId: $appInstallId, ')
+          ..write('displayLabel: $displayLabel')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, createdAt, lastSeenAt, appInstallId, displayLabel);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncDeviceRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.lastSeenAt == this.lastSeenAt &&
+          other.appInstallId == this.appInstallId &&
+          other.displayLabel == this.displayLabel);
+}
+
+class SyncDevicesCompanion extends UpdateCompanion<SyncDeviceRow> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> lastSeenAt;
+  final Value<String> appInstallId;
+  final Value<String?> displayLabel;
+  final Value<int> rowid;
+  const SyncDevicesCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.lastSeenAt = const Value.absent(),
+    this.appInstallId = const Value.absent(),
+    this.displayLabel = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncDevicesCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.lastSeenAt = const Value.absent(),
+    required String appInstallId,
+    this.displayLabel = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : appInstallId = Value(appInstallId);
+  static Insertable<SyncDeviceRow> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? lastSeenAt,
+    Expression<String>? appInstallId,
+    Expression<String>? displayLabel,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (lastSeenAt != null) 'last_seen_at': lastSeenAt,
+      if (appInstallId != null) 'app_install_id': appInstallId,
+      if (displayLabel != null) 'display_label': displayLabel,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncDevicesCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? lastSeenAt,
+    Value<String>? appInstallId,
+    Value<String?>? displayLabel,
+    Value<int>? rowid,
+  }) {
+    return SyncDevicesCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+      appInstallId: appInstallId ?? this.appInstallId,
+      displayLabel: displayLabel ?? this.displayLabel,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (lastSeenAt.present) {
+      map['last_seen_at'] = Variable<DateTime>(lastSeenAt.value);
+    }
+    if (appInstallId.present) {
+      map['app_install_id'] = Variable<String>(appInstallId.value);
+    }
+    if (displayLabel.present) {
+      map['display_label'] = Variable<String>(displayLabel.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncDevicesCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastSeenAt: $lastSeenAt, ')
+          ..write('appInstallId: $appInstallId, ')
+          ..write('displayLabel: $displayLabel, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncOutboxTable extends SyncOutbox
+    with TableInfo<$SyncOutboxTable, SyncOutboxRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncOutboxTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _requestIdMeta = const VerificationMeta(
+    'requestId',
+  );
+  @override
+  late final GeneratedColumn<String> requestId = GeneratedColumn<String>(
+    'request_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deviceIdMeta = const VerificationMeta(
+    'deviceId',
+  );
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+    'device_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES sync_devices (id)',
+    ),
+  );
+  static const VerificationMeta _operationTypeMeta = const VerificationMeta(
+    'operationType',
+  );
+  @override
+  late final GeneratedColumn<String> operationType = GeneratedColumn<String>(
+    'operation_type',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _aggregateTypeMeta = const VerificationMeta(
+    'aggregateType',
+  );
+  @override
+  late final GeneratedColumn<String> aggregateType = GeneratedColumn<String>(
+    'aggregate_type',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _aggregateIdMeta = const VerificationMeta(
+    'aggregateId',
+  );
+  @override
+  late final GeneratedColumn<String> aggregateId = GeneratedColumn<String>(
+    'aggregate_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _actorUserIdMeta = const VerificationMeta(
+    'actorUserId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUserId = GeneratedColumn<String>(
+    'actor_user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _payloadVersionMeta = const VerificationMeta(
+    'payloadVersion',
+  );
+  @override
+  late final GeneratedColumn<int> payloadVersion = GeneratedColumn<int>(
+    'payload_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _baseServerVersionMeta = const VerificationMeta(
+    'baseServerVersion',
+  );
+  @override
+  late final GeneratedColumn<int> baseServerVersion = GeneratedColumn<int>(
+    'base_server_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _occurredAtUtcMeta = const VerificationMeta(
+    'occurredAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> occurredAtUtc =
+      GeneratedColumn<DateTime>(
+        'occurred_at_utc',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _payloadHashMeta = const VerificationMeta(
+    'payloadHash',
+  );
+  @override
+  late final GeneratedColumn<String> payloadHash = GeneratedColumn<String>(
+    'payload_hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('queued'),
+  );
+  static const VerificationMeta _attemptCountMeta = const VerificationMeta(
+    'attemptCount',
+  );
+  @override
+  late final GeneratedColumn<int> attemptCount = GeneratedColumn<int>(
+    'attempt_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _nextAttemptEpochMsMeta =
+      const VerificationMeta('nextAttemptEpochMs');
+  @override
+  late final GeneratedColumn<int> nextAttemptEpochMs = GeneratedColumn<int>(
+    'next_attempt_epoch_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _leaseStartedEpochMsMeta =
+      const VerificationMeta('leaseStartedEpochMs');
+  @override
+  late final GeneratedColumn<int> leaseStartedEpochMs = GeneratedColumn<int>(
+    'lease_started_epoch_ms',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastErrorCodeMeta = const VerificationMeta(
+    'lastErrorCode',
+  );
+  @override
+  late final GeneratedColumn<String> lastErrorCode = GeneratedColumn<String>(
+    'last_error_code',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 96),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastErrorMessageMeta = const VerificationMeta(
+    'lastErrorMessage',
+  );
+  @override
+  late final GeneratedColumn<String> lastErrorMessage = GeneratedColumn<String>(
+    'last_error_message',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 512),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    requestId,
+    deviceId,
+    operationType,
+    aggregateType,
+    aggregateId,
+    actorUserId,
+    payloadVersion,
+    baseServerVersion,
+    occurredAtUtc,
+    payloadHash,
+    status,
+    attemptCount,
+    nextAttemptEpochMs,
+    leaseStartedEpochMs,
+    lastErrorCode,
+    lastErrorMessage,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_outbox';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncOutboxRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('request_id')) {
+      context.handle(
+        _requestIdMeta,
+        requestId.isAcceptableOrUnknown(data['request_id']!, _requestIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_requestIdMeta);
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(
+        _deviceIdMeta,
+        deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deviceIdMeta);
+    }
+    if (data.containsKey('operation_type')) {
+      context.handle(
+        _operationTypeMeta,
+        operationType.isAcceptableOrUnknown(
+          data['operation_type']!,
+          _operationTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_operationTypeMeta);
+    }
+    if (data.containsKey('aggregate_type')) {
+      context.handle(
+        _aggregateTypeMeta,
+        aggregateType.isAcceptableOrUnknown(
+          data['aggregate_type']!,
+          _aggregateTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_aggregateTypeMeta);
+    }
+    if (data.containsKey('aggregate_id')) {
+      context.handle(
+        _aggregateIdMeta,
+        aggregateId.isAcceptableOrUnknown(
+          data['aggregate_id']!,
+          _aggregateIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_aggregateIdMeta);
+    }
+    if (data.containsKey('actor_user_id')) {
+      context.handle(
+        _actorUserIdMeta,
+        actorUserId.isAcceptableOrUnknown(
+          data['actor_user_id']!,
+          _actorUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('payload_version')) {
+      context.handle(
+        _payloadVersionMeta,
+        payloadVersion.isAcceptableOrUnknown(
+          data['payload_version']!,
+          _payloadVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('base_server_version')) {
+      context.handle(
+        _baseServerVersionMeta,
+        baseServerVersion.isAcceptableOrUnknown(
+          data['base_server_version']!,
+          _baseServerVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('occurred_at_utc')) {
+      context.handle(
+        _occurredAtUtcMeta,
+        occurredAtUtc.isAcceptableOrUnknown(
+          data['occurred_at_utc']!,
+          _occurredAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_occurredAtUtcMeta);
+    }
+    if (data.containsKey('payload_hash')) {
+      context.handle(
+        _payloadHashMeta,
+        payloadHash.isAcceptableOrUnknown(
+          data['payload_hash']!,
+          _payloadHashMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadHashMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('attempt_count')) {
+      context.handle(
+        _attemptCountMeta,
+        attemptCount.isAcceptableOrUnknown(
+          data['attempt_count']!,
+          _attemptCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('next_attempt_epoch_ms')) {
+      context.handle(
+        _nextAttemptEpochMsMeta,
+        nextAttemptEpochMs.isAcceptableOrUnknown(
+          data['next_attempt_epoch_ms']!,
+          _nextAttemptEpochMsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('lease_started_epoch_ms')) {
+      context.handle(
+        _leaseStartedEpochMsMeta,
+        leaseStartedEpochMs.isAcceptableOrUnknown(
+          data['lease_started_epoch_ms']!,
+          _leaseStartedEpochMsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_error_code')) {
+      context.handle(
+        _lastErrorCodeMeta,
+        lastErrorCode.isAcceptableOrUnknown(
+          data['last_error_code']!,
+          _lastErrorCodeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_error_message')) {
+      context.handle(
+        _lastErrorMessageMeta,
+        lastErrorMessage.isAcceptableOrUnknown(
+          data['last_error_message']!,
+          _lastErrorMessageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncOutboxRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncOutboxRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      requestId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}request_id'],
+      )!,
+      deviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device_id'],
+      )!,
+      operationType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}operation_type'],
+      )!,
+      aggregateType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}aggregate_type'],
+      )!,
+      aggregateId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}aggregate_id'],
+      )!,
+      actorUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_user_id'],
+      ),
+      payloadVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}payload_version'],
+      )!,
+      baseServerVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}base_server_version'],
+      )!,
+      occurredAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}occurred_at_utc'],
+      )!,
+      payloadHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload_hash'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      attemptCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempt_count'],
+      )!,
+      nextAttemptEpochMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}next_attempt_epoch_ms'],
+      )!,
+      leaseStartedEpochMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}lease_started_epoch_ms'],
+      ),
+      lastErrorCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error_code'],
+      ),
+      lastErrorMessage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error_message'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncOutboxTable createAlias(String alias) {
+    return $SyncOutboxTable(attachedDatabase, alias);
+  }
+}
+
+class SyncOutboxRow extends DataClass implements Insertable<SyncOutboxRow> {
+  final String id;
+  final String requestId;
+  final String deviceId;
+  final String operationType;
+  final String aggregateType;
+  final String aggregateId;
+
+  /// Original business actor. Legacy master rows created before schema v14 do
+  /// not carry actor provenance, so their permanently blocked reconstruction
+  /// deliberately stores NULL instead of inventing an identity.
+  final String? actorUserId;
+  final int payloadVersion;
+  final int baseServerVersion;
+  final DateTime occurredAtUtc;
+  final String payloadHash;
+  final String status;
+  final int attemptCount;
+  final int nextAttemptEpochMs;
+  final int? leaseStartedEpochMs;
+  final String? lastErrorCode;
+  final String? lastErrorMessage;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const SyncOutboxRow({
+    required this.id,
+    required this.requestId,
+    required this.deviceId,
+    required this.operationType,
+    required this.aggregateType,
+    required this.aggregateId,
+    this.actorUserId,
+    required this.payloadVersion,
+    required this.baseServerVersion,
+    required this.occurredAtUtc,
+    required this.payloadHash,
+    required this.status,
+    required this.attemptCount,
+    required this.nextAttemptEpochMs,
+    this.leaseStartedEpochMs,
+    this.lastErrorCode,
+    this.lastErrorMessage,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['request_id'] = Variable<String>(requestId);
+    map['device_id'] = Variable<String>(deviceId);
+    map['operation_type'] = Variable<String>(operationType);
+    map['aggregate_type'] = Variable<String>(aggregateType);
+    map['aggregate_id'] = Variable<String>(aggregateId);
+    if (!nullToAbsent || actorUserId != null) {
+      map['actor_user_id'] = Variable<String>(actorUserId);
+    }
+    map['payload_version'] = Variable<int>(payloadVersion);
+    map['base_server_version'] = Variable<int>(baseServerVersion);
+    map['occurred_at_utc'] = Variable<DateTime>(occurredAtUtc);
+    map['payload_hash'] = Variable<String>(payloadHash);
+    map['status'] = Variable<String>(status);
+    map['attempt_count'] = Variable<int>(attemptCount);
+    map['next_attempt_epoch_ms'] = Variable<int>(nextAttemptEpochMs);
+    if (!nullToAbsent || leaseStartedEpochMs != null) {
+      map['lease_started_epoch_ms'] = Variable<int>(leaseStartedEpochMs);
+    }
+    if (!nullToAbsent || lastErrorCode != null) {
+      map['last_error_code'] = Variable<String>(lastErrorCode);
+    }
+    if (!nullToAbsent || lastErrorMessage != null) {
+      map['last_error_message'] = Variable<String>(lastErrorMessage);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  SyncOutboxCompanion toCompanion(bool nullToAbsent) {
+    return SyncOutboxCompanion(
+      id: Value(id),
+      requestId: Value(requestId),
+      deviceId: Value(deviceId),
+      operationType: Value(operationType),
+      aggregateType: Value(aggregateType),
+      aggregateId: Value(aggregateId),
+      actorUserId: actorUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actorUserId),
+      payloadVersion: Value(payloadVersion),
+      baseServerVersion: Value(baseServerVersion),
+      occurredAtUtc: Value(occurredAtUtc),
+      payloadHash: Value(payloadHash),
+      status: Value(status),
+      attemptCount: Value(attemptCount),
+      nextAttemptEpochMs: Value(nextAttemptEpochMs),
+      leaseStartedEpochMs: leaseStartedEpochMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(leaseStartedEpochMs),
+      lastErrorCode: lastErrorCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastErrorCode),
+      lastErrorMessage: lastErrorMessage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastErrorMessage),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory SyncOutboxRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncOutboxRow(
+      id: serializer.fromJson<String>(json['id']),
+      requestId: serializer.fromJson<String>(json['requestId']),
+      deviceId: serializer.fromJson<String>(json['deviceId']),
+      operationType: serializer.fromJson<String>(json['operationType']),
+      aggregateType: serializer.fromJson<String>(json['aggregateType']),
+      aggregateId: serializer.fromJson<String>(json['aggregateId']),
+      actorUserId: serializer.fromJson<String?>(json['actorUserId']),
+      payloadVersion: serializer.fromJson<int>(json['payloadVersion']),
+      baseServerVersion: serializer.fromJson<int>(json['baseServerVersion']),
+      occurredAtUtc: serializer.fromJson<DateTime>(json['occurredAtUtc']),
+      payloadHash: serializer.fromJson<String>(json['payloadHash']),
+      status: serializer.fromJson<String>(json['status']),
+      attemptCount: serializer.fromJson<int>(json['attemptCount']),
+      nextAttemptEpochMs: serializer.fromJson<int>(json['nextAttemptEpochMs']),
+      leaseStartedEpochMs: serializer.fromJson<int?>(
+        json['leaseStartedEpochMs'],
+      ),
+      lastErrorCode: serializer.fromJson<String?>(json['lastErrorCode']),
+      lastErrorMessage: serializer.fromJson<String?>(json['lastErrorMessage']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'requestId': serializer.toJson<String>(requestId),
+      'deviceId': serializer.toJson<String>(deviceId),
+      'operationType': serializer.toJson<String>(operationType),
+      'aggregateType': serializer.toJson<String>(aggregateType),
+      'aggregateId': serializer.toJson<String>(aggregateId),
+      'actorUserId': serializer.toJson<String?>(actorUserId),
+      'payloadVersion': serializer.toJson<int>(payloadVersion),
+      'baseServerVersion': serializer.toJson<int>(baseServerVersion),
+      'occurredAtUtc': serializer.toJson<DateTime>(occurredAtUtc),
+      'payloadHash': serializer.toJson<String>(payloadHash),
+      'status': serializer.toJson<String>(status),
+      'attemptCount': serializer.toJson<int>(attemptCount),
+      'nextAttemptEpochMs': serializer.toJson<int>(nextAttemptEpochMs),
+      'leaseStartedEpochMs': serializer.toJson<int?>(leaseStartedEpochMs),
+      'lastErrorCode': serializer.toJson<String?>(lastErrorCode),
+      'lastErrorMessage': serializer.toJson<String?>(lastErrorMessage),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  SyncOutboxRow copyWith({
+    String? id,
+    String? requestId,
+    String? deviceId,
+    String? operationType,
+    String? aggregateType,
+    String? aggregateId,
+    Value<String?> actorUserId = const Value.absent(),
+    int? payloadVersion,
+    int? baseServerVersion,
+    DateTime? occurredAtUtc,
+    String? payloadHash,
+    String? status,
+    int? attemptCount,
+    int? nextAttemptEpochMs,
+    Value<int?> leaseStartedEpochMs = const Value.absent(),
+    Value<String?> lastErrorCode = const Value.absent(),
+    Value<String?> lastErrorMessage = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => SyncOutboxRow(
+    id: id ?? this.id,
+    requestId: requestId ?? this.requestId,
+    deviceId: deviceId ?? this.deviceId,
+    operationType: operationType ?? this.operationType,
+    aggregateType: aggregateType ?? this.aggregateType,
+    aggregateId: aggregateId ?? this.aggregateId,
+    actorUserId: actorUserId.present ? actorUserId.value : this.actorUserId,
+    payloadVersion: payloadVersion ?? this.payloadVersion,
+    baseServerVersion: baseServerVersion ?? this.baseServerVersion,
+    occurredAtUtc: occurredAtUtc ?? this.occurredAtUtc,
+    payloadHash: payloadHash ?? this.payloadHash,
+    status: status ?? this.status,
+    attemptCount: attemptCount ?? this.attemptCount,
+    nextAttemptEpochMs: nextAttemptEpochMs ?? this.nextAttemptEpochMs,
+    leaseStartedEpochMs: leaseStartedEpochMs.present
+        ? leaseStartedEpochMs.value
+        : this.leaseStartedEpochMs,
+    lastErrorCode: lastErrorCode.present
+        ? lastErrorCode.value
+        : this.lastErrorCode,
+    lastErrorMessage: lastErrorMessage.present
+        ? lastErrorMessage.value
+        : this.lastErrorMessage,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  SyncOutboxRow copyWithCompanion(SyncOutboxCompanion data) {
+    return SyncOutboxRow(
+      id: data.id.present ? data.id.value : this.id,
+      requestId: data.requestId.present ? data.requestId.value : this.requestId,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+      operationType: data.operationType.present
+          ? data.operationType.value
+          : this.operationType,
+      aggregateType: data.aggregateType.present
+          ? data.aggregateType.value
+          : this.aggregateType,
+      aggregateId: data.aggregateId.present
+          ? data.aggregateId.value
+          : this.aggregateId,
+      actorUserId: data.actorUserId.present
+          ? data.actorUserId.value
+          : this.actorUserId,
+      payloadVersion: data.payloadVersion.present
+          ? data.payloadVersion.value
+          : this.payloadVersion,
+      baseServerVersion: data.baseServerVersion.present
+          ? data.baseServerVersion.value
+          : this.baseServerVersion,
+      occurredAtUtc: data.occurredAtUtc.present
+          ? data.occurredAtUtc.value
+          : this.occurredAtUtc,
+      payloadHash: data.payloadHash.present
+          ? data.payloadHash.value
+          : this.payloadHash,
+      status: data.status.present ? data.status.value : this.status,
+      attemptCount: data.attemptCount.present
+          ? data.attemptCount.value
+          : this.attemptCount,
+      nextAttemptEpochMs: data.nextAttemptEpochMs.present
+          ? data.nextAttemptEpochMs.value
+          : this.nextAttemptEpochMs,
+      leaseStartedEpochMs: data.leaseStartedEpochMs.present
+          ? data.leaseStartedEpochMs.value
+          : this.leaseStartedEpochMs,
+      lastErrorCode: data.lastErrorCode.present
+          ? data.lastErrorCode.value
+          : this.lastErrorCode,
+      lastErrorMessage: data.lastErrorMessage.present
+          ? data.lastErrorMessage.value
+          : this.lastErrorMessage,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncOutboxRow(')
+          ..write('id: $id, ')
+          ..write('requestId: $requestId, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('operationType: $operationType, ')
+          ..write('aggregateType: $aggregateType, ')
+          ..write('aggregateId: $aggregateId, ')
+          ..write('actorUserId: $actorUserId, ')
+          ..write('payloadVersion: $payloadVersion, ')
+          ..write('baseServerVersion: $baseServerVersion, ')
+          ..write('occurredAtUtc: $occurredAtUtc, ')
+          ..write('payloadHash: $payloadHash, ')
+          ..write('status: $status, ')
+          ..write('attemptCount: $attemptCount, ')
+          ..write('nextAttemptEpochMs: $nextAttemptEpochMs, ')
+          ..write('leaseStartedEpochMs: $leaseStartedEpochMs, ')
+          ..write('lastErrorCode: $lastErrorCode, ')
+          ..write('lastErrorMessage: $lastErrorMessage, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    requestId,
+    deviceId,
+    operationType,
+    aggregateType,
+    aggregateId,
+    actorUserId,
+    payloadVersion,
+    baseServerVersion,
+    occurredAtUtc,
+    payloadHash,
+    status,
+    attemptCount,
+    nextAttemptEpochMs,
+    leaseStartedEpochMs,
+    lastErrorCode,
+    lastErrorMessage,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncOutboxRow &&
+          other.id == this.id &&
+          other.requestId == this.requestId &&
+          other.deviceId == this.deviceId &&
+          other.operationType == this.operationType &&
+          other.aggregateType == this.aggregateType &&
+          other.aggregateId == this.aggregateId &&
+          other.actorUserId == this.actorUserId &&
+          other.payloadVersion == this.payloadVersion &&
+          other.baseServerVersion == this.baseServerVersion &&
+          other.occurredAtUtc == this.occurredAtUtc &&
+          other.payloadHash == this.payloadHash &&
+          other.status == this.status &&
+          other.attemptCount == this.attemptCount &&
+          other.nextAttemptEpochMs == this.nextAttemptEpochMs &&
+          other.leaseStartedEpochMs == this.leaseStartedEpochMs &&
+          other.lastErrorCode == this.lastErrorCode &&
+          other.lastErrorMessage == this.lastErrorMessage &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class SyncOutboxCompanion extends UpdateCompanion<SyncOutboxRow> {
+  final Value<String> id;
+  final Value<String> requestId;
+  final Value<String> deviceId;
+  final Value<String> operationType;
+  final Value<String> aggregateType;
+  final Value<String> aggregateId;
+  final Value<String?> actorUserId;
+  final Value<int> payloadVersion;
+  final Value<int> baseServerVersion;
+  final Value<DateTime> occurredAtUtc;
+  final Value<String> payloadHash;
+  final Value<String> status;
+  final Value<int> attemptCount;
+  final Value<int> nextAttemptEpochMs;
+  final Value<int?> leaseStartedEpochMs;
+  final Value<String?> lastErrorCode;
+  final Value<String?> lastErrorMessage;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const SyncOutboxCompanion({
+    this.id = const Value.absent(),
+    this.requestId = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    this.operationType = const Value.absent(),
+    this.aggregateType = const Value.absent(),
+    this.aggregateId = const Value.absent(),
+    this.actorUserId = const Value.absent(),
+    this.payloadVersion = const Value.absent(),
+    this.baseServerVersion = const Value.absent(),
+    this.occurredAtUtc = const Value.absent(),
+    this.payloadHash = const Value.absent(),
+    this.status = const Value.absent(),
+    this.attemptCount = const Value.absent(),
+    this.nextAttemptEpochMs = const Value.absent(),
+    this.leaseStartedEpochMs = const Value.absent(),
+    this.lastErrorCode = const Value.absent(),
+    this.lastErrorMessage = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncOutboxCompanion.insert({
+    this.id = const Value.absent(),
+    required String requestId,
+    required String deviceId,
+    required String operationType,
+    required String aggregateType,
+    required String aggregateId,
+    this.actorUserId = const Value.absent(),
+    this.payloadVersion = const Value.absent(),
+    this.baseServerVersion = const Value.absent(),
+    required DateTime occurredAtUtc,
+    required String payloadHash,
+    this.status = const Value.absent(),
+    this.attemptCount = const Value.absent(),
+    this.nextAttemptEpochMs = const Value.absent(),
+    this.leaseStartedEpochMs = const Value.absent(),
+    this.lastErrorCode = const Value.absent(),
+    this.lastErrorMessage = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : requestId = Value(requestId),
+       deviceId = Value(deviceId),
+       operationType = Value(operationType),
+       aggregateType = Value(aggregateType),
+       aggregateId = Value(aggregateId),
+       occurredAtUtc = Value(occurredAtUtc),
+       payloadHash = Value(payloadHash);
+  static Insertable<SyncOutboxRow> custom({
+    Expression<String>? id,
+    Expression<String>? requestId,
+    Expression<String>? deviceId,
+    Expression<String>? operationType,
+    Expression<String>? aggregateType,
+    Expression<String>? aggregateId,
+    Expression<String>? actorUserId,
+    Expression<int>? payloadVersion,
+    Expression<int>? baseServerVersion,
+    Expression<DateTime>? occurredAtUtc,
+    Expression<String>? payloadHash,
+    Expression<String>? status,
+    Expression<int>? attemptCount,
+    Expression<int>? nextAttemptEpochMs,
+    Expression<int>? leaseStartedEpochMs,
+    Expression<String>? lastErrorCode,
+    Expression<String>? lastErrorMessage,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (requestId != null) 'request_id': requestId,
+      if (deviceId != null) 'device_id': deviceId,
+      if (operationType != null) 'operation_type': operationType,
+      if (aggregateType != null) 'aggregate_type': aggregateType,
+      if (aggregateId != null) 'aggregate_id': aggregateId,
+      if (actorUserId != null) 'actor_user_id': actorUserId,
+      if (payloadVersion != null) 'payload_version': payloadVersion,
+      if (baseServerVersion != null) 'base_server_version': baseServerVersion,
+      if (occurredAtUtc != null) 'occurred_at_utc': occurredAtUtc,
+      if (payloadHash != null) 'payload_hash': payloadHash,
+      if (status != null) 'status': status,
+      if (attemptCount != null) 'attempt_count': attemptCount,
+      if (nextAttemptEpochMs != null)
+        'next_attempt_epoch_ms': nextAttemptEpochMs,
+      if (leaseStartedEpochMs != null)
+        'lease_started_epoch_ms': leaseStartedEpochMs,
+      if (lastErrorCode != null) 'last_error_code': lastErrorCode,
+      if (lastErrorMessage != null) 'last_error_message': lastErrorMessage,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncOutboxCompanion copyWith({
+    Value<String>? id,
+    Value<String>? requestId,
+    Value<String>? deviceId,
+    Value<String>? operationType,
+    Value<String>? aggregateType,
+    Value<String>? aggregateId,
+    Value<String?>? actorUserId,
+    Value<int>? payloadVersion,
+    Value<int>? baseServerVersion,
+    Value<DateTime>? occurredAtUtc,
+    Value<String>? payloadHash,
+    Value<String>? status,
+    Value<int>? attemptCount,
+    Value<int>? nextAttemptEpochMs,
+    Value<int?>? leaseStartedEpochMs,
+    Value<String?>? lastErrorCode,
+    Value<String?>? lastErrorMessage,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return SyncOutboxCompanion(
+      id: id ?? this.id,
+      requestId: requestId ?? this.requestId,
+      deviceId: deviceId ?? this.deviceId,
+      operationType: operationType ?? this.operationType,
+      aggregateType: aggregateType ?? this.aggregateType,
+      aggregateId: aggregateId ?? this.aggregateId,
+      actorUserId: actorUserId ?? this.actorUserId,
+      payloadVersion: payloadVersion ?? this.payloadVersion,
+      baseServerVersion: baseServerVersion ?? this.baseServerVersion,
+      occurredAtUtc: occurredAtUtc ?? this.occurredAtUtc,
+      payloadHash: payloadHash ?? this.payloadHash,
+      status: status ?? this.status,
+      attemptCount: attemptCount ?? this.attemptCount,
+      nextAttemptEpochMs: nextAttemptEpochMs ?? this.nextAttemptEpochMs,
+      leaseStartedEpochMs: leaseStartedEpochMs ?? this.leaseStartedEpochMs,
+      lastErrorCode: lastErrorCode ?? this.lastErrorCode,
+      lastErrorMessage: lastErrorMessage ?? this.lastErrorMessage,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (requestId.present) {
+      map['request_id'] = Variable<String>(requestId.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
+    }
+    if (operationType.present) {
+      map['operation_type'] = Variable<String>(operationType.value);
+    }
+    if (aggregateType.present) {
+      map['aggregate_type'] = Variable<String>(aggregateType.value);
+    }
+    if (aggregateId.present) {
+      map['aggregate_id'] = Variable<String>(aggregateId.value);
+    }
+    if (actorUserId.present) {
+      map['actor_user_id'] = Variable<String>(actorUserId.value);
+    }
+    if (payloadVersion.present) {
+      map['payload_version'] = Variable<int>(payloadVersion.value);
+    }
+    if (baseServerVersion.present) {
+      map['base_server_version'] = Variable<int>(baseServerVersion.value);
+    }
+    if (occurredAtUtc.present) {
+      map['occurred_at_utc'] = Variable<DateTime>(occurredAtUtc.value);
+    }
+    if (payloadHash.present) {
+      map['payload_hash'] = Variable<String>(payloadHash.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (attemptCount.present) {
+      map['attempt_count'] = Variable<int>(attemptCount.value);
+    }
+    if (nextAttemptEpochMs.present) {
+      map['next_attempt_epoch_ms'] = Variable<int>(nextAttemptEpochMs.value);
+    }
+    if (leaseStartedEpochMs.present) {
+      map['lease_started_epoch_ms'] = Variable<int>(leaseStartedEpochMs.value);
+    }
+    if (lastErrorCode.present) {
+      map['last_error_code'] = Variable<String>(lastErrorCode.value);
+    }
+    if (lastErrorMessage.present) {
+      map['last_error_message'] = Variable<String>(lastErrorMessage.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncOutboxCompanion(')
+          ..write('id: $id, ')
+          ..write('requestId: $requestId, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('operationType: $operationType, ')
+          ..write('aggregateType: $aggregateType, ')
+          ..write('aggregateId: $aggregateId, ')
+          ..write('actorUserId: $actorUserId, ')
+          ..write('payloadVersion: $payloadVersion, ')
+          ..write('baseServerVersion: $baseServerVersion, ')
+          ..write('occurredAtUtc: $occurredAtUtc, ')
+          ..write('payloadHash: $payloadHash, ')
+          ..write('status: $status, ')
+          ..write('attemptCount: $attemptCount, ')
+          ..write('nextAttemptEpochMs: $nextAttemptEpochMs, ')
+          ..write('leaseStartedEpochMs: $leaseStartedEpochMs, ')
+          ..write('lastErrorCode: $lastErrorCode, ')
+          ..write('lastErrorMessage: $lastErrorMessage, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncEntityStatesTable extends SyncEntityStates
+    with TableInfo<$SyncEntityStatesTable, SyncEntityStateRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncEntityStatesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _aggregateTypeMeta = const VerificationMeta(
+    'aggregateType',
+  );
+  @override
+  late final GeneratedColumn<String> aggregateType = GeneratedColumn<String>(
+    'aggregate_type',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _aggregateIdMeta = const VerificationMeta(
+    'aggregateId',
+  );
+  @override
+  late final GeneratedColumn<String> aggregateId = GeneratedColumn<String>(
+    'aggregate_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _serverVersionMeta = const VerificationMeta(
+    'serverVersion',
+  );
+  @override
+  late final GeneratedColumn<int> serverVersion = GeneratedColumn<int>(
+    'server_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _serverUpdatedAtUtcMeta =
+      const VerificationMeta('serverUpdatedAtUtc');
+  @override
+  late final GeneratedColumn<DateTime> serverUpdatedAtUtc =
+      GeneratedColumn<DateTime>(
+        'server_updated_at_utc',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lastSyncedPayloadHashMeta =
+      const VerificationMeta('lastSyncedPayloadHash');
+  @override
+  late final GeneratedColumn<String> lastSyncedPayloadHash =
+      GeneratedColumn<String>(
+        'last_synced_payload_hash',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lastSyncedRequestIdMeta =
+      const VerificationMeta('lastSyncedRequestId');
+  @override
+  late final GeneratedColumn<String> lastSyncedRequestId =
+      GeneratedColumn<String>(
+        'last_synced_request_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    aggregateType,
+    aggregateId,
+    serverVersion,
+    serverUpdatedAtUtc,
+    lastSyncedPayloadHash,
+    lastSyncedRequestId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_entity_states';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncEntityStateRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('aggregate_type')) {
+      context.handle(
+        _aggregateTypeMeta,
+        aggregateType.isAcceptableOrUnknown(
+          data['aggregate_type']!,
+          _aggregateTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_aggregateTypeMeta);
+    }
+    if (data.containsKey('aggregate_id')) {
+      context.handle(
+        _aggregateIdMeta,
+        aggregateId.isAcceptableOrUnknown(
+          data['aggregate_id']!,
+          _aggregateIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_aggregateIdMeta);
+    }
+    if (data.containsKey('server_version')) {
+      context.handle(
+        _serverVersionMeta,
+        serverVersion.isAcceptableOrUnknown(
+          data['server_version']!,
+          _serverVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('server_updated_at_utc')) {
+      context.handle(
+        _serverUpdatedAtUtcMeta,
+        serverUpdatedAtUtc.isAcceptableOrUnknown(
+          data['server_updated_at_utc']!,
+          _serverUpdatedAtUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_synced_payload_hash')) {
+      context.handle(
+        _lastSyncedPayloadHashMeta,
+        lastSyncedPayloadHash.isAcceptableOrUnknown(
+          data['last_synced_payload_hash']!,
+          _lastSyncedPayloadHashMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_synced_request_id')) {
+      context.handle(
+        _lastSyncedRequestIdMeta,
+        lastSyncedRequestId.isAcceptableOrUnknown(
+          data['last_synced_request_id']!,
+          _lastSyncedRequestIdMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncEntityStateRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncEntityStateRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      aggregateType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}aggregate_type'],
+      )!,
+      aggregateId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}aggregate_id'],
+      )!,
+      serverVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_version'],
+      )!,
+      serverUpdatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}server_updated_at_utc'],
+      ),
+      lastSyncedPayloadHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_synced_payload_hash'],
+      ),
+      lastSyncedRequestId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_synced_request_id'],
+      ),
+    );
+  }
+
+  @override
+  $SyncEntityStatesTable createAlias(String alias) {
+    return $SyncEntityStatesTable(attachedDatabase, alias);
+  }
+}
+
+class SyncEntityStateRow extends DataClass
+    implements Insertable<SyncEntityStateRow> {
+  final String id;
+  final String aggregateType;
+  final String aggregateId;
+  final int serverVersion;
+  final DateTime? serverUpdatedAtUtc;
+  final String? lastSyncedPayloadHash;
+  final String? lastSyncedRequestId;
+  const SyncEntityStateRow({
+    required this.id,
+    required this.aggregateType,
+    required this.aggregateId,
+    required this.serverVersion,
+    this.serverUpdatedAtUtc,
+    this.lastSyncedPayloadHash,
+    this.lastSyncedRequestId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['aggregate_type'] = Variable<String>(aggregateType);
+    map['aggregate_id'] = Variable<String>(aggregateId);
+    map['server_version'] = Variable<int>(serverVersion);
+    if (!nullToAbsent || serverUpdatedAtUtc != null) {
+      map['server_updated_at_utc'] = Variable<DateTime>(serverUpdatedAtUtc);
+    }
+    if (!nullToAbsent || lastSyncedPayloadHash != null) {
+      map['last_synced_payload_hash'] = Variable<String>(lastSyncedPayloadHash);
+    }
+    if (!nullToAbsent || lastSyncedRequestId != null) {
+      map['last_synced_request_id'] = Variable<String>(lastSyncedRequestId);
+    }
+    return map;
+  }
+
+  SyncEntityStatesCompanion toCompanion(bool nullToAbsent) {
+    return SyncEntityStatesCompanion(
+      id: Value(id),
+      aggregateType: Value(aggregateType),
+      aggregateId: Value(aggregateId),
+      serverVersion: Value(serverVersion),
+      serverUpdatedAtUtc: serverUpdatedAtUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUpdatedAtUtc),
+      lastSyncedPayloadHash: lastSyncedPayloadHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncedPayloadHash),
+      lastSyncedRequestId: lastSyncedRequestId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncedRequestId),
+    );
+  }
+
+  factory SyncEntityStateRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncEntityStateRow(
+      id: serializer.fromJson<String>(json['id']),
+      aggregateType: serializer.fromJson<String>(json['aggregateType']),
+      aggregateId: serializer.fromJson<String>(json['aggregateId']),
+      serverVersion: serializer.fromJson<int>(json['serverVersion']),
+      serverUpdatedAtUtc: serializer.fromJson<DateTime?>(
+        json['serverUpdatedAtUtc'],
+      ),
+      lastSyncedPayloadHash: serializer.fromJson<String?>(
+        json['lastSyncedPayloadHash'],
+      ),
+      lastSyncedRequestId: serializer.fromJson<String?>(
+        json['lastSyncedRequestId'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'aggregateType': serializer.toJson<String>(aggregateType),
+      'aggregateId': serializer.toJson<String>(aggregateId),
+      'serverVersion': serializer.toJson<int>(serverVersion),
+      'serverUpdatedAtUtc': serializer.toJson<DateTime?>(serverUpdatedAtUtc),
+      'lastSyncedPayloadHash': serializer.toJson<String?>(
+        lastSyncedPayloadHash,
+      ),
+      'lastSyncedRequestId': serializer.toJson<String?>(lastSyncedRequestId),
+    };
+  }
+
+  SyncEntityStateRow copyWith({
+    String? id,
+    String? aggregateType,
+    String? aggregateId,
+    int? serverVersion,
+    Value<DateTime?> serverUpdatedAtUtc = const Value.absent(),
+    Value<String?> lastSyncedPayloadHash = const Value.absent(),
+    Value<String?> lastSyncedRequestId = const Value.absent(),
+  }) => SyncEntityStateRow(
+    id: id ?? this.id,
+    aggregateType: aggregateType ?? this.aggregateType,
+    aggregateId: aggregateId ?? this.aggregateId,
+    serverVersion: serverVersion ?? this.serverVersion,
+    serverUpdatedAtUtc: serverUpdatedAtUtc.present
+        ? serverUpdatedAtUtc.value
+        : this.serverUpdatedAtUtc,
+    lastSyncedPayloadHash: lastSyncedPayloadHash.present
+        ? lastSyncedPayloadHash.value
+        : this.lastSyncedPayloadHash,
+    lastSyncedRequestId: lastSyncedRequestId.present
+        ? lastSyncedRequestId.value
+        : this.lastSyncedRequestId,
+  );
+  SyncEntityStateRow copyWithCompanion(SyncEntityStatesCompanion data) {
+    return SyncEntityStateRow(
+      id: data.id.present ? data.id.value : this.id,
+      aggregateType: data.aggregateType.present
+          ? data.aggregateType.value
+          : this.aggregateType,
+      aggregateId: data.aggregateId.present
+          ? data.aggregateId.value
+          : this.aggregateId,
+      serverVersion: data.serverVersion.present
+          ? data.serverVersion.value
+          : this.serverVersion,
+      serverUpdatedAtUtc: data.serverUpdatedAtUtc.present
+          ? data.serverUpdatedAtUtc.value
+          : this.serverUpdatedAtUtc,
+      lastSyncedPayloadHash: data.lastSyncedPayloadHash.present
+          ? data.lastSyncedPayloadHash.value
+          : this.lastSyncedPayloadHash,
+      lastSyncedRequestId: data.lastSyncedRequestId.present
+          ? data.lastSyncedRequestId.value
+          : this.lastSyncedRequestId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncEntityStateRow(')
+          ..write('id: $id, ')
+          ..write('aggregateType: $aggregateType, ')
+          ..write('aggregateId: $aggregateId, ')
+          ..write('serverVersion: $serverVersion, ')
+          ..write('serverUpdatedAtUtc: $serverUpdatedAtUtc, ')
+          ..write('lastSyncedPayloadHash: $lastSyncedPayloadHash, ')
+          ..write('lastSyncedRequestId: $lastSyncedRequestId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    aggregateType,
+    aggregateId,
+    serverVersion,
+    serverUpdatedAtUtc,
+    lastSyncedPayloadHash,
+    lastSyncedRequestId,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncEntityStateRow &&
+          other.id == this.id &&
+          other.aggregateType == this.aggregateType &&
+          other.aggregateId == this.aggregateId &&
+          other.serverVersion == this.serverVersion &&
+          other.serverUpdatedAtUtc == this.serverUpdatedAtUtc &&
+          other.lastSyncedPayloadHash == this.lastSyncedPayloadHash &&
+          other.lastSyncedRequestId == this.lastSyncedRequestId);
+}
+
+class SyncEntityStatesCompanion extends UpdateCompanion<SyncEntityStateRow> {
+  final Value<String> id;
+  final Value<String> aggregateType;
+  final Value<String> aggregateId;
+  final Value<int> serverVersion;
+  final Value<DateTime?> serverUpdatedAtUtc;
+  final Value<String?> lastSyncedPayloadHash;
+  final Value<String?> lastSyncedRequestId;
+  final Value<int> rowid;
+  const SyncEntityStatesCompanion({
+    this.id = const Value.absent(),
+    this.aggregateType = const Value.absent(),
+    this.aggregateId = const Value.absent(),
+    this.serverVersion = const Value.absent(),
+    this.serverUpdatedAtUtc = const Value.absent(),
+    this.lastSyncedPayloadHash = const Value.absent(),
+    this.lastSyncedRequestId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncEntityStatesCompanion.insert({
+    this.id = const Value.absent(),
+    required String aggregateType,
+    required String aggregateId,
+    this.serverVersion = const Value.absent(),
+    this.serverUpdatedAtUtc = const Value.absent(),
+    this.lastSyncedPayloadHash = const Value.absent(),
+    this.lastSyncedRequestId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : aggregateType = Value(aggregateType),
+       aggregateId = Value(aggregateId);
+  static Insertable<SyncEntityStateRow> custom({
+    Expression<String>? id,
+    Expression<String>? aggregateType,
+    Expression<String>? aggregateId,
+    Expression<int>? serverVersion,
+    Expression<DateTime>? serverUpdatedAtUtc,
+    Expression<String>? lastSyncedPayloadHash,
+    Expression<String>? lastSyncedRequestId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (aggregateType != null) 'aggregate_type': aggregateType,
+      if (aggregateId != null) 'aggregate_id': aggregateId,
+      if (serverVersion != null) 'server_version': serverVersion,
+      if (serverUpdatedAtUtc != null)
+        'server_updated_at_utc': serverUpdatedAtUtc,
+      if (lastSyncedPayloadHash != null)
+        'last_synced_payload_hash': lastSyncedPayloadHash,
+      if (lastSyncedRequestId != null)
+        'last_synced_request_id': lastSyncedRequestId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncEntityStatesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? aggregateType,
+    Value<String>? aggregateId,
+    Value<int>? serverVersion,
+    Value<DateTime?>? serverUpdatedAtUtc,
+    Value<String?>? lastSyncedPayloadHash,
+    Value<String?>? lastSyncedRequestId,
+    Value<int>? rowid,
+  }) {
+    return SyncEntityStatesCompanion(
+      id: id ?? this.id,
+      aggregateType: aggregateType ?? this.aggregateType,
+      aggregateId: aggregateId ?? this.aggregateId,
+      serverVersion: serverVersion ?? this.serverVersion,
+      serverUpdatedAtUtc: serverUpdatedAtUtc ?? this.serverUpdatedAtUtc,
+      lastSyncedPayloadHash:
+          lastSyncedPayloadHash ?? this.lastSyncedPayloadHash,
+      lastSyncedRequestId: lastSyncedRequestId ?? this.lastSyncedRequestId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (aggregateType.present) {
+      map['aggregate_type'] = Variable<String>(aggregateType.value);
+    }
+    if (aggregateId.present) {
+      map['aggregate_id'] = Variable<String>(aggregateId.value);
+    }
+    if (serverVersion.present) {
+      map['server_version'] = Variable<int>(serverVersion.value);
+    }
+    if (serverUpdatedAtUtc.present) {
+      map['server_updated_at_utc'] = Variable<DateTime>(
+        serverUpdatedAtUtc.value,
+      );
+    }
+    if (lastSyncedPayloadHash.present) {
+      map['last_synced_payload_hash'] = Variable<String>(
+        lastSyncedPayloadHash.value,
+      );
+    }
+    if (lastSyncedRequestId.present) {
+      map['last_synced_request_id'] = Variable<String>(
+        lastSyncedRequestId.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncEntityStatesCompanion(')
+          ..write('id: $id, ')
+          ..write('aggregateType: $aggregateType, ')
+          ..write('aggregateId: $aggregateId, ')
+          ..write('serverVersion: $serverVersion, ')
+          ..write('serverUpdatedAtUtc: $serverUpdatedAtUtc, ')
+          ..write('lastSyncedPayloadHash: $lastSyncedPayloadHash, ')
+          ..write('lastSyncedRequestId: $lastSyncedRequestId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncAttemptLogsTable extends SyncAttemptLogs
+    with TableInfo<$SyncAttemptLogsTable, SyncAttemptLogRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncAttemptLogsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _requestIdMeta = const VerificationMeta(
+    'requestId',
+  );
+  @override
+  late final GeneratedColumn<String> requestId = GeneratedColumn<String>(
+    'request_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _attemptNumberMeta = const VerificationMeta(
+    'attemptNumber',
+  );
+  @override
+  late final GeneratedColumn<int> attemptNumber = GeneratedColumn<int>(
+    'attempt_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _finishedAtMeta = const VerificationMeta(
+    'finishedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> finishedAt = GeneratedColumn<DateTime>(
+    'finished_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _outcomeMeta = const VerificationMeta(
+    'outcome',
+  );
+  @override
+  late final GeneratedColumn<String> outcome = GeneratedColumn<String>(
+    'outcome',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 32,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _httpStatusMeta = const VerificationMeta(
+    'httpStatus',
+  );
+  @override
+  late final GeneratedColumn<int> httpStatus = GeneratedColumn<int>(
+    'http_status',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _safeErrorCodeMeta = const VerificationMeta(
+    'safeErrorCode',
+  );
+  @override
+  late final GeneratedColumn<String> safeErrorCode = GeneratedColumn<String>(
+    'safe_error_code',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 96),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _safeErrorMessageMeta = const VerificationMeta(
+    'safeErrorMessage',
+  );
+  @override
+  late final GeneratedColumn<String> safeErrorMessage = GeneratedColumn<String>(
+    'safe_error_message',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 512),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    requestId,
+    attemptNumber,
+    startedAt,
+    finishedAt,
+    outcome,
+    httpStatus,
+    safeErrorCode,
+    safeErrorMessage,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_attempt_logs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncAttemptLogRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('request_id')) {
+      context.handle(
+        _requestIdMeta,
+        requestId.isAcceptableOrUnknown(data['request_id']!, _requestIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_requestIdMeta);
+    }
+    if (data.containsKey('attempt_number')) {
+      context.handle(
+        _attemptNumberMeta,
+        attemptNumber.isAcceptableOrUnknown(
+          data['attempt_number']!,
+          _attemptNumberMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_attemptNumberMeta);
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('finished_at')) {
+      context.handle(
+        _finishedAtMeta,
+        finishedAt.isAcceptableOrUnknown(data['finished_at']!, _finishedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_finishedAtMeta);
+    }
+    if (data.containsKey('outcome')) {
+      context.handle(
+        _outcomeMeta,
+        outcome.isAcceptableOrUnknown(data['outcome']!, _outcomeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_outcomeMeta);
+    }
+    if (data.containsKey('http_status')) {
+      context.handle(
+        _httpStatusMeta,
+        httpStatus.isAcceptableOrUnknown(data['http_status']!, _httpStatusMeta),
+      );
+    }
+    if (data.containsKey('safe_error_code')) {
+      context.handle(
+        _safeErrorCodeMeta,
+        safeErrorCode.isAcceptableOrUnknown(
+          data['safe_error_code']!,
+          _safeErrorCodeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('safe_error_message')) {
+      context.handle(
+        _safeErrorMessageMeta,
+        safeErrorMessage.isAcceptableOrUnknown(
+          data['safe_error_message']!,
+          _safeErrorMessageMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncAttemptLogRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncAttemptLogRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      requestId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}request_id'],
+      )!,
+      attemptNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempt_number'],
+      )!,
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      )!,
+      finishedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}finished_at'],
+      )!,
+      outcome: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}outcome'],
+      )!,
+      httpStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}http_status'],
+      ),
+      safeErrorCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}safe_error_code'],
+      ),
+      safeErrorMessage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}safe_error_message'],
+      ),
+    );
+  }
+
+  @override
+  $SyncAttemptLogsTable createAlias(String alias) {
+    return $SyncAttemptLogsTable(attachedDatabase, alias);
+  }
+}
+
+class SyncAttemptLogRow extends DataClass
+    implements Insertable<SyncAttemptLogRow> {
+  final String id;
+  final String requestId;
+  final int attemptNumber;
+  final DateTime startedAt;
+  final DateTime finishedAt;
+  final String outcome;
+  final int? httpStatus;
+  final String? safeErrorCode;
+  final String? safeErrorMessage;
+  const SyncAttemptLogRow({
+    required this.id,
+    required this.requestId,
+    required this.attemptNumber,
+    required this.startedAt,
+    required this.finishedAt,
+    required this.outcome,
+    this.httpStatus,
+    this.safeErrorCode,
+    this.safeErrorMessage,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['request_id'] = Variable<String>(requestId);
+    map['attempt_number'] = Variable<int>(attemptNumber);
+    map['started_at'] = Variable<DateTime>(startedAt);
+    map['finished_at'] = Variable<DateTime>(finishedAt);
+    map['outcome'] = Variable<String>(outcome);
+    if (!nullToAbsent || httpStatus != null) {
+      map['http_status'] = Variable<int>(httpStatus);
+    }
+    if (!nullToAbsent || safeErrorCode != null) {
+      map['safe_error_code'] = Variable<String>(safeErrorCode);
+    }
+    if (!nullToAbsent || safeErrorMessage != null) {
+      map['safe_error_message'] = Variable<String>(safeErrorMessage);
+    }
+    return map;
+  }
+
+  SyncAttemptLogsCompanion toCompanion(bool nullToAbsent) {
+    return SyncAttemptLogsCompanion(
+      id: Value(id),
+      requestId: Value(requestId),
+      attemptNumber: Value(attemptNumber),
+      startedAt: Value(startedAt),
+      finishedAt: Value(finishedAt),
+      outcome: Value(outcome),
+      httpStatus: httpStatus == null && nullToAbsent
+          ? const Value.absent()
+          : Value(httpStatus),
+      safeErrorCode: safeErrorCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(safeErrorCode),
+      safeErrorMessage: safeErrorMessage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(safeErrorMessage),
+    );
+  }
+
+  factory SyncAttemptLogRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncAttemptLogRow(
+      id: serializer.fromJson<String>(json['id']),
+      requestId: serializer.fromJson<String>(json['requestId']),
+      attemptNumber: serializer.fromJson<int>(json['attemptNumber']),
+      startedAt: serializer.fromJson<DateTime>(json['startedAt']),
+      finishedAt: serializer.fromJson<DateTime>(json['finishedAt']),
+      outcome: serializer.fromJson<String>(json['outcome']),
+      httpStatus: serializer.fromJson<int?>(json['httpStatus']),
+      safeErrorCode: serializer.fromJson<String?>(json['safeErrorCode']),
+      safeErrorMessage: serializer.fromJson<String?>(json['safeErrorMessage']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'requestId': serializer.toJson<String>(requestId),
+      'attemptNumber': serializer.toJson<int>(attemptNumber),
+      'startedAt': serializer.toJson<DateTime>(startedAt),
+      'finishedAt': serializer.toJson<DateTime>(finishedAt),
+      'outcome': serializer.toJson<String>(outcome),
+      'httpStatus': serializer.toJson<int?>(httpStatus),
+      'safeErrorCode': serializer.toJson<String?>(safeErrorCode),
+      'safeErrorMessage': serializer.toJson<String?>(safeErrorMessage),
+    };
+  }
+
+  SyncAttemptLogRow copyWith({
+    String? id,
+    String? requestId,
+    int? attemptNumber,
+    DateTime? startedAt,
+    DateTime? finishedAt,
+    String? outcome,
+    Value<int?> httpStatus = const Value.absent(),
+    Value<String?> safeErrorCode = const Value.absent(),
+    Value<String?> safeErrorMessage = const Value.absent(),
+  }) => SyncAttemptLogRow(
+    id: id ?? this.id,
+    requestId: requestId ?? this.requestId,
+    attemptNumber: attemptNumber ?? this.attemptNumber,
+    startedAt: startedAt ?? this.startedAt,
+    finishedAt: finishedAt ?? this.finishedAt,
+    outcome: outcome ?? this.outcome,
+    httpStatus: httpStatus.present ? httpStatus.value : this.httpStatus,
+    safeErrorCode: safeErrorCode.present
+        ? safeErrorCode.value
+        : this.safeErrorCode,
+    safeErrorMessage: safeErrorMessage.present
+        ? safeErrorMessage.value
+        : this.safeErrorMessage,
+  );
+  SyncAttemptLogRow copyWithCompanion(SyncAttemptLogsCompanion data) {
+    return SyncAttemptLogRow(
+      id: data.id.present ? data.id.value : this.id,
+      requestId: data.requestId.present ? data.requestId.value : this.requestId,
+      attemptNumber: data.attemptNumber.present
+          ? data.attemptNumber.value
+          : this.attemptNumber,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      finishedAt: data.finishedAt.present
+          ? data.finishedAt.value
+          : this.finishedAt,
+      outcome: data.outcome.present ? data.outcome.value : this.outcome,
+      httpStatus: data.httpStatus.present
+          ? data.httpStatus.value
+          : this.httpStatus,
+      safeErrorCode: data.safeErrorCode.present
+          ? data.safeErrorCode.value
+          : this.safeErrorCode,
+      safeErrorMessage: data.safeErrorMessage.present
+          ? data.safeErrorMessage.value
+          : this.safeErrorMessage,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncAttemptLogRow(')
+          ..write('id: $id, ')
+          ..write('requestId: $requestId, ')
+          ..write('attemptNumber: $attemptNumber, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('finishedAt: $finishedAt, ')
+          ..write('outcome: $outcome, ')
+          ..write('httpStatus: $httpStatus, ')
+          ..write('safeErrorCode: $safeErrorCode, ')
+          ..write('safeErrorMessage: $safeErrorMessage')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    requestId,
+    attemptNumber,
+    startedAt,
+    finishedAt,
+    outcome,
+    httpStatus,
+    safeErrorCode,
+    safeErrorMessage,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncAttemptLogRow &&
+          other.id == this.id &&
+          other.requestId == this.requestId &&
+          other.attemptNumber == this.attemptNumber &&
+          other.startedAt == this.startedAt &&
+          other.finishedAt == this.finishedAt &&
+          other.outcome == this.outcome &&
+          other.httpStatus == this.httpStatus &&
+          other.safeErrorCode == this.safeErrorCode &&
+          other.safeErrorMessage == this.safeErrorMessage);
+}
+
+class SyncAttemptLogsCompanion extends UpdateCompanion<SyncAttemptLogRow> {
+  final Value<String> id;
+  final Value<String> requestId;
+  final Value<int> attemptNumber;
+  final Value<DateTime> startedAt;
+  final Value<DateTime> finishedAt;
+  final Value<String> outcome;
+  final Value<int?> httpStatus;
+  final Value<String?> safeErrorCode;
+  final Value<String?> safeErrorMessage;
+  final Value<int> rowid;
+  const SyncAttemptLogsCompanion({
+    this.id = const Value.absent(),
+    this.requestId = const Value.absent(),
+    this.attemptNumber = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.finishedAt = const Value.absent(),
+    this.outcome = const Value.absent(),
+    this.httpStatus = const Value.absent(),
+    this.safeErrorCode = const Value.absent(),
+    this.safeErrorMessage = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncAttemptLogsCompanion.insert({
+    this.id = const Value.absent(),
+    required String requestId,
+    required int attemptNumber,
+    required DateTime startedAt,
+    required DateTime finishedAt,
+    required String outcome,
+    this.httpStatus = const Value.absent(),
+    this.safeErrorCode = const Value.absent(),
+    this.safeErrorMessage = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : requestId = Value(requestId),
+       attemptNumber = Value(attemptNumber),
+       startedAt = Value(startedAt),
+       finishedAt = Value(finishedAt),
+       outcome = Value(outcome);
+  static Insertable<SyncAttemptLogRow> custom({
+    Expression<String>? id,
+    Expression<String>? requestId,
+    Expression<int>? attemptNumber,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? finishedAt,
+    Expression<String>? outcome,
+    Expression<int>? httpStatus,
+    Expression<String>? safeErrorCode,
+    Expression<String>? safeErrorMessage,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (requestId != null) 'request_id': requestId,
+      if (attemptNumber != null) 'attempt_number': attemptNumber,
+      if (startedAt != null) 'started_at': startedAt,
+      if (finishedAt != null) 'finished_at': finishedAt,
+      if (outcome != null) 'outcome': outcome,
+      if (httpStatus != null) 'http_status': httpStatus,
+      if (safeErrorCode != null) 'safe_error_code': safeErrorCode,
+      if (safeErrorMessage != null) 'safe_error_message': safeErrorMessage,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncAttemptLogsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? requestId,
+    Value<int>? attemptNumber,
+    Value<DateTime>? startedAt,
+    Value<DateTime>? finishedAt,
+    Value<String>? outcome,
+    Value<int?>? httpStatus,
+    Value<String?>? safeErrorCode,
+    Value<String?>? safeErrorMessage,
+    Value<int>? rowid,
+  }) {
+    return SyncAttemptLogsCompanion(
+      id: id ?? this.id,
+      requestId: requestId ?? this.requestId,
+      attemptNumber: attemptNumber ?? this.attemptNumber,
+      startedAt: startedAt ?? this.startedAt,
+      finishedAt: finishedAt ?? this.finishedAt,
+      outcome: outcome ?? this.outcome,
+      httpStatus: httpStatus ?? this.httpStatus,
+      safeErrorCode: safeErrorCode ?? this.safeErrorCode,
+      safeErrorMessage: safeErrorMessage ?? this.safeErrorMessage,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (requestId.present) {
+      map['request_id'] = Variable<String>(requestId.value);
+    }
+    if (attemptNumber.present) {
+      map['attempt_number'] = Variable<int>(attemptNumber.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (finishedAt.present) {
+      map['finished_at'] = Variable<DateTime>(finishedAt.value);
+    }
+    if (outcome.present) {
+      map['outcome'] = Variable<String>(outcome.value);
+    }
+    if (httpStatus.present) {
+      map['http_status'] = Variable<int>(httpStatus.value);
+    }
+    if (safeErrorCode.present) {
+      map['safe_error_code'] = Variable<String>(safeErrorCode.value);
+    }
+    if (safeErrorMessage.present) {
+      map['safe_error_message'] = Variable<String>(safeErrorMessage.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncAttemptLogsCompanion(')
+          ..write('id: $id, ')
+          ..write('requestId: $requestId, ')
+          ..write('attemptNumber: $attemptNumber, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('finishedAt: $finishedAt, ')
+          ..write('outcome: $outcome, ')
+          ..write('httpStatus: $httpStatus, ')
+          ..write('safeErrorCode: $safeErrorCode, ')
+          ..write('safeErrorMessage: $safeErrorMessage, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncConflictLogsTable extends SyncConflictLogs
+    with TableInfo<$SyncConflictLogsTable, SyncConflictLogRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncConflictLogsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _requestIdMeta = const VerificationMeta(
+    'requestId',
+  );
+  @override
+  late final GeneratedColumn<String> requestId = GeneratedColumn<String>(
+    'request_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _aggregateTypeMeta = const VerificationMeta(
+    'aggregateType',
+  );
+  @override
+  late final GeneratedColumn<String> aggregateType = GeneratedColumn<String>(
+    'aggregate_type',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _aggregateIdMeta = const VerificationMeta(
+    'aggregateId',
+  );
+  @override
+  late final GeneratedColumn<String> aggregateId = GeneratedColumn<String>(
+    'aggregate_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _operationTypeMeta = const VerificationMeta(
+    'operationType',
+  );
+  @override
+  late final GeneratedColumn<String> operationType = GeneratedColumn<String>(
+    'operation_type',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _conflictCodeMeta = const VerificationMeta(
+    'conflictCode',
+  );
+  @override
+  late final GeneratedColumn<String> conflictCode = GeneratedColumn<String>(
+    'conflict_code',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 96,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _baseVersionMeta = const VerificationMeta(
+    'baseVersion',
+  );
+  @override
+  late final GeneratedColumn<int> baseVersion = GeneratedColumn<int>(
+    'base_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _serverVersionMeta = const VerificationMeta(
+    'serverVersion',
+  );
+  @override
+  late final GeneratedColumn<int> serverVersion = GeneratedColumn<int>(
+    'server_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _safeDetailJsonMeta = const VerificationMeta(
+    'safeDetailJson',
+  );
+  @override
+  late final GeneratedColumn<String> safeDetailJson = GeneratedColumn<String>(
+    'safe_detail_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  static const VerificationMeta _detectedAtMeta = const VerificationMeta(
+    'detectedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> detectedAt = GeneratedColumn<DateTime>(
+    'detected_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _resolvedAtMeta = const VerificationMeta(
+    'resolvedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> resolvedAt = GeneratedColumn<DateTime>(
+    'resolved_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _resolutionMeta = const VerificationMeta(
+    'resolution',
+  );
+  @override
+  late final GeneratedColumn<String> resolution = GeneratedColumn<String>(
+    'resolution',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 64),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    requestId,
+    aggregateType,
+    aggregateId,
+    operationType,
+    conflictCode,
+    baseVersion,
+    serverVersion,
+    safeDetailJson,
+    detectedAt,
+    resolvedAt,
+    resolution,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_conflict_logs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncConflictLogRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('request_id')) {
+      context.handle(
+        _requestIdMeta,
+        requestId.isAcceptableOrUnknown(data['request_id']!, _requestIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_requestIdMeta);
+    }
+    if (data.containsKey('aggregate_type')) {
+      context.handle(
+        _aggregateTypeMeta,
+        aggregateType.isAcceptableOrUnknown(
+          data['aggregate_type']!,
+          _aggregateTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_aggregateTypeMeta);
+    }
+    if (data.containsKey('aggregate_id')) {
+      context.handle(
+        _aggregateIdMeta,
+        aggregateId.isAcceptableOrUnknown(
+          data['aggregate_id']!,
+          _aggregateIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_aggregateIdMeta);
+    }
+    if (data.containsKey('operation_type')) {
+      context.handle(
+        _operationTypeMeta,
+        operationType.isAcceptableOrUnknown(
+          data['operation_type']!,
+          _operationTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_operationTypeMeta);
+    }
+    if (data.containsKey('conflict_code')) {
+      context.handle(
+        _conflictCodeMeta,
+        conflictCode.isAcceptableOrUnknown(
+          data['conflict_code']!,
+          _conflictCodeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_conflictCodeMeta);
+    }
+    if (data.containsKey('base_version')) {
+      context.handle(
+        _baseVersionMeta,
+        baseVersion.isAcceptableOrUnknown(
+          data['base_version']!,
+          _baseVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_baseVersionMeta);
+    }
+    if (data.containsKey('server_version')) {
+      context.handle(
+        _serverVersionMeta,
+        serverVersion.isAcceptableOrUnknown(
+          data['server_version']!,
+          _serverVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('safe_detail_json')) {
+      context.handle(
+        _safeDetailJsonMeta,
+        safeDetailJson.isAcceptableOrUnknown(
+          data['safe_detail_json']!,
+          _safeDetailJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('detected_at')) {
+      context.handle(
+        _detectedAtMeta,
+        detectedAt.isAcceptableOrUnknown(data['detected_at']!, _detectedAtMeta),
+      );
+    }
+    if (data.containsKey('resolved_at')) {
+      context.handle(
+        _resolvedAtMeta,
+        resolvedAt.isAcceptableOrUnknown(data['resolved_at']!, _resolvedAtMeta),
+      );
+    }
+    if (data.containsKey('resolution')) {
+      context.handle(
+        _resolutionMeta,
+        resolution.isAcceptableOrUnknown(data['resolution']!, _resolutionMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncConflictLogRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncConflictLogRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      requestId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}request_id'],
+      )!,
+      aggregateType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}aggregate_type'],
+      )!,
+      aggregateId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}aggregate_id'],
+      )!,
+      operationType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}operation_type'],
+      )!,
+      conflictCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conflict_code'],
+      )!,
+      baseVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}base_version'],
+      )!,
+      serverVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_version'],
+      ),
+      safeDetailJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}safe_detail_json'],
+      )!,
+      detectedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}detected_at'],
+      )!,
+      resolvedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}resolved_at'],
+      ),
+      resolution: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}resolution'],
+      ),
+    );
+  }
+
+  @override
+  $SyncConflictLogsTable createAlias(String alias) {
+    return $SyncConflictLogsTable(attachedDatabase, alias);
+  }
+}
+
+class SyncConflictLogRow extends DataClass
+    implements Insertable<SyncConflictLogRow> {
+  final String id;
+  final String requestId;
+  final String aggregateType;
+  final String aggregateId;
+  final String operationType;
+  final String conflictCode;
+  final int baseVersion;
+  final int? serverVersion;
+  final String safeDetailJson;
+  final DateTime detectedAt;
+  final DateTime? resolvedAt;
+  final String? resolution;
+  const SyncConflictLogRow({
+    required this.id,
+    required this.requestId,
+    required this.aggregateType,
+    required this.aggregateId,
+    required this.operationType,
+    required this.conflictCode,
+    required this.baseVersion,
+    this.serverVersion,
+    required this.safeDetailJson,
+    required this.detectedAt,
+    this.resolvedAt,
+    this.resolution,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['request_id'] = Variable<String>(requestId);
+    map['aggregate_type'] = Variable<String>(aggregateType);
+    map['aggregate_id'] = Variable<String>(aggregateId);
+    map['operation_type'] = Variable<String>(operationType);
+    map['conflict_code'] = Variable<String>(conflictCode);
+    map['base_version'] = Variable<int>(baseVersion);
+    if (!nullToAbsent || serverVersion != null) {
+      map['server_version'] = Variable<int>(serverVersion);
+    }
+    map['safe_detail_json'] = Variable<String>(safeDetailJson);
+    map['detected_at'] = Variable<DateTime>(detectedAt);
+    if (!nullToAbsent || resolvedAt != null) {
+      map['resolved_at'] = Variable<DateTime>(resolvedAt);
+    }
+    if (!nullToAbsent || resolution != null) {
+      map['resolution'] = Variable<String>(resolution);
+    }
+    return map;
+  }
+
+  SyncConflictLogsCompanion toCompanion(bool nullToAbsent) {
+    return SyncConflictLogsCompanion(
+      id: Value(id),
+      requestId: Value(requestId),
+      aggregateType: Value(aggregateType),
+      aggregateId: Value(aggregateId),
+      operationType: Value(operationType),
+      conflictCode: Value(conflictCode),
+      baseVersion: Value(baseVersion),
+      serverVersion: serverVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverVersion),
+      safeDetailJson: Value(safeDetailJson),
+      detectedAt: Value(detectedAt),
+      resolvedAt: resolvedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(resolvedAt),
+      resolution: resolution == null && nullToAbsent
+          ? const Value.absent()
+          : Value(resolution),
+    );
+  }
+
+  factory SyncConflictLogRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncConflictLogRow(
+      id: serializer.fromJson<String>(json['id']),
+      requestId: serializer.fromJson<String>(json['requestId']),
+      aggregateType: serializer.fromJson<String>(json['aggregateType']),
+      aggregateId: serializer.fromJson<String>(json['aggregateId']),
+      operationType: serializer.fromJson<String>(json['operationType']),
+      conflictCode: serializer.fromJson<String>(json['conflictCode']),
+      baseVersion: serializer.fromJson<int>(json['baseVersion']),
+      serverVersion: serializer.fromJson<int?>(json['serverVersion']),
+      safeDetailJson: serializer.fromJson<String>(json['safeDetailJson']),
+      detectedAt: serializer.fromJson<DateTime>(json['detectedAt']),
+      resolvedAt: serializer.fromJson<DateTime?>(json['resolvedAt']),
+      resolution: serializer.fromJson<String?>(json['resolution']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'requestId': serializer.toJson<String>(requestId),
+      'aggregateType': serializer.toJson<String>(aggregateType),
+      'aggregateId': serializer.toJson<String>(aggregateId),
+      'operationType': serializer.toJson<String>(operationType),
+      'conflictCode': serializer.toJson<String>(conflictCode),
+      'baseVersion': serializer.toJson<int>(baseVersion),
+      'serverVersion': serializer.toJson<int?>(serverVersion),
+      'safeDetailJson': serializer.toJson<String>(safeDetailJson),
+      'detectedAt': serializer.toJson<DateTime>(detectedAt),
+      'resolvedAt': serializer.toJson<DateTime?>(resolvedAt),
+      'resolution': serializer.toJson<String?>(resolution),
+    };
+  }
+
+  SyncConflictLogRow copyWith({
+    String? id,
+    String? requestId,
+    String? aggregateType,
+    String? aggregateId,
+    String? operationType,
+    String? conflictCode,
+    int? baseVersion,
+    Value<int?> serverVersion = const Value.absent(),
+    String? safeDetailJson,
+    DateTime? detectedAt,
+    Value<DateTime?> resolvedAt = const Value.absent(),
+    Value<String?> resolution = const Value.absent(),
+  }) => SyncConflictLogRow(
+    id: id ?? this.id,
+    requestId: requestId ?? this.requestId,
+    aggregateType: aggregateType ?? this.aggregateType,
+    aggregateId: aggregateId ?? this.aggregateId,
+    operationType: operationType ?? this.operationType,
+    conflictCode: conflictCode ?? this.conflictCode,
+    baseVersion: baseVersion ?? this.baseVersion,
+    serverVersion: serverVersion.present
+        ? serverVersion.value
+        : this.serverVersion,
+    safeDetailJson: safeDetailJson ?? this.safeDetailJson,
+    detectedAt: detectedAt ?? this.detectedAt,
+    resolvedAt: resolvedAt.present ? resolvedAt.value : this.resolvedAt,
+    resolution: resolution.present ? resolution.value : this.resolution,
+  );
+  SyncConflictLogRow copyWithCompanion(SyncConflictLogsCompanion data) {
+    return SyncConflictLogRow(
+      id: data.id.present ? data.id.value : this.id,
+      requestId: data.requestId.present ? data.requestId.value : this.requestId,
+      aggregateType: data.aggregateType.present
+          ? data.aggregateType.value
+          : this.aggregateType,
+      aggregateId: data.aggregateId.present
+          ? data.aggregateId.value
+          : this.aggregateId,
+      operationType: data.operationType.present
+          ? data.operationType.value
+          : this.operationType,
+      conflictCode: data.conflictCode.present
+          ? data.conflictCode.value
+          : this.conflictCode,
+      baseVersion: data.baseVersion.present
+          ? data.baseVersion.value
+          : this.baseVersion,
+      serverVersion: data.serverVersion.present
+          ? data.serverVersion.value
+          : this.serverVersion,
+      safeDetailJson: data.safeDetailJson.present
+          ? data.safeDetailJson.value
+          : this.safeDetailJson,
+      detectedAt: data.detectedAt.present
+          ? data.detectedAt.value
+          : this.detectedAt,
+      resolvedAt: data.resolvedAt.present
+          ? data.resolvedAt.value
+          : this.resolvedAt,
+      resolution: data.resolution.present
+          ? data.resolution.value
+          : this.resolution,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncConflictLogRow(')
+          ..write('id: $id, ')
+          ..write('requestId: $requestId, ')
+          ..write('aggregateType: $aggregateType, ')
+          ..write('aggregateId: $aggregateId, ')
+          ..write('operationType: $operationType, ')
+          ..write('conflictCode: $conflictCode, ')
+          ..write('baseVersion: $baseVersion, ')
+          ..write('serverVersion: $serverVersion, ')
+          ..write('safeDetailJson: $safeDetailJson, ')
+          ..write('detectedAt: $detectedAt, ')
+          ..write('resolvedAt: $resolvedAt, ')
+          ..write('resolution: $resolution')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    requestId,
+    aggregateType,
+    aggregateId,
+    operationType,
+    conflictCode,
+    baseVersion,
+    serverVersion,
+    safeDetailJson,
+    detectedAt,
+    resolvedAt,
+    resolution,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncConflictLogRow &&
+          other.id == this.id &&
+          other.requestId == this.requestId &&
+          other.aggregateType == this.aggregateType &&
+          other.aggregateId == this.aggregateId &&
+          other.operationType == this.operationType &&
+          other.conflictCode == this.conflictCode &&
+          other.baseVersion == this.baseVersion &&
+          other.serverVersion == this.serverVersion &&
+          other.safeDetailJson == this.safeDetailJson &&
+          other.detectedAt == this.detectedAt &&
+          other.resolvedAt == this.resolvedAt &&
+          other.resolution == this.resolution);
+}
+
+class SyncConflictLogsCompanion extends UpdateCompanion<SyncConflictLogRow> {
+  final Value<String> id;
+  final Value<String> requestId;
+  final Value<String> aggregateType;
+  final Value<String> aggregateId;
+  final Value<String> operationType;
+  final Value<String> conflictCode;
+  final Value<int> baseVersion;
+  final Value<int?> serverVersion;
+  final Value<String> safeDetailJson;
+  final Value<DateTime> detectedAt;
+  final Value<DateTime?> resolvedAt;
+  final Value<String?> resolution;
+  final Value<int> rowid;
+  const SyncConflictLogsCompanion({
+    this.id = const Value.absent(),
+    this.requestId = const Value.absent(),
+    this.aggregateType = const Value.absent(),
+    this.aggregateId = const Value.absent(),
+    this.operationType = const Value.absent(),
+    this.conflictCode = const Value.absent(),
+    this.baseVersion = const Value.absent(),
+    this.serverVersion = const Value.absent(),
+    this.safeDetailJson = const Value.absent(),
+    this.detectedAt = const Value.absent(),
+    this.resolvedAt = const Value.absent(),
+    this.resolution = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncConflictLogsCompanion.insert({
+    this.id = const Value.absent(),
+    required String requestId,
+    required String aggregateType,
+    required String aggregateId,
+    required String operationType,
+    required String conflictCode,
+    required int baseVersion,
+    this.serverVersion = const Value.absent(),
+    this.safeDetailJson = const Value.absent(),
+    this.detectedAt = const Value.absent(),
+    this.resolvedAt = const Value.absent(),
+    this.resolution = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : requestId = Value(requestId),
+       aggregateType = Value(aggregateType),
+       aggregateId = Value(aggregateId),
+       operationType = Value(operationType),
+       conflictCode = Value(conflictCode),
+       baseVersion = Value(baseVersion);
+  static Insertable<SyncConflictLogRow> custom({
+    Expression<String>? id,
+    Expression<String>? requestId,
+    Expression<String>? aggregateType,
+    Expression<String>? aggregateId,
+    Expression<String>? operationType,
+    Expression<String>? conflictCode,
+    Expression<int>? baseVersion,
+    Expression<int>? serverVersion,
+    Expression<String>? safeDetailJson,
+    Expression<DateTime>? detectedAt,
+    Expression<DateTime>? resolvedAt,
+    Expression<String>? resolution,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (requestId != null) 'request_id': requestId,
+      if (aggregateType != null) 'aggregate_type': aggregateType,
+      if (aggregateId != null) 'aggregate_id': aggregateId,
+      if (operationType != null) 'operation_type': operationType,
+      if (conflictCode != null) 'conflict_code': conflictCode,
+      if (baseVersion != null) 'base_version': baseVersion,
+      if (serverVersion != null) 'server_version': serverVersion,
+      if (safeDetailJson != null) 'safe_detail_json': safeDetailJson,
+      if (detectedAt != null) 'detected_at': detectedAt,
+      if (resolvedAt != null) 'resolved_at': resolvedAt,
+      if (resolution != null) 'resolution': resolution,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncConflictLogsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? requestId,
+    Value<String>? aggregateType,
+    Value<String>? aggregateId,
+    Value<String>? operationType,
+    Value<String>? conflictCode,
+    Value<int>? baseVersion,
+    Value<int?>? serverVersion,
+    Value<String>? safeDetailJson,
+    Value<DateTime>? detectedAt,
+    Value<DateTime?>? resolvedAt,
+    Value<String?>? resolution,
+    Value<int>? rowid,
+  }) {
+    return SyncConflictLogsCompanion(
+      id: id ?? this.id,
+      requestId: requestId ?? this.requestId,
+      aggregateType: aggregateType ?? this.aggregateType,
+      aggregateId: aggregateId ?? this.aggregateId,
+      operationType: operationType ?? this.operationType,
+      conflictCode: conflictCode ?? this.conflictCode,
+      baseVersion: baseVersion ?? this.baseVersion,
+      serverVersion: serverVersion ?? this.serverVersion,
+      safeDetailJson: safeDetailJson ?? this.safeDetailJson,
+      detectedAt: detectedAt ?? this.detectedAt,
+      resolvedAt: resolvedAt ?? this.resolvedAt,
+      resolution: resolution ?? this.resolution,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (requestId.present) {
+      map['request_id'] = Variable<String>(requestId.value);
+    }
+    if (aggregateType.present) {
+      map['aggregate_type'] = Variable<String>(aggregateType.value);
+    }
+    if (aggregateId.present) {
+      map['aggregate_id'] = Variable<String>(aggregateId.value);
+    }
+    if (operationType.present) {
+      map['operation_type'] = Variable<String>(operationType.value);
+    }
+    if (conflictCode.present) {
+      map['conflict_code'] = Variable<String>(conflictCode.value);
+    }
+    if (baseVersion.present) {
+      map['base_version'] = Variable<int>(baseVersion.value);
+    }
+    if (serverVersion.present) {
+      map['server_version'] = Variable<int>(serverVersion.value);
+    }
+    if (safeDetailJson.present) {
+      map['safe_detail_json'] = Variable<String>(safeDetailJson.value);
+    }
+    if (detectedAt.present) {
+      map['detected_at'] = Variable<DateTime>(detectedAt.value);
+    }
+    if (resolvedAt.present) {
+      map['resolved_at'] = Variable<DateTime>(resolvedAt.value);
+    }
+    if (resolution.present) {
+      map['resolution'] = Variable<String>(resolution.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncConflictLogsCompanion(')
+          ..write('id: $id, ')
+          ..write('requestId: $requestId, ')
+          ..write('aggregateType: $aggregateType, ')
+          ..write('aggregateId: $aggregateId, ')
+          ..write('operationType: $operationType, ')
+          ..write('conflictCode: $conflictCode, ')
+          ..write('baseVersion: $baseVersion, ')
+          ..write('serverVersion: $serverVersion, ')
+          ..write('safeDetailJson: $safeDetailJson, ')
+          ..write('detectedAt: $detectedAt, ')
+          ..write('resolvedAt: $resolvedAt, ')
+          ..write('resolution: $resolution, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncFileUploadsTable extends SyncFileUploads
+    with TableInfo<$SyncFileUploadsTable, SyncFileUploadRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncFileUploadsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _requestIdMeta = const VerificationMeta(
+    'requestId',
+  );
+  @override
+  late final GeneratedColumn<String> requestId = GeneratedColumn<String>(
+    'request_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityTypeMeta = const VerificationMeta(
+    'entityType',
+  );
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+    'entity_type',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityIdMeta = const VerificationMeta(
+    'entityId',
+  );
+  @override
+  late final GeneratedColumn<String> entityId = GeneratedColumn<String>(
+    'entity_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _actorUserIdMeta = const VerificationMeta(
+    'actorUserId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUserId = GeneratedColumn<String>(
+    'actor_user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localFilePathMeta = const VerificationMeta(
+    'localFilePath',
+  );
+  @override
+  late final GeneratedColumn<String> localFilePath = GeneratedColumn<String>(
+    'local_file_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _originalFileNameMeta = const VerificationMeta(
+    'originalFileName',
+  );
+  @override
+  late final GeneratedColumn<String> originalFileName = GeneratedColumn<String>(
+    'original_file_name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 255,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sha256Meta = const VerificationMeta('sha256');
+  @override
+  late final GeneratedColumn<String> sha256 = GeneratedColumn<String>(
+    'sha256',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sizeBytesMeta = const VerificationMeta(
+    'sizeBytes',
+  );
+  @override
+  late final GeneratedColumn<int> sizeBytes = GeneratedColumn<int>(
+    'size_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mimeTypeMeta = const VerificationMeta(
+    'mimeType',
+  );
+  @override
+  late final GeneratedColumn<String> mimeType = GeneratedColumn<String>(
+    'mime_type',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 128,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _remoteBucketMeta = const VerificationMeta(
+    'remoteBucket',
+  );
+  @override
+  late final GeneratedColumn<String> remoteBucket = GeneratedColumn<String>(
+    'remote_bucket',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _remoteObjectKeyMeta = const VerificationMeta(
+    'remoteObjectKey',
+  );
+  @override
+  late final GeneratedColumn<String> remoteObjectKey = GeneratedColumn<String>(
+    'remote_object_key',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _remoteObjectIdMeta = const VerificationMeta(
+    'remoteObjectId',
+  );
+  @override
+  late final GeneratedColumn<String> remoteObjectId = GeneratedColumn<String>(
+    'remote_object_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('queued'),
+  );
+  static const VerificationMeta _attemptCountMeta = const VerificationMeta(
+    'attemptCount',
+  );
+  @override
+  late final GeneratedColumn<int> attemptCount = GeneratedColumn<int>(
+    'attempt_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _nextAttemptEpochMsMeta =
+      const VerificationMeta('nextAttemptEpochMs');
+  @override
+  late final GeneratedColumn<int> nextAttemptEpochMs = GeneratedColumn<int>(
+    'next_attempt_epoch_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _leaseStartedEpochMsMeta =
+      const VerificationMeta('leaseStartedEpochMs');
+  @override
+  late final GeneratedColumn<int> leaseStartedEpochMs = GeneratedColumn<int>(
+    'lease_started_epoch_ms',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastErrorCodeMeta = const VerificationMeta(
+    'lastErrorCode',
+  );
+  @override
+  late final GeneratedColumn<String> lastErrorCode = GeneratedColumn<String>(
+    'last_error_code',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 96),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastErrorMessageMeta = const VerificationMeta(
+    'lastErrorMessage',
+  );
+  @override
+  late final GeneratedColumn<String> lastErrorMessage = GeneratedColumn<String>(
+    'last_error_message',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 512),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    requestId,
+    entityType,
+    entityId,
+    actorUserId,
+    localFilePath,
+    originalFileName,
+    sha256,
+    sizeBytes,
+    mimeType,
+    remoteBucket,
+    remoteObjectKey,
+    remoteObjectId,
+    status,
+    attemptCount,
+    nextAttemptEpochMs,
+    leaseStartedEpochMs,
+    lastErrorCode,
+    lastErrorMessage,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_file_uploads';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncFileUploadRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('request_id')) {
+      context.handle(
+        _requestIdMeta,
+        requestId.isAcceptableOrUnknown(data['request_id']!, _requestIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_requestIdMeta);
+    }
+    if (data.containsKey('entity_type')) {
+      context.handle(
+        _entityTypeMeta,
+        entityType.isAcceptableOrUnknown(data['entity_type']!, _entityTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityTypeMeta);
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(
+        _entityIdMeta,
+        entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('actor_user_id')) {
+      context.handle(
+        _actorUserIdMeta,
+        actorUserId.isAcceptableOrUnknown(
+          data['actor_user_id']!,
+          _actorUserIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_actorUserIdMeta);
+    }
+    if (data.containsKey('local_file_path')) {
+      context.handle(
+        _localFilePathMeta,
+        localFilePath.isAcceptableOrUnknown(
+          data['local_file_path']!,
+          _localFilePathMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_localFilePathMeta);
+    }
+    if (data.containsKey('original_file_name')) {
+      context.handle(
+        _originalFileNameMeta,
+        originalFileName.isAcceptableOrUnknown(
+          data['original_file_name']!,
+          _originalFileNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_originalFileNameMeta);
+    }
+    if (data.containsKey('sha256')) {
+      context.handle(
+        _sha256Meta,
+        sha256.isAcceptableOrUnknown(data['sha256']!, _sha256Meta),
+      );
+    } else if (isInserting) {
+      context.missing(_sha256Meta);
+    }
+    if (data.containsKey('size_bytes')) {
+      context.handle(
+        _sizeBytesMeta,
+        sizeBytes.isAcceptableOrUnknown(data['size_bytes']!, _sizeBytesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sizeBytesMeta);
+    }
+    if (data.containsKey('mime_type')) {
+      context.handle(
+        _mimeTypeMeta,
+        mimeType.isAcceptableOrUnknown(data['mime_type']!, _mimeTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_mimeTypeMeta);
+    }
+    if (data.containsKey('remote_bucket')) {
+      context.handle(
+        _remoteBucketMeta,
+        remoteBucket.isAcceptableOrUnknown(
+          data['remote_bucket']!,
+          _remoteBucketMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_remoteBucketMeta);
+    }
+    if (data.containsKey('remote_object_key')) {
+      context.handle(
+        _remoteObjectKeyMeta,
+        remoteObjectKey.isAcceptableOrUnknown(
+          data['remote_object_key']!,
+          _remoteObjectKeyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('remote_object_id')) {
+      context.handle(
+        _remoteObjectIdMeta,
+        remoteObjectId.isAcceptableOrUnknown(
+          data['remote_object_id']!,
+          _remoteObjectIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('attempt_count')) {
+      context.handle(
+        _attemptCountMeta,
+        attemptCount.isAcceptableOrUnknown(
+          data['attempt_count']!,
+          _attemptCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('next_attempt_epoch_ms')) {
+      context.handle(
+        _nextAttemptEpochMsMeta,
+        nextAttemptEpochMs.isAcceptableOrUnknown(
+          data['next_attempt_epoch_ms']!,
+          _nextAttemptEpochMsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('lease_started_epoch_ms')) {
+      context.handle(
+        _leaseStartedEpochMsMeta,
+        leaseStartedEpochMs.isAcceptableOrUnknown(
+          data['lease_started_epoch_ms']!,
+          _leaseStartedEpochMsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_error_code')) {
+      context.handle(
+        _lastErrorCodeMeta,
+        lastErrorCode.isAcceptableOrUnknown(
+          data['last_error_code']!,
+          _lastErrorCodeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_error_message')) {
+      context.handle(
+        _lastErrorMessageMeta,
+        lastErrorMessage.isAcceptableOrUnknown(
+          data['last_error_message']!,
+          _lastErrorMessageMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncFileUploadRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncFileUploadRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      requestId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}request_id'],
+      )!,
+      entityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_type'],
+      )!,
+      entityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_id'],
+      )!,
+      actorUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_user_id'],
+      )!,
+      localFilePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_file_path'],
+      )!,
+      originalFileName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}original_file_name'],
+      )!,
+      sha256: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sha256'],
+      )!,
+      sizeBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}size_bytes'],
+      )!,
+      mimeType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mime_type'],
+      )!,
+      remoteBucket: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}remote_bucket'],
+      )!,
+      remoteObjectKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}remote_object_key'],
+      ),
+      remoteObjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}remote_object_id'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      attemptCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempt_count'],
+      )!,
+      nextAttemptEpochMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}next_attempt_epoch_ms'],
+      )!,
+      leaseStartedEpochMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}lease_started_epoch_ms'],
+      ),
+      lastErrorCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error_code'],
+      ),
+      lastErrorMessage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error_message'],
+      ),
+    );
+  }
+
+  @override
+  $SyncFileUploadsTable createAlias(String alias) {
+    return $SyncFileUploadsTable(attachedDatabase, alias);
+  }
+}
+
+class SyncFileUploadRow extends DataClass
+    implements Insertable<SyncFileUploadRow> {
+  final String id;
+  final String requestId;
+  final String entityType;
+  final String entityId;
+  final String actorUserId;
+  final String localFilePath;
+  final String originalFileName;
+  final String sha256;
+  final int sizeBytes;
+  final String mimeType;
+  final String remoteBucket;
+  final String? remoteObjectKey;
+  final String? remoteObjectId;
+  final String status;
+  final int attemptCount;
+  final int nextAttemptEpochMs;
+  final int? leaseStartedEpochMs;
+  final String? lastErrorCode;
+  final String? lastErrorMessage;
+  const SyncFileUploadRow({
+    required this.id,
+    required this.requestId,
+    required this.entityType,
+    required this.entityId,
+    required this.actorUserId,
+    required this.localFilePath,
+    required this.originalFileName,
+    required this.sha256,
+    required this.sizeBytes,
+    required this.mimeType,
+    required this.remoteBucket,
+    this.remoteObjectKey,
+    this.remoteObjectId,
+    required this.status,
+    required this.attemptCount,
+    required this.nextAttemptEpochMs,
+    this.leaseStartedEpochMs,
+    this.lastErrorCode,
+    this.lastErrorMessage,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['request_id'] = Variable<String>(requestId);
+    map['entity_type'] = Variable<String>(entityType);
+    map['entity_id'] = Variable<String>(entityId);
+    map['actor_user_id'] = Variable<String>(actorUserId);
+    map['local_file_path'] = Variable<String>(localFilePath);
+    map['original_file_name'] = Variable<String>(originalFileName);
+    map['sha256'] = Variable<String>(sha256);
+    map['size_bytes'] = Variable<int>(sizeBytes);
+    map['mime_type'] = Variable<String>(mimeType);
+    map['remote_bucket'] = Variable<String>(remoteBucket);
+    if (!nullToAbsent || remoteObjectKey != null) {
+      map['remote_object_key'] = Variable<String>(remoteObjectKey);
+    }
+    if (!nullToAbsent || remoteObjectId != null) {
+      map['remote_object_id'] = Variable<String>(remoteObjectId);
+    }
+    map['status'] = Variable<String>(status);
+    map['attempt_count'] = Variable<int>(attemptCount);
+    map['next_attempt_epoch_ms'] = Variable<int>(nextAttemptEpochMs);
+    if (!nullToAbsent || leaseStartedEpochMs != null) {
+      map['lease_started_epoch_ms'] = Variable<int>(leaseStartedEpochMs);
+    }
+    if (!nullToAbsent || lastErrorCode != null) {
+      map['last_error_code'] = Variable<String>(lastErrorCode);
+    }
+    if (!nullToAbsent || lastErrorMessage != null) {
+      map['last_error_message'] = Variable<String>(lastErrorMessage);
+    }
+    return map;
+  }
+
+  SyncFileUploadsCompanion toCompanion(bool nullToAbsent) {
+    return SyncFileUploadsCompanion(
+      id: Value(id),
+      requestId: Value(requestId),
+      entityType: Value(entityType),
+      entityId: Value(entityId),
+      actorUserId: Value(actorUserId),
+      localFilePath: Value(localFilePath),
+      originalFileName: Value(originalFileName),
+      sha256: Value(sha256),
+      sizeBytes: Value(sizeBytes),
+      mimeType: Value(mimeType),
+      remoteBucket: Value(remoteBucket),
+      remoteObjectKey: remoteObjectKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remoteObjectKey),
+      remoteObjectId: remoteObjectId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remoteObjectId),
+      status: Value(status),
+      attemptCount: Value(attemptCount),
+      nextAttemptEpochMs: Value(nextAttemptEpochMs),
+      leaseStartedEpochMs: leaseStartedEpochMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(leaseStartedEpochMs),
+      lastErrorCode: lastErrorCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastErrorCode),
+      lastErrorMessage: lastErrorMessage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastErrorMessage),
+    );
+  }
+
+  factory SyncFileUploadRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncFileUploadRow(
+      id: serializer.fromJson<String>(json['id']),
+      requestId: serializer.fromJson<String>(json['requestId']),
+      entityType: serializer.fromJson<String>(json['entityType']),
+      entityId: serializer.fromJson<String>(json['entityId']),
+      actorUserId: serializer.fromJson<String>(json['actorUserId']),
+      localFilePath: serializer.fromJson<String>(json['localFilePath']),
+      originalFileName: serializer.fromJson<String>(json['originalFileName']),
+      sha256: serializer.fromJson<String>(json['sha256']),
+      sizeBytes: serializer.fromJson<int>(json['sizeBytes']),
+      mimeType: serializer.fromJson<String>(json['mimeType']),
+      remoteBucket: serializer.fromJson<String>(json['remoteBucket']),
+      remoteObjectKey: serializer.fromJson<String?>(json['remoteObjectKey']),
+      remoteObjectId: serializer.fromJson<String?>(json['remoteObjectId']),
+      status: serializer.fromJson<String>(json['status']),
+      attemptCount: serializer.fromJson<int>(json['attemptCount']),
+      nextAttemptEpochMs: serializer.fromJson<int>(json['nextAttemptEpochMs']),
+      leaseStartedEpochMs: serializer.fromJson<int?>(
+        json['leaseStartedEpochMs'],
+      ),
+      lastErrorCode: serializer.fromJson<String?>(json['lastErrorCode']),
+      lastErrorMessage: serializer.fromJson<String?>(json['lastErrorMessage']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'requestId': serializer.toJson<String>(requestId),
+      'entityType': serializer.toJson<String>(entityType),
+      'entityId': serializer.toJson<String>(entityId),
+      'actorUserId': serializer.toJson<String>(actorUserId),
+      'localFilePath': serializer.toJson<String>(localFilePath),
+      'originalFileName': serializer.toJson<String>(originalFileName),
+      'sha256': serializer.toJson<String>(sha256),
+      'sizeBytes': serializer.toJson<int>(sizeBytes),
+      'mimeType': serializer.toJson<String>(mimeType),
+      'remoteBucket': serializer.toJson<String>(remoteBucket),
+      'remoteObjectKey': serializer.toJson<String?>(remoteObjectKey),
+      'remoteObjectId': serializer.toJson<String?>(remoteObjectId),
+      'status': serializer.toJson<String>(status),
+      'attemptCount': serializer.toJson<int>(attemptCount),
+      'nextAttemptEpochMs': serializer.toJson<int>(nextAttemptEpochMs),
+      'leaseStartedEpochMs': serializer.toJson<int?>(leaseStartedEpochMs),
+      'lastErrorCode': serializer.toJson<String?>(lastErrorCode),
+      'lastErrorMessage': serializer.toJson<String?>(lastErrorMessage),
+    };
+  }
+
+  SyncFileUploadRow copyWith({
+    String? id,
+    String? requestId,
+    String? entityType,
+    String? entityId,
+    String? actorUserId,
+    String? localFilePath,
+    String? originalFileName,
+    String? sha256,
+    int? sizeBytes,
+    String? mimeType,
+    String? remoteBucket,
+    Value<String?> remoteObjectKey = const Value.absent(),
+    Value<String?> remoteObjectId = const Value.absent(),
+    String? status,
+    int? attemptCount,
+    int? nextAttemptEpochMs,
+    Value<int?> leaseStartedEpochMs = const Value.absent(),
+    Value<String?> lastErrorCode = const Value.absent(),
+    Value<String?> lastErrorMessage = const Value.absent(),
+  }) => SyncFileUploadRow(
+    id: id ?? this.id,
+    requestId: requestId ?? this.requestId,
+    entityType: entityType ?? this.entityType,
+    entityId: entityId ?? this.entityId,
+    actorUserId: actorUserId ?? this.actorUserId,
+    localFilePath: localFilePath ?? this.localFilePath,
+    originalFileName: originalFileName ?? this.originalFileName,
+    sha256: sha256 ?? this.sha256,
+    sizeBytes: sizeBytes ?? this.sizeBytes,
+    mimeType: mimeType ?? this.mimeType,
+    remoteBucket: remoteBucket ?? this.remoteBucket,
+    remoteObjectKey: remoteObjectKey.present
+        ? remoteObjectKey.value
+        : this.remoteObjectKey,
+    remoteObjectId: remoteObjectId.present
+        ? remoteObjectId.value
+        : this.remoteObjectId,
+    status: status ?? this.status,
+    attemptCount: attemptCount ?? this.attemptCount,
+    nextAttemptEpochMs: nextAttemptEpochMs ?? this.nextAttemptEpochMs,
+    leaseStartedEpochMs: leaseStartedEpochMs.present
+        ? leaseStartedEpochMs.value
+        : this.leaseStartedEpochMs,
+    lastErrorCode: lastErrorCode.present
+        ? lastErrorCode.value
+        : this.lastErrorCode,
+    lastErrorMessage: lastErrorMessage.present
+        ? lastErrorMessage.value
+        : this.lastErrorMessage,
+  );
+  SyncFileUploadRow copyWithCompanion(SyncFileUploadsCompanion data) {
+    return SyncFileUploadRow(
+      id: data.id.present ? data.id.value : this.id,
+      requestId: data.requestId.present ? data.requestId.value : this.requestId,
+      entityType: data.entityType.present
+          ? data.entityType.value
+          : this.entityType,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      actorUserId: data.actorUserId.present
+          ? data.actorUserId.value
+          : this.actorUserId,
+      localFilePath: data.localFilePath.present
+          ? data.localFilePath.value
+          : this.localFilePath,
+      originalFileName: data.originalFileName.present
+          ? data.originalFileName.value
+          : this.originalFileName,
+      sha256: data.sha256.present ? data.sha256.value : this.sha256,
+      sizeBytes: data.sizeBytes.present ? data.sizeBytes.value : this.sizeBytes,
+      mimeType: data.mimeType.present ? data.mimeType.value : this.mimeType,
+      remoteBucket: data.remoteBucket.present
+          ? data.remoteBucket.value
+          : this.remoteBucket,
+      remoteObjectKey: data.remoteObjectKey.present
+          ? data.remoteObjectKey.value
+          : this.remoteObjectKey,
+      remoteObjectId: data.remoteObjectId.present
+          ? data.remoteObjectId.value
+          : this.remoteObjectId,
+      status: data.status.present ? data.status.value : this.status,
+      attemptCount: data.attemptCount.present
+          ? data.attemptCount.value
+          : this.attemptCount,
+      nextAttemptEpochMs: data.nextAttemptEpochMs.present
+          ? data.nextAttemptEpochMs.value
+          : this.nextAttemptEpochMs,
+      leaseStartedEpochMs: data.leaseStartedEpochMs.present
+          ? data.leaseStartedEpochMs.value
+          : this.leaseStartedEpochMs,
+      lastErrorCode: data.lastErrorCode.present
+          ? data.lastErrorCode.value
+          : this.lastErrorCode,
+      lastErrorMessage: data.lastErrorMessage.present
+          ? data.lastErrorMessage.value
+          : this.lastErrorMessage,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncFileUploadRow(')
+          ..write('id: $id, ')
+          ..write('requestId: $requestId, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('actorUserId: $actorUserId, ')
+          ..write('localFilePath: $localFilePath, ')
+          ..write('originalFileName: $originalFileName, ')
+          ..write('sha256: $sha256, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('mimeType: $mimeType, ')
+          ..write('remoteBucket: $remoteBucket, ')
+          ..write('remoteObjectKey: $remoteObjectKey, ')
+          ..write('remoteObjectId: $remoteObjectId, ')
+          ..write('status: $status, ')
+          ..write('attemptCount: $attemptCount, ')
+          ..write('nextAttemptEpochMs: $nextAttemptEpochMs, ')
+          ..write('leaseStartedEpochMs: $leaseStartedEpochMs, ')
+          ..write('lastErrorCode: $lastErrorCode, ')
+          ..write('lastErrorMessage: $lastErrorMessage')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    requestId,
+    entityType,
+    entityId,
+    actorUserId,
+    localFilePath,
+    originalFileName,
+    sha256,
+    sizeBytes,
+    mimeType,
+    remoteBucket,
+    remoteObjectKey,
+    remoteObjectId,
+    status,
+    attemptCount,
+    nextAttemptEpochMs,
+    leaseStartedEpochMs,
+    lastErrorCode,
+    lastErrorMessage,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncFileUploadRow &&
+          other.id == this.id &&
+          other.requestId == this.requestId &&
+          other.entityType == this.entityType &&
+          other.entityId == this.entityId &&
+          other.actorUserId == this.actorUserId &&
+          other.localFilePath == this.localFilePath &&
+          other.originalFileName == this.originalFileName &&
+          other.sha256 == this.sha256 &&
+          other.sizeBytes == this.sizeBytes &&
+          other.mimeType == this.mimeType &&
+          other.remoteBucket == this.remoteBucket &&
+          other.remoteObjectKey == this.remoteObjectKey &&
+          other.remoteObjectId == this.remoteObjectId &&
+          other.status == this.status &&
+          other.attemptCount == this.attemptCount &&
+          other.nextAttemptEpochMs == this.nextAttemptEpochMs &&
+          other.leaseStartedEpochMs == this.leaseStartedEpochMs &&
+          other.lastErrorCode == this.lastErrorCode &&
+          other.lastErrorMessage == this.lastErrorMessage);
+}
+
+class SyncFileUploadsCompanion extends UpdateCompanion<SyncFileUploadRow> {
+  final Value<String> id;
+  final Value<String> requestId;
+  final Value<String> entityType;
+  final Value<String> entityId;
+  final Value<String> actorUserId;
+  final Value<String> localFilePath;
+  final Value<String> originalFileName;
+  final Value<String> sha256;
+  final Value<int> sizeBytes;
+  final Value<String> mimeType;
+  final Value<String> remoteBucket;
+  final Value<String?> remoteObjectKey;
+  final Value<String?> remoteObjectId;
+  final Value<String> status;
+  final Value<int> attemptCount;
+  final Value<int> nextAttemptEpochMs;
+  final Value<int?> leaseStartedEpochMs;
+  final Value<String?> lastErrorCode;
+  final Value<String?> lastErrorMessage;
+  final Value<int> rowid;
+  const SyncFileUploadsCompanion({
+    this.id = const Value.absent(),
+    this.requestId = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.actorUserId = const Value.absent(),
+    this.localFilePath = const Value.absent(),
+    this.originalFileName = const Value.absent(),
+    this.sha256 = const Value.absent(),
+    this.sizeBytes = const Value.absent(),
+    this.mimeType = const Value.absent(),
+    this.remoteBucket = const Value.absent(),
+    this.remoteObjectKey = const Value.absent(),
+    this.remoteObjectId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.attemptCount = const Value.absent(),
+    this.nextAttemptEpochMs = const Value.absent(),
+    this.leaseStartedEpochMs = const Value.absent(),
+    this.lastErrorCode = const Value.absent(),
+    this.lastErrorMessage = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncFileUploadsCompanion.insert({
+    this.id = const Value.absent(),
+    required String requestId,
+    required String entityType,
+    required String entityId,
+    required String actorUserId,
+    required String localFilePath,
+    required String originalFileName,
+    required String sha256,
+    required int sizeBytes,
+    required String mimeType,
+    required String remoteBucket,
+    this.remoteObjectKey = const Value.absent(),
+    this.remoteObjectId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.attemptCount = const Value.absent(),
+    this.nextAttemptEpochMs = const Value.absent(),
+    this.leaseStartedEpochMs = const Value.absent(),
+    this.lastErrorCode = const Value.absent(),
+    this.lastErrorMessage = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : requestId = Value(requestId),
+       entityType = Value(entityType),
+       entityId = Value(entityId),
+       actorUserId = Value(actorUserId),
+       localFilePath = Value(localFilePath),
+       originalFileName = Value(originalFileName),
+       sha256 = Value(sha256),
+       sizeBytes = Value(sizeBytes),
+       mimeType = Value(mimeType),
+       remoteBucket = Value(remoteBucket);
+  static Insertable<SyncFileUploadRow> custom({
+    Expression<String>? id,
+    Expression<String>? requestId,
+    Expression<String>? entityType,
+    Expression<String>? entityId,
+    Expression<String>? actorUserId,
+    Expression<String>? localFilePath,
+    Expression<String>? originalFileName,
+    Expression<String>? sha256,
+    Expression<int>? sizeBytes,
+    Expression<String>? mimeType,
+    Expression<String>? remoteBucket,
+    Expression<String>? remoteObjectKey,
+    Expression<String>? remoteObjectId,
+    Expression<String>? status,
+    Expression<int>? attemptCount,
+    Expression<int>? nextAttemptEpochMs,
+    Expression<int>? leaseStartedEpochMs,
+    Expression<String>? lastErrorCode,
+    Expression<String>? lastErrorMessage,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (requestId != null) 'request_id': requestId,
+      if (entityType != null) 'entity_type': entityType,
+      if (entityId != null) 'entity_id': entityId,
+      if (actorUserId != null) 'actor_user_id': actorUserId,
+      if (localFilePath != null) 'local_file_path': localFilePath,
+      if (originalFileName != null) 'original_file_name': originalFileName,
+      if (sha256 != null) 'sha256': sha256,
+      if (sizeBytes != null) 'size_bytes': sizeBytes,
+      if (mimeType != null) 'mime_type': mimeType,
+      if (remoteBucket != null) 'remote_bucket': remoteBucket,
+      if (remoteObjectKey != null) 'remote_object_key': remoteObjectKey,
+      if (remoteObjectId != null) 'remote_object_id': remoteObjectId,
+      if (status != null) 'status': status,
+      if (attemptCount != null) 'attempt_count': attemptCount,
+      if (nextAttemptEpochMs != null)
+        'next_attempt_epoch_ms': nextAttemptEpochMs,
+      if (leaseStartedEpochMs != null)
+        'lease_started_epoch_ms': leaseStartedEpochMs,
+      if (lastErrorCode != null) 'last_error_code': lastErrorCode,
+      if (lastErrorMessage != null) 'last_error_message': lastErrorMessage,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncFileUploadsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? requestId,
+    Value<String>? entityType,
+    Value<String>? entityId,
+    Value<String>? actorUserId,
+    Value<String>? localFilePath,
+    Value<String>? originalFileName,
+    Value<String>? sha256,
+    Value<int>? sizeBytes,
+    Value<String>? mimeType,
+    Value<String>? remoteBucket,
+    Value<String?>? remoteObjectKey,
+    Value<String?>? remoteObjectId,
+    Value<String>? status,
+    Value<int>? attemptCount,
+    Value<int>? nextAttemptEpochMs,
+    Value<int?>? leaseStartedEpochMs,
+    Value<String?>? lastErrorCode,
+    Value<String?>? lastErrorMessage,
+    Value<int>? rowid,
+  }) {
+    return SyncFileUploadsCompanion(
+      id: id ?? this.id,
+      requestId: requestId ?? this.requestId,
+      entityType: entityType ?? this.entityType,
+      entityId: entityId ?? this.entityId,
+      actorUserId: actorUserId ?? this.actorUserId,
+      localFilePath: localFilePath ?? this.localFilePath,
+      originalFileName: originalFileName ?? this.originalFileName,
+      sha256: sha256 ?? this.sha256,
+      sizeBytes: sizeBytes ?? this.sizeBytes,
+      mimeType: mimeType ?? this.mimeType,
+      remoteBucket: remoteBucket ?? this.remoteBucket,
+      remoteObjectKey: remoteObjectKey ?? this.remoteObjectKey,
+      remoteObjectId: remoteObjectId ?? this.remoteObjectId,
+      status: status ?? this.status,
+      attemptCount: attemptCount ?? this.attemptCount,
+      nextAttemptEpochMs: nextAttemptEpochMs ?? this.nextAttemptEpochMs,
+      leaseStartedEpochMs: leaseStartedEpochMs ?? this.leaseStartedEpochMs,
+      lastErrorCode: lastErrorCode ?? this.lastErrorCode,
+      lastErrorMessage: lastErrorMessage ?? this.lastErrorMessage,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (requestId.present) {
+      map['request_id'] = Variable<String>(requestId.value);
+    }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
+    if (actorUserId.present) {
+      map['actor_user_id'] = Variable<String>(actorUserId.value);
+    }
+    if (localFilePath.present) {
+      map['local_file_path'] = Variable<String>(localFilePath.value);
+    }
+    if (originalFileName.present) {
+      map['original_file_name'] = Variable<String>(originalFileName.value);
+    }
+    if (sha256.present) {
+      map['sha256'] = Variable<String>(sha256.value);
+    }
+    if (sizeBytes.present) {
+      map['size_bytes'] = Variable<int>(sizeBytes.value);
+    }
+    if (mimeType.present) {
+      map['mime_type'] = Variable<String>(mimeType.value);
+    }
+    if (remoteBucket.present) {
+      map['remote_bucket'] = Variable<String>(remoteBucket.value);
+    }
+    if (remoteObjectKey.present) {
+      map['remote_object_key'] = Variable<String>(remoteObjectKey.value);
+    }
+    if (remoteObjectId.present) {
+      map['remote_object_id'] = Variable<String>(remoteObjectId.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (attemptCount.present) {
+      map['attempt_count'] = Variable<int>(attemptCount.value);
+    }
+    if (nextAttemptEpochMs.present) {
+      map['next_attempt_epoch_ms'] = Variable<int>(nextAttemptEpochMs.value);
+    }
+    if (leaseStartedEpochMs.present) {
+      map['lease_started_epoch_ms'] = Variable<int>(leaseStartedEpochMs.value);
+    }
+    if (lastErrorCode.present) {
+      map['last_error_code'] = Variable<String>(lastErrorCode.value);
+    }
+    if (lastErrorMessage.present) {
+      map['last_error_message'] = Variable<String>(lastErrorMessage.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncFileUploadsCompanion(')
+          ..write('id: $id, ')
+          ..write('requestId: $requestId, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('actorUserId: $actorUserId, ')
+          ..write('localFilePath: $localFilePath, ')
+          ..write('originalFileName: $originalFileName, ')
+          ..write('sha256: $sha256, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('mimeType: $mimeType, ')
+          ..write('remoteBucket: $remoteBucket, ')
+          ..write('remoteObjectKey: $remoteObjectKey, ')
+          ..write('remoteObjectId: $remoteObjectId, ')
+          ..write('status: $status, ')
+          ..write('attemptCount: $attemptCount, ')
+          ..write('nextAttemptEpochMs: $nextAttemptEpochMs, ')
+          ..write('leaseStartedEpochMs: $leaseStartedEpochMs, ')
+          ..write('lastErrorCode: $lastErrorCode, ')
+          ..write('lastErrorMessage: $lastErrorMessage, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   late final $BranchesTable branches = $BranchesTable(this);
@@ -20501,6 +24988,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $ExportLogsTable exportLogs = $ExportLogsTable(this);
   late final $ImportLogsTable importLogs = $ImportLogsTable(this);
+  late final $SyncDevicesTable syncDevices = $SyncDevicesTable(this);
+  late final $SyncOutboxTable syncOutbox = $SyncOutboxTable(this);
+  late final $SyncEntityStatesTable syncEntityStates = $SyncEntityStatesTable(
+    this,
+  );
+  late final $SyncAttemptLogsTable syncAttemptLogs = $SyncAttemptLogsTable(
+    this,
+  );
+  late final $SyncConflictLogsTable syncConflictLogs = $SyncConflictLogsTable(
+    this,
+  );
+  late final $SyncFileUploadsTable syncFileUploads = $SyncFileUploadsTable(
+    this,
+  );
   late final Index idxStockBalancesBatched = Index(
     'idx_stock_balances_batched',
     'CREATE UNIQUE INDEX idx_stock_balances_batched ON stock_balances (location_id, item_id, batch_id) WHERE batch_id IS NOT NULL',
@@ -20937,6 +25438,58 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_import_logs_sync',
     'CREATE INDEX idx_import_logs_sync ON import_logs (sync_status, created_at)',
   );
+  late final Index idxSyncDevicesInstall = Index(
+    'idx_sync_devices_install',
+    'CREATE UNIQUE INDEX idx_sync_devices_install ON sync_devices (app_install_id)',
+  );
+  late final Index idxSyncOutboxDue = Index(
+    'idx_sync_outbox_due',
+    'CREATE INDEX idx_sync_outbox_due ON sync_outbox (status, next_attempt_epoch_ms)',
+  );
+  late final Index idxSyncOutboxActorStatus = Index(
+    'idx_sync_outbox_actor_status',
+    'CREATE INDEX idx_sync_outbox_actor_status ON sync_outbox (actor_user_id, status)',
+  );
+  late final Index idxSyncOutboxAggregate = Index(
+    'idx_sync_outbox_aggregate',
+    'CREATE INDEX idx_sync_outbox_aggregate ON sync_outbox (aggregate_type, aggregate_id)',
+  );
+  late final Index idxSyncOutboxRequest = Index(
+    'idx_sync_outbox_request',
+    'CREATE UNIQUE INDEX idx_sync_outbox_request ON sync_outbox (request_id)',
+  );
+  late final Index idxSyncOutboxDevice = Index(
+    'idx_sync_outbox_device',
+    'CREATE INDEX idx_sync_outbox_device ON sync_outbox (device_id)',
+  );
+  late final Index idxSyncEntityStatesAggregate = Index(
+    'idx_sync_entity_states_aggregate',
+    'CREATE UNIQUE INDEX idx_sync_entity_states_aggregate ON sync_entity_states (aggregate_type, aggregate_id)',
+  );
+  late final Index idxSyncAttemptLogsRequest = Index(
+    'idx_sync_attempt_logs_request',
+    'CREATE INDEX idx_sync_attempt_logs_request ON sync_attempt_logs (request_id, attempt_number)',
+  );
+  late final Index idxSyncConflictLogsRequest = Index(
+    'idx_sync_conflict_logs_request',
+    'CREATE INDEX idx_sync_conflict_logs_request ON sync_conflict_logs (request_id)',
+  );
+  late final Index idxSyncConflictLogsAggregate = Index(
+    'idx_sync_conflict_logs_aggregate',
+    'CREATE INDEX idx_sync_conflict_logs_aggregate ON sync_conflict_logs (aggregate_type, aggregate_id)',
+  );
+  late final Index idxSyncFileUploadsRequest = Index(
+    'idx_sync_file_uploads_request',
+    'CREATE UNIQUE INDEX idx_sync_file_uploads_request ON sync_file_uploads (request_id)',
+  );
+  late final Index idxSyncFileUploadsStatus = Index(
+    'idx_sync_file_uploads_status',
+    'CREATE INDEX idx_sync_file_uploads_status ON sync_file_uploads (status)',
+  );
+  late final Index idxSyncFileUploadsActorStatus = Index(
+    'idx_sync_file_uploads_actor_status',
+    'CREATE INDEX idx_sync_file_uploads_actor_status ON sync_file_uploads (actor_user_id, status)',
+  );
   late final MasterDataDao masterDataDao = MasterDataDao(this as AppDatabase);
   late final MasterAdminDao masterAdminDao = MasterAdminDao(
     this as AppDatabase,
@@ -20963,6 +25516,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this as AppDatabase,
   );
   late final ReportingDao reportingDao = ReportingDao(this as AppDatabase);
+  late final SyncDao syncDao = SyncDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -20996,6 +25550,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     goodsReturnLines,
     exportLogs,
     importLogs,
+    syncDevices,
+    syncOutbox,
+    syncEntityStates,
+    syncAttemptLogs,
+    syncConflictLogs,
+    syncFileUploads,
     idxStockBalancesBatched,
     idxStockBalancesUnbatched,
     idxStockMovementsItem,
@@ -21105,6 +25665,19 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxImportLogsCreatedAt,
     idxImportLogsSha256,
     idxImportLogsSync,
+    idxSyncDevicesInstall,
+    idxSyncOutboxDue,
+    idxSyncOutboxActorStatus,
+    idxSyncOutboxAggregate,
+    idxSyncOutboxRequest,
+    idxSyncOutboxDevice,
+    idxSyncEntityStatesAggregate,
+    idxSyncAttemptLogsRequest,
+    idxSyncConflictLogsRequest,
+    idxSyncConflictLogsAggregate,
+    idxSyncFileUploadsRequest,
+    idxSyncFileUploadsStatus,
+    idxSyncFileUploadsActorStatus,
   ];
   @override
   DriftDatabaseOptions get options =>

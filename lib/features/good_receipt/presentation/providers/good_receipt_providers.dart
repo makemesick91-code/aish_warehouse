@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/db/database_providers.dart';
+import '../../../../core/sync/sync_providers.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/quantity/quantity.dart';
 import '../../../../core/session/acting_user_providers.dart';
@@ -96,6 +97,7 @@ final postGoodReceiptUseCaseProvider = Provider<PostGoodReceiptUseCase>(
     requests: ref.watch(purchaseRequestRepositoryProvider),
     master: ref.watch(masterDataRepositoryProvider),
     posting: ref.watch(goodReceiptStockPostingServiceProvider),
+    outbox: ref.watch(syncOutboxWriterProvider),
     clock: ref.watch(goodReceiptClockProvider),
   ),
 );

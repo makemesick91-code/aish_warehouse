@@ -107,6 +107,12 @@ void main() {
         'goods_return_lines',
         'export_logs',
         'import_logs',
+        'sync_devices',
+        'sync_outbox',
+        'sync_entity_states',
+        'sync_attempt_logs',
+        'sync_conflict_logs',
+        'sync_file_uploads',
       });
     });
 

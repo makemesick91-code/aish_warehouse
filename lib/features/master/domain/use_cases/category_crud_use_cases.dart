@@ -1,4 +1,6 @@
 import '../../../../core/errors/failures.dart';
+import '../../../../core/sync/sync_contracts.dart';
+import '../../../../core/sync/sync_outbox_writer.dart';
 import '../models/master_admin_models.dart';
 import '../models/master_models.dart';
 import '../repositories/master_admin_repository.dart';
@@ -12,10 +14,14 @@ import 'master_admin_guard.dart';
 /// simplest of the six — and the one where "update" has the least to do. See
 /// [UpdateItemCategoryUseCase] for what that means in practice.
 class CreateItemCategoryUseCase with MasterAdminGuard {
-  CreateItemCategoryUseCase({required this.repository});
+  CreateItemCategoryUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<MasterCategory> call({
     required String actorUserId,
@@ -38,7 +44,15 @@ class CreateItemCategoryUseCase with MasterAdminGuard {
           naturalKey: normalized,
         );
       }
-      return repository.insertCategory(normalized);
+      final category = await repository.insertCategory(normalized);
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.category,
+        aggregateId: category.id,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
+      );
+      return category;
     });
   }
 }
@@ -62,10 +76,14 @@ class CreateItemCategoryUseCase with MasterAdminGuard {
 /// archived category refreshes `updated_at` and the sync status, and that is a
 /// change the server has not seen.
 class UpdateItemCategoryUseCase with MasterAdminGuard {
-  UpdateItemCategoryUseCase({required this.repository});
+  UpdateItemCategoryUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<MasterCategory> call({
     required String actorUserId,
@@ -105,6 +123,13 @@ class UpdateItemCategoryUseCase with MasterAdminGuard {
         rows,
         'Kategori gagal diperbarui. Muat ulang lalu coba lagi.',
       );
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.category,
+        aggregateId: categoryId,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
+      );
       return (await repository.categoryById(categoryId))!;
     });
   }
@@ -122,10 +147,14 @@ class UpdateItemCategoryUseCase with MasterAdminGuard {
 /// would render with a category that no picker offers, and the operator should
 /// move those items first.
 class ArchiveItemCategoryUseCase with MasterAdminGuard {
-  ArchiveItemCategoryUseCase({required this.repository});
+  ArchiveItemCategoryUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<void> call({
     required String actorUserId,
@@ -158,16 +187,27 @@ class ArchiveItemCategoryUseCase with MasterAdminGuard {
         'Kategori gagal diarsipkan — mungkin sudah diarsipkan sebelumnya. '
         'Muat ulang lalu coba lagi.',
       );
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.category,
+        aggregateId: categoryId,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
+      );
     });
   }
 }
 
 /// Restores an archived category — `deleted_at = NULL`.
 class RestoreItemCategoryUseCase with MasterAdminGuard {
-  RestoreItemCategoryUseCase({required this.repository});
+  RestoreItemCategoryUseCase({
+    required this.repository,
+    this.outboxWriter = const NoopSyncOutboxWriter(),
+  });
 
   @override
   final MasterAdminRepository repository;
+  final SyncOutboxWriter outboxWriter;
 
   Future<void> call({
     required String actorUserId,
@@ -188,6 +228,13 @@ class RestoreItemCategoryUseCase with MasterAdminGuard {
         rows,
         'Kategori gagal dipulihkan — mungkin sudah aktif. Muat ulang lalu coba '
         'lagi.',
+      );
+      await outboxWriter.enqueueCurrentAggregate(
+        operation: SyncOperationType.upsertMaster,
+        aggregateType: SyncAggregateType.category,
+        aggregateId: categoryId,
+        actorUserId: actorUserId,
+        occurredAtUtc: DateTime.now().toUtc(),
       );
     });
   }

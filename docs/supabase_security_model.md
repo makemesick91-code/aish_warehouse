@@ -1,4 +1,4 @@
-# Supabase Security Model — Milestone 12A
+# Supabase Security Model — Milestone 12B
 
 ## Trust boundaries
 
@@ -33,7 +33,8 @@ Tambahan server: `user_auth_links`, `app_meta.schema_revisions`, dan kolom
 `server_updated_at` + `server_version` di 28 tabel syncable. UUID, UTC
 `timestamptz`, civil `date`, bigint milli-unit, generated opname difference,
 foreign key, partial unique index, workflow CHECK, serta historical soft delete
-dipertahankan secara semantik. Drift tetap v13.
+dipertahankan secara semantik. Drift v14 menambah enam tabel sync lokal tanpa mengubah
+business schema v13.
 
 ## Read matrix ringkas
 
@@ -54,12 +55,12 @@ dipertahankan secara semantik. Drift tetap v13.
 Master historical rows tetap dapat dibaca bila diperlukan dokumen. `users` lebih
 ketat karena memuat email; actor detail lintas user tidak dibuka sebagai daftar.
 
-## Write model 12A
+## Write model 12B
 
 Authenticated hanya mendapat table `SELECT`. Tidak ada policy business
-INSERT/UPDATE/DELETE, tidak ada DELETE policy, dan tidak ada direct document
-finalization. Master write, sync push, numbering, dan posting akan memakai RPC
-transaksional/trusted server pada 12B.
+INSERT/UPDATE/DELETE, DELETE policy, atau direct document finalization. Write memakai
+`register_sync_device`, typed `push_sync_operation`, serta intent/finalize upload yang
+sempit. RPC membaca actor/role/branch aktif dari Auth mapping pada setiap request.
 
 `stock_movements`:
 
@@ -76,7 +77,8 @@ quantity server memakai bigint milli-unit, tidak ada floating point.
   `import-audit/<import-id>/<sanitized-name>`.
 - `report-artifacts`: private; owner path membaca. Path
   `report-artifacts/<domain-user-id>/<export-id>/<sanitized-name>`.
-- Tidak ada client upload/update/delete/overwrite pada 12A.
+- Tidak ada generic client upload/update/delete/overwrite. Upload hanya memakai signed
+  token satu-object dari Edge Function.
 - Metadata database tetap authority untuk hash, size, actor, scope, dan status.
 - Filename bukan identity dan object key internal tidak ditampilkan UI.
 
@@ -89,13 +91,18 @@ unlinked/inactive dikeluarkan dan route terlindungi tidak dibuka.
 
 ## Residual risks / scope sengaja ditunda
 
-- Belum ada RPC workflow write/posting/numbering.
-- Belum ada push/pull sync, conflict resolution, atau trusted offline profile
-  cache.
+- General pull, tombstone, dan LWW per kolom belum ada; 12B hanya mendeteksi dan mencatat
+  conflict.
 - Existing workflow use case masih memvalidasi actor terhadap row `users` di
   Drift. Sampai initial pull 12B tersedia, instalasi production harus
   mem-bootstrap data lokal dari dataset domain yang sama agar UUID user server
   dan Drift identik; profil Auth tidak boleh dibuat sebagai UUID domain baru.
-- Belum ada remote artifact ownership model selain actor path.
-- Belum ada Realtime, MFA, reset password production, atau Edge Function.
+- File report remote bersifat opsional; orphan cleanup tetap operasi administrator.
+- Belum ada Realtime, MFA, atau reset password production.
 - Local stack bukan bukti remote Dashboard/Auth config; remote verification wajib.
+# Revision 002 write boundary
+
+Authenticated client writes hanya melalui RPC eksplisit dan signed upload intent.
+`sync_operations`, counter, balance, movement, dan storage control-plane tidak memiliki
+generic authenticated write policy. Semua definer function memakai empty search path dan
+fully-qualified names; actor selalu berasal dari Auth mapping.

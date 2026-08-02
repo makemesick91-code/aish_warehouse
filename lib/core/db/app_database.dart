@@ -15,6 +15,7 @@ import 'daos/master_data_dao.dart';
 import 'daos/opname_dao.dart';
 import 'daos/purchase_request_dao.dart';
 import 'daos/reporting_dao.dart';
+import 'daos/sync_dao.dart';
 import 'tables/base_columns.dart';
 import 'tables/consumption_tables.dart';
 import 'tables/delivery_tables.dart';
@@ -28,6 +29,7 @@ import 'tables/master_tables.dart';
 import 'tables/opname_tables.dart';
 import 'tables/purchase_request_tables.dart';
 import 'tables/reporting_tables.dart';
+import 'tables/sync_tables.dart';
 
 part 'app_database.g.dart';
 
@@ -61,6 +63,12 @@ part 'app_database.g.dart';
     GoodsReturnLines,
     ExportLogs,
     ImportLogs,
+    SyncDevices,
+    SyncOutbox,
+    SyncEntityStates,
+    SyncAttemptLogs,
+    SyncConflictLogs,
+    SyncFileUploads,
   ],
   daos: [
     MasterDataDao,
@@ -75,6 +83,7 @@ part 'app_database.g.dart';
     ConsumptionDao,
     GoodsReturnDao,
     ReportingDao,
+    SyncDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -98,8 +107,9 @@ class AppDatabase extends _$AppDatabase {
   /// * v11 — Milestone 9, Retur Barang (`goods_returns`, `goods_return_lines`).
   /// * v12 — Milestone 10, Reporting export audit (`export_logs`).
   /// * v13 — Milestone 11, Master import audit (`import_logs`).
+  /// * v14 — Milestone 12B, local push-sync infrastructure and outbox.
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -441,6 +451,16 @@ class AppDatabase extends _$AppDatabase {
         for (final statement in _v13ImportLogIndexes) {
           await customStatement(statement);
         }
+      }
+      if (from < 14) {
+        // Additive infrastructure only. No business row, quantity, document
+        // number, auth record, import log or export log is rewritten here.
+        await m.createTable(syncDevices);
+        await m.createTable(syncOutbox);
+        await m.createTable(syncEntityStates);
+        await m.createTable(syncAttemptLogs);
+        await m.createTable(syncConflictLogs);
+        await m.createTable(syncFileUploads);
       }
     },
     beforeOpen: (details) async {

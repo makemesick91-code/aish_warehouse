@@ -13,6 +13,7 @@ import 'daos/master_data_dao.dart';
 import 'daos/opname_dao.dart';
 import 'daos/purchase_request_dao.dart';
 import 'daos/reporting_dao.dart';
+import 'daos/sync_dao.dart';
 import 'database_connection.dart';
 
 /// Single owner of the database handle.
@@ -77,4 +78,8 @@ final goodsReturnDaoProvider = Provider<GoodsReturnDao>(
 
 final reportingDaoProvider = Provider<ReportingDao>(
   (ref) => ref.watch(appDatabaseProvider).reportingDao,
+);
+
+final syncDaoProvider = Provider<SyncDao>(
+  (ref) => ref.watch(appDatabaseProvider).syncDao,
 );

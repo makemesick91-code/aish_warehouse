@@ -34,6 +34,9 @@ import '../models/reporting_models.dart';
 /// soft-delete anywhere in this interface: `export_logs` is an audit trail, and an
 /// audit trail with an edit path is a log nobody can rely on (§42).
 abstract interface class ReportingRepository {
+  /// Runs audit and synchronization metadata writes as one local commit.
+  Future<T> transaction<T>(Future<T> Function() action);
+
   /// Turns a scope *type* plus the ids a screen chose into the resolved set of
   /// stock locations the report may read.
   ///
