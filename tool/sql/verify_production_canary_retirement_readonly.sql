@@ -76,10 +76,10 @@ rows_found as (
   union all
   select 'items', i.id, i.deleted_at, i.is_active
     from public.items i, ns where i.name like 'CANARY ' || ns.token || '%'
-  -- Tables with no name column: reached through the canary branch.
+  -- Users carry the namespace in full_name; the remaining tables are reached through the canary branch.
   union all
   select 'users', u.id, u.deleted_at, u.is_active
-    from public.users u where u.branch_id in (select id from canary_branches)
+    from public.users u, ns where u.full_name like 'CANARY ' || ns.token || '%'
   union all
   select 'stock_opnames', o.id, o.deleted_at, null::boolean
     from public.stock_opnames o where o.branch_id in (select id from canary_branches)
@@ -121,7 +121,7 @@ rows_found as (
   union all select s.deleted_at from public.stock_locations s, ns where s.name like 'CANARY ' || ns.token || '%'
   union all select c.deleted_at from public.item_categories c, ns where c.name like 'CANARY ' || ns.token || '%'
   union all select i.deleted_at from public.items i, ns where i.name like 'CANARY ' || ns.token || '%'
-  union all select u.deleted_at from public.users u where u.branch_id in (select id from canary_branches)
+  union all select u.deleted_at from public.users u, ns where u.full_name like 'CANARY ' || ns.token || '%'
   union all select o.deleted_at from public.stock_opnames o where o.branch_id in (select id from canary_branches)
   union all select p.deleted_at from public.purchase_requests p where p.branch_id in (select id from canary_branches)
   union all select l.deleted_at from public.purchase_request_lines l
@@ -149,17 +149,15 @@ select
   left(split_part(u.email, '@', 1), 3) || '…@'
     || split_part(u.email, '@', 2)                          as email_masked,
   (u.banned_until is not null and u.banned_until > now())   as is_currently_banned,
-  u.banned_until >= now() + interval '100 years'            as banned_effectively_forever,
+  u.banned_until,
+  u.banned_until - now() as remaining_ban,
   u.created_at
 from auth.users u
 where u.email like '%aish-12c-canary-e2e-2026-08-03T15-32-38-154Z%'
    or u.id in (
      select l.auth_user_id from public.user_auth_links l
      join public.users du on du.id = l.user_id
-     where du.branch_id in (
-       select b.id from public.branches b
-       where b.name like 'CANARY aish-12c-canary-e2e-2026-08-03T15-32-38-154Z%'
-     )
+     where du.full_name like 'CANARY aish-12c-canary-e2e-2026-08-03T15-32-38-154Z-cafc2d3d-5a11a3cc96%'
    )
 order by u.created_at;
 
@@ -174,10 +172,7 @@ from auth.users u
 where u.id in (
   select l.auth_user_id from public.user_auth_links l
   join public.users du on du.id = l.user_id
-  where du.branch_id in (
-    select b.id from public.branches b
-    where b.name like 'CANARY aish-12c-canary-e2e-2026-08-03T15-32-38-154Z%'
-  )
+  where du.full_name like 'CANARY aish-12c-canary-e2e-2026-08-03T15-32-38-154Z-cafc2d3d-5a11a3cc96%'
 );
 
 -- ---------------------------------------------------------------------
@@ -197,20 +192,14 @@ select 'user_auth_links', count(*)
   from public.user_auth_links l
  where l.user_id in (
    select du.id from public.users du
-   where du.branch_id in (
-     select b.id from public.branches b
-     where b.name like 'CANARY aish-12c-canary-e2e-2026-08-03T15-32-38-154Z%'
-   )
+   where du.full_name like 'CANARY aish-12c-canary-e2e-2026-08-03T15-32-38-154Z-cafc2d3d-5a11a3cc96%'
  )
 union all
 select 'sync_operations', count(*)
   from public.sync_operations o
  where o.actor_user_id in (
    select du.id from public.users du
-   where du.branch_id in (
-     select b.id from public.branches b
-     where b.name like 'CANARY aish-12c-canary-e2e-2026-08-03T15-32-38-154Z%'
-   )
+   where du.full_name like 'CANARY aish-12c-canary-e2e-2026-08-03T15-32-38-154Z-cafc2d3d-5a11a3cc96%'
  );
 
 -- ---------------------------------------------------------------------
@@ -261,8 +250,9 @@ select count(*) as active_canary_rows_remaining from (
    where c.name like 'CANARY ' || ns.token || '%' and c.deleted_at is null
   union all select 1 from public.items i, ns
    where i.name like 'CANARY ' || ns.token || '%' and i.deleted_at is null
-  union all select 1 from public.users u
-   where u.branch_id in (select id from canary_branches) and u.deleted_at is null
+  union all select 1 from public.users u, ns
+   where u.full_name like 'CANARY ' || ns.token || '%'
+     and u.deleted_at is null
   union all select 1 from public.stock_opnames o
    where o.branch_id in (select id from canary_branches) and o.deleted_at is null
   union all select 1 from public.purchase_requests p

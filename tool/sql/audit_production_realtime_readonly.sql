@@ -180,13 +180,18 @@ where a.attrelid = 'public.sync_change_journal'::regclass
 order by a.attnum;
 
 select
+  idx.relname as index_name,
   i.indisprimary,
   i.indisunique,
-  array_to_string(array_agg(a.attname order by a.attnum), ',') as columns
+  pg_get_indexdef(i.indexrelid) as index_definition
 from pg_index i
-join pg_attribute a on a.attrelid = i.indrelid and a.attnum = any(i.indkey)
+join pg_class idx
+  on idx.oid = i.indexrelid
 where i.indrelid = 'public.sync_change_journal'::regclass
-group by i.indisprimary, i.indisunique;
+order by
+  i.indisprimary desc,
+  i.indisunique desc,
+  idx.relname;
 
 -- Journal triggers: the row has to be written before it can be replicated.
 select
