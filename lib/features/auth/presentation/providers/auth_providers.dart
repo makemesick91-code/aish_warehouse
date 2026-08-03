@@ -10,6 +10,7 @@ import '../../domain/models/auth_models.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/use_cases/auth_use_cases.dart';
 import '../../../../core/session/current_user_session.dart';
+import '../../../../core/sync/realtime_invalidation_coordinator.dart';
 import '../../../../core/sync/sync_providers.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -92,6 +93,11 @@ class ProductionAuthController extends AsyncNotifier<AuthState> {
 
   Future<void> signOut() async {
     state = const AsyncLoading();
+    // Sync stops before the session does. An in-flight pull must not advance a
+    // cursor under an actor who is leaving, and the Realtime channel must not
+    // outlive the token it authenticated with.
+    ref.read(syncOrchestratorProvider)?.cancelForActorChange();
+    unawaited(ref.read(realtimeSyncSignalProvider)?.stop() ?? Future.value());
     try {
       await ref.read(signOutUseCaseProvider).call();
     } on AuthFailure {
@@ -133,8 +139,16 @@ class ProductionAuthController extends AsyncNotifier<AuthState> {
     // Push bootstrap belongs only to a genuine production-client session.
     if (ref.read(supabaseClientProvider) != null) {
       await ref.read(rebuildPendingOutboxProvider).call();
+      // One cycle rather than a bare push: signing in is exactly the moment a
+      // device is most likely to be behind, and the pull is what closes the gap
+      // left by everything that happened while it was signed out.
       unawaited(
-        ref.read(pushSyncCoordinatorProvider)?.trigger(actorUserId: profile.id),
+        ref
+            .read(syncInvalidationCoordinatorProvider)
+            .flush(SyncInvalidationSource.signIn),
+      );
+      unawaited(
+        ref.read(realtimeSyncSignalProvider)?.start() ?? Future.value(),
       );
     }
     return AuthAuthenticated(session: session, profile: profile);

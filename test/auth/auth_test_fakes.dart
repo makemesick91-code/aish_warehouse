@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:aish_warehouse/core/config/supabase_config.dart';
 import 'package:aish_warehouse/core/supabase/supabase_health_gateway.dart';
 import 'package:aish_warehouse/features/auth/domain/models/auth_models.dart';
 import 'package:aish_warehouse/features/auth/domain/repositories/auth_repository.dart';
@@ -57,6 +58,8 @@ class FakeHealthGateway implements SupabaseHealthGateway {
   Future<ServerHealth> check() async => ServerHealth(
     status: 'ok',
     serverTimeUtc: DateTime.utc(2026, 8, 2),
-    schemaRevision: compatible ? 'aish-supabase-002' : 'old-revision',
+    schemaRevision: compatible
+        ? SupabaseConfig.expectedSchemaRevision
+        : 'old-revision',
   );
 }

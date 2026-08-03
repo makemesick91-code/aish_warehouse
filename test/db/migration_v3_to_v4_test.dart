@@ -271,7 +271,7 @@ CREATE TABLE "stock_opnames" (
       final row = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(row.read<int>('user_version'), 14);
+      expect(row.read<int>('user_version'), 15);
 
       await database.close();
     });
@@ -592,7 +592,7 @@ CREATE TABLE "stock_opnames" (
       final version = await second
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 14);
+      expect(version.read<int>('user_version'), 15);
       await second.close();
     });
 
@@ -641,6 +641,11 @@ CREATE TABLE "stock_opnames" (
         'sync_attempt_logs',
         'sync_conflict_logs',
         'sync_file_uploads',
+        'sync_pull_cursors',
+        'sync_entity_snapshots',
+        'sync_field_versions',
+        'sync_tombstones',
+        'sync_pull_logs',
         'disposals',
         'disposal_lines',
       });
@@ -674,7 +679,7 @@ CREATE TABLE "stock_opnames" (
         final version = await database
             .customSelect('PRAGMA user_version;')
             .getSingle();
-        expect(version.read<int>('user_version'), 14);
+        expect(version.read<int>('user_version'), 15);
 
         // v1 → v2 scaling ran exactly once…
         final balance = await database
@@ -741,7 +746,7 @@ CREATE TABLE "stock_opnames" (
       final version = await database
           .customSelect('PRAGMA user_version;')
           .getSingle();
-      expect(version.read<int>('user_version'), 14);
+      expect(version.read<int>('user_version'), 15);
 
       // Already milli-units at v2: 10500 becoming 10500000 is exactly the bug
       // the `from < 2` guard prevents.

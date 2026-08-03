@@ -10,7 +10,7 @@ select has_table('public','file_upload_intents','upload intent exists');
 select has_table('public','remote_file_objects','remote object audit exists');
 
 select is((select revision from app_meta.schema_revisions order by applied_at desc limit 1),
-  'aish-supabase-002','revision 002 is latest');
+  'aish-supabase-003','revision 003 is latest');
 select is((select count(*)::bigint from storage.buckets where id in ('import-audit','report-artifacts') and not public),2::bigint,'buckets remain private');
 select ok(not has_table_privilege('authenticated','public.stock_movements','INSERT'),'client still cannot insert movement');
 select ok(not has_table_privilege('authenticated','public.stock_balances','UPDATE'),'client still cannot update balance');

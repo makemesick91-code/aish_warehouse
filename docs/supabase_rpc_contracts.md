@@ -40,3 +40,61 @@ Kode stabil meliputi `sync_auth_required`, `sync_identity_unlinked`,
 `sync_dependency_pending`, `sync_movement_plan_mismatch`,
 `sync_insufficient_stock`, dan kode upload yang
 didokumentasikan di `supabase_storage_upload.md`. Pesan UI tidak memakai substring SQL.
+
+## Pull contract (revisi 003)
+
+```text
+public.pull_sync_changes(
+  after_cursor bigint,
+  batch_limit  integer default 200,
+  device_id    uuid,
+  entity_types text[] default null
+) returns jsonb
+```
+
+`SECURITY DEFINER`, `search_path` dikunci, execute dicabut dari `public` dan
+`anon`, diberikan hanya ke `authenticated`.
+
+Validasi berurutan: identitas domain aktif → device milik actor → bentuk
+argumen. `batch_limit` dibatasi 1..500. `entity_types` opsional dan hanya
+mempersempit.
+
+Response:
+
+```text
+changes[]           ordered, ascending change_seq
+  change_seq        posisi jurnal
+  entity_type       branch|room|user|category|item|batch|stock_location|
+                    stock_balance|stock_movement|<dokumen>
+  entity_id         uuid
+  operation         upsert | tombstone
+  server_version    versi entity saat perubahan
+  server_changed_at_utc
+  payload           aggregate lengkap, atau null untuk tombstone
+  field_versions    kolom → server_version saat kolom itu terakhir berubah
+next_cursor         posisi yang dikonsumsi halaman ini
+has_more            boolean
+server_time_utc     timestamp server
+server_horizon      batas commit yang aman dibaca
+scope_fingerprint   digest user|role|branch
+```
+
+Filter data dilakukan di server oleh `app_private.pull_entity_visible`, yang
+mengulang predikat SELECT RLS dan dipin terhadapnya oleh test ekuivalensi di
+`pull_sync.test.sql`. Entry di luar scope dibuang tanpa jejak — tidak ada
+placeholder, sehingga keberadaan record lintas cabang tidak dapat disimpulkan
+dari gap `change_seq`.
+
+Cursor hanya sah dalam satu scope. Fingerprint yang berubah membuat klien memulai
+scope baru dari 0.
+
+Halaman dibatasi commit horizon: hanya entry yang transaksinya sudah settle yang
+dikembalikan, sehingga cursor tidak pernah melewati perubahan yang belum
+terlihat. Konsekuensinya transaksi panjang menahan kepala antrean.
+
+Kode stabil tambahan: `sync_cursor_invalid` (cursor negatif, melebihi feed, atau
+scope tidak lagi cocok — klien meresponsnya dengan resync penuh).
+
+Payload dokumen selalu membawa `lines`; Purchase Request menambah `opname_links`;
+dokumen posting menambah `movements`. Perubahan pada baris line dijurnal terhadap
+header induknya, sehingga dokumen parsial tidak dapat diterapkan.

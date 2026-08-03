@@ -29,6 +29,7 @@ import 'tables/master_tables.dart';
 import 'tables/opname_tables.dart';
 import 'tables/purchase_request_tables.dart';
 import 'tables/reporting_tables.dart';
+import 'tables/sync_pull_tables.dart';
 import 'tables/sync_tables.dart';
 
 part 'app_database.g.dart';
@@ -69,6 +70,11 @@ part 'app_database.g.dart';
     SyncAttemptLogs,
     SyncConflictLogs,
     SyncFileUploads,
+    SyncPullCursors,
+    SyncEntitySnapshots,
+    SyncFieldVersions,
+    SyncTombstones,
+    SyncPullLogs,
   ],
   daos: [
     MasterDataDao,
@@ -108,8 +114,10 @@ class AppDatabase extends _$AppDatabase {
   /// * v12 — Milestone 10, Reporting export audit (`export_logs`).
   /// * v13 — Milestone 11, Master import audit (`import_logs`).
   /// * v14 — Milestone 12B, local push-sync infrastructure and outbox.
+  /// * v15 — Milestone 12C, deterministic pull: cursors, reconciliation
+  ///   baselines, field versions, tombstones, and the pull audit log.
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -461,6 +469,50 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(syncAttemptLogs);
         await m.createTable(syncConflictLogs);
         await m.createTable(syncFileUploads);
+      }
+      if (from < 15) {
+        // Milestone 12C, additive in the sense the `from < 3` block established:
+        // five new tables and their indexes, and not one statement touching an
+        // existing column.
+        //
+        // This is the milestone that teaches the device to *read* from the
+        // server, and the temptation it has to refuse is seeding those reads.
+        // It writes no cursor, no baseline snapshot and no field version for
+        // anything already on the device — and that absence is load-bearing in a
+        // way the earlier blocks' was not.
+        //
+        // A cursor is a claim about *what this device has already seen*. Any
+        // value invented here would be a lie in one of two directions: a
+        // non-zero cursor would make the first pull skip every change below it,
+        // silently and permanently, because a change journal is only ever read
+        // forward. A baseline snapshot invented from the local row would be
+        // worse still: the three-way merge reads it as "the server said this",
+        // so a locally-edited row would be misread as unchanged and the user's
+        // pending edit would be discarded the first time the server touched that
+        // entity. Both tables therefore come up empty, which is the honest
+        // outcome — before v15 nothing could pull, so this device has seen
+        // nothing, and the first pull starts from zero and reconciles from
+        // whatever the server actually reports.
+        //
+        // No tombstone is written either. A tombstone asserts that the server
+        // deleted a record; a row soft-deleted locally before v15 was deleted by
+        // *this device*, and recording it as a server tombstone would block the
+        // legitimate upsert that a later pull may bring.
+        //
+        // It also has to leave `stock_opnames` alone for the second reason the
+        // `from < 5` block spells out: the `from < 4` block reads the *current*
+        // Dart definition of that table through `alterTable`, so a v15 that
+        // changed its shape would make a v3 → v15 upgrade land on the v15 shape
+        // at step 4 and then apply steps 5 to 15 on top. None of these five
+        // tables carries a foreign key at all — they are keyed by
+        // `(entity_type, entity_id)` text pairs precisely so that a pull can
+        // record a tombstone for an entity the device has never held — so that
+        // trap stays shut.
+        await m.createTable(syncPullCursors);
+        await m.createTable(syncEntitySnapshots);
+        await m.createTable(syncFieldVersions);
+        await m.createTable(syncTombstones);
+        await m.createTable(syncPullLogs);
       }
     },
     beforeOpen: (details) async {

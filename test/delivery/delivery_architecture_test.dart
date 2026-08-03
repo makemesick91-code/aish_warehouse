@@ -650,7 +650,7 @@ void main() {
       expect(source, contains('if (from < 6)'));
       // Bumped by every later milestone; what this test is really pinning is
       // that the v6 *step* is still there, still frozen, and still additive.
-      expect(source, contains('int get schemaVersion => 14;'));
+      expect(source, contains('int get schemaVersion => 15;'));
       expect(
         source.contains('allSchemaEntities'),
         isFalse,

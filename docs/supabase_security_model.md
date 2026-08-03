@@ -106,3 +106,59 @@ Authenticated client writes hanya melalui RPC eksplisit dan signed upload intent
 `sync_operations`, counter, balance, movement, dan storage control-plane tidak memiliki
 generic authenticated write policy. Semua definer function memakai empty search path dan
 fully-qualified names; actor selalu berasal dari Auth mapping.
+
+# Revision 003 read boundary
+
+Jalur baca terotorisasi ditambahkan tanpa membuka satu pun tabel bisnis untuk
+generic read lintas scope.
+
+- `public.pull_sync_changes` adalah satu-satunya cara klien membaca change feed,
+  dan satu-satunya fungsi revisi 003 yang di-grant ke `authenticated`. Seluruh
+  helper `app_private` revisi 003 — `pull_entity_visible`,
+  `pull_entity_payload`, `pull_commit_horizon`, `pull_scope_fingerprint`,
+  `pull_mergeable_fields`, registry entity type, ketiga trigger function, dan
+  `prune_sync_change_journal` — dicabut dari `public`, `anon`, dan
+  `authenticated`. RPC publiknya SECURITY DEFINER sehingga menjangkau helper
+  sebagai owner; klien tidak perlu dan tidak mendapat privilege langsung.
+  `pull_sync.test.sql` menguji daftar itu sebagai satu himpunan agar helper baru
+  tidak lolos dengan EXECUTE default milik PUBLIC.
+- `app_private.pull_entity_visible` mengulang predikat SELECT RLS karena
+  SECURITY DEFINER melewati RLS. Pengulangan itu berisiko menyimpang, sehingga
+  `pull_sync.test.sql` membandingkan himpunan id RLS dengan himpunan id yang
+  diloloskan fungsi ini untuk setiap entity type dan setiap actor fixture.
+  Fungsi ini tidak dipanggil dari policy mana pun: ekspresi policy dievaluasi
+  dengan privilege role pemanggil, sehingga memanggilnya di sana akan memaksa
+  grant EXECUTE ke `authenticated` dan menyerahkan oracle keberadaan entity ke
+  koneksi langsung.
+- `sync_change_journal` memaksa RLS, hanya punya policy SELECT, dan tidak
+  memiliki grant INSERT/UPDATE/DELETE untuk role klien mana pun. Trigger
+  tambahan menolak UPDATE. Kanal Realtime karena itu hanya membawa bookkeeping
+  baris yang memang boleh dibaca actor.
+- Policy SELECT jurnal menyatakan predikatnya sebagai probe keberadaan ke tabel
+  entity itu sendiri, bukan pemanggilan helper privat. Policy dievaluasi sebagai
+  actor dengan RLS aktif pada setiap tabel yang disentuhnya, sehingga probe itu
+  *adalah* jawaban RLS dan tidak bisa menyimpang darinya. `pull_sync.test.sql`
+  membuktikan policy tersebut meloloskan persis baris jurnal yang diloloskan
+  filter pull, untuk setiap actor fixture.
+- `sync_entity_field_versions` tidak dapat dibaca klien sama sekali; nilainya
+  hanya keluar melalui response pull. Klien tidak pernah mengirim field version,
+  sehingga ordering merge tidak dapat dipengaruhi payload.
+- Trigger jurnal dan field version berjalan `SECURITY DEFINER` agar feed mencatat
+  setiap penulis, termasuk `service_role` yang tidak diberi usage pada
+  `app_private`. Ketiganya tidak dapat dipanggil langsung.
+- Realtime tidak pernah menjadi sumber kebenaran: payload event tidak dibaca,
+  tidak menulis ledger, dan tidak mengganti entity. Ia hanya menjadwalkan pull.
+
+## Residual risks revisi 003
+
+- Backfill jurnal belum dijalankan; data pra-migrasi tidak muncul di feed sampai
+  barisnya tersentuh. Strategi ada di `supabase_12c_remote_handoff.md`.
+- Retensi jurnal tersedia tetapi tidak dijadwalkan; jurnal tumbuh monoton.
+- Policy RLS jurnal melakukan satu probe keberadaan per baris — benar, tetapi
+  biayanya belum diukur pada volume produksi.
+- `grant usage on schema app_private to authenticated` masih berlaku dari
+  revisi 001. Helper revisi 003 sudah dicabut satu per satu, tetapi helper
+  identitas revisi 001 masih memakai EXECUTE default milik PUBLIC. Mencabut
+  usage schema itu adalah hardening satu baris yang menutup seluruh sisa
+  permukaan sekaligus; belum dilakukan karena berada di luar scope revisi 003
+  dan menyentuh migrasi yang sudah ter-deploy.

@@ -1,10 +1,11 @@
 # Supabase Sync Next Steps
 
-Revision 002 menyediakan push-only transactional outbox, typed RPC, server
-idempotency/numbering, atomic ledger helpers, conflict logging, dan trusted upload.
-General pull sengaja belum aktif.
+Revisi 003 melengkapi revisi 002 dengan jalur baca: change feed deterministik,
+tombstone, rekonsiliasi per kolom, recovery konflik final, dan Realtime sebagai
+invalidation. Push, idempotency, canonical hash, outbox dependency, trusted
+upload, dan transaksi atomik 12B tidak berubah.
 
-## Milestone 12B — trusted writes dan push
+## Milestone 12B — trusted writes dan push (selesai)
 
 - RPC transaksional per workflow, bukan generic table write.
 - Server document numbering pada submit (`TMP-*` menjadi nomor final).
@@ -16,32 +17,52 @@ General pull sengaja belum aktif.
 - Trusted Storage upload untuk validated import source/report retention.
 - Contract test setiap RPC terhadap RLS dan direct-client denial.
 
-Server cursor sudah tersedia di setiap syncable table:
+## Milestone 12C — pull, rekonsiliasi, tombstone, signals (selesai)
 
-```text
-server_updated_at timestamptz
-server_version bigint
-```
+- Change journal terurut (`sync_change_journal`) dengan `change_seq` monotonik
+  dan commit horizon berbasis `xid8`, menggantikan rencana cursor
+  `(server_updated_at, id)` yang tidak dapat menjamin no-skip saat sebuah row
+  berubah dua kali. Trade-off terdokumentasi di `supabase_12c_sync_design.md`.
+- `public.pull_sync_changes` terotorisasi, paginasi berbatas, filter scope di
+  server, dan `scope_fingerprint` yang menginvalidasi cursor saat role/branch
+  berubah. Cursor disimpan per `(actor, fingerprint)`; account switch tidak
+  berbagi cache.
+- Batch diterapkan bersama cursor dalam satu transaksi Drift; kegagalan di
+  tengah membatalkan seluruh batch dan cursor tidak maju.
+- Tombstone deterministik yang menulis `deleted_at`, bukan `DELETE`, dengan
+  catatan anti-resurrection. Klasifikasi per entity di
+  `supabase_12c_reconciliation.md`.
+- LWW per kolom untuk master data memakai `field_version` server (G-Y3); dokumen
+  final selalu dimenangkan server (G-Y2).
+- `FinalConflictRecoveryService`: snapshot server diterapkan, movement lokal yang
+  tidak diterima server dibalik dengan reversal ber-UUID deterministik (G-A1),
+  outbox diselesaikan, conflict log menerima resolusi eksplisit.
+- Realtime hanya invalidation, di-debounce dan dikoalesensi; sistem tetap benar
+  tanpanya lewat login, resume, reconnect, dan manual sync.
+- Nomor dokumen final server dipertahankan saat rekonsiliasi.
 
-Trigger mengabaikan nilai client, memakai server clock, dan menaikkan version
-tepat sekali. `created_at`, quantity, dan status bisnis tidak disentuh trigger.
+## Berikutnya — hybrid storage
 
-## Milestone 12C — pull, conflict, numbering completion, signals
+Fondasi penyimpanan file besar di server sendiri **baru boleh dimulai setelah
+seluruh acceptance gate 12C lulus di staging**, bukan hanya lokal. Abstraksi
+upload 12B (`TrustedFileUploadGateway`, `SyncFileUploads`, intent/finalize)
+sengaja tidak diubah pada 12C, sehingga backend penyimpanan dapat ditukar tanpa
+menyentuh jalur sync.
 
-- Pull deterministik dengan cursor `(server_updated_at, id)` dan pagination.
-- Cursor disimpan per table/account; account switch tidak berbagi cache.
-- Tombstone/soft-delete handling.
-- Draft conflict per-column sesuai G-Y3; final server-wins.
-- Conflict audit dan UI resolusi yang tidak mengedit final document.
-- Reconcile temporary/final number mapping.
-- Realtime hanya sebagai invalidation signal; data tetap diambil lewat pull
-  terotorisasi, bukan dipercaya dari payload signal.
-- Signed/trusted cached profile policy bila read-only offline production dibuka.
+Prasyarat sebelum memulai:
 
-## Gates sebelum remote rollout 12B
+- gate rollout 12C di `supabase_12c_remote_handoff.md` terpenuhi;
+- backfill jurnal dijalankan dan diverifikasi;
+- kebijakan retensi jurnal disepakati;
+- beban tulis jurnal dan Realtime terukur pada traffic realistis.
+
+## Gate sebelum remote rollout
 
 - Remote project dan Auth Dashboard tersedia.
 - Role/branch matrix diterima pemilik produk.
 - Local `db reset` + pgTAP tetap lulus.
+- Runner 12B dan 12C dijalankan terhadap staging.
 - Backup/rollback dan staging environment tersedia.
 - Tidak ada remote write dari credential developer yang tidak terkontrol.
+- Rilis klien dijadwalkan setelah migrasi server; klien revisi 002 sengaja
+  menolak server 003 lewat health check.

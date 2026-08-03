@@ -80,7 +80,7 @@ void main() {
 
   group('bentuk tabel', () {
     test('schema version adalah 12', () {
-      expect(context.database.schemaVersion, 14);
+      expect(context.database.schemaVersion, 15);
     });
 
     test('export_logs ada', () async {

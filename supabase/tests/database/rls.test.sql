@@ -60,7 +60,7 @@ select is(
 
 select is(
   (select revision from app_meta.schema_revisions order by applied_at desc limit 1),
-  'aish-supabase-002',
+  'aish-supabase-003',
   'schema revision is exact'
 );
 
@@ -160,7 +160,7 @@ select set_config('request.jwt.claims', '{"sub":"10000000-0000-0000-0000-0000000
 select is((select count(*)::bigint from public.branches), 2::bigint, 'super admin reads all branches');
 select is((select count(*)::bigint from public.rooms), 3::bigint, 'super admin reads all rooms');
 select is((select count(*)::bigint from public.users), 5::bigint, 'super admin reads domain users');
-select is((select schema_revision from public.get_server_health()), 'aish-supabase-002', 'active session health RPC returns revision');
+select is((select schema_revision from public.get_server_health()), 'aish-supabase-003', 'active session health RPC returns revision');
 
 reset role;
 

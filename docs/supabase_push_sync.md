@@ -45,5 +45,12 @@ Movement UUID lokal dipakai persis di server. `occurred_at_utc` mempertahankan w
 offline dan tanggal operasional dihitung di Asia/Makassar. Jam perangkat offline tidak
 anti-tamper; server menolak waktu lebih dari lima menit di masa depan.
 
-12B mendeteksi stale/non-final serta final mismatch dan mencatatnya. Pull deterministik,
-tombstone, LWW per kolom, dan perbaikan konflik final adalah scope 12C.
+12B mendeteksi stale/non-final serta final mismatch dan mencatatnya. Perbaikannya
+ada di 12C: pull deterministik, tombstone, LWW per kolom, dan recovery konflik
+final — lihat `supabase_12c_sync_design.md` dan `supabase_12c_reconciliation.md`.
+
+Push tidak berubah pada 12C. Yang bertambah hanya urutannya: satu siklus kini
+push dulu, baru pull, lalu — hanya bila rekonsiliasi menyisakan kolom yang masih
+terutang ke server — satu ronde push tambahan yang dibatasi tepat sekali. Blocked
+master legacy `sync_original_actor_unknown` tetap menunggu rekonsiliasi
+administratif dan tidak pernah diambil alih akun mana pun.

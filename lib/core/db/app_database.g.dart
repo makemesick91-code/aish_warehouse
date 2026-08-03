@@ -24944,6 +24944,2732 @@ class SyncFileUploadsCompanion extends UpdateCompanion<SyncFileUploadRow> {
   }
 }
 
+class $SyncPullCursorsTable extends SyncPullCursors
+    with TableInfo<$SyncPullCursorsTable, SyncPullCursorRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncPullCursorsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _actorUserIdMeta = const VerificationMeta(
+    'actorUserId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUserId = GeneratedColumn<String>(
+    'actor_user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scopeFingerprintMeta = const VerificationMeta(
+    'scopeFingerprint',
+  );
+  @override
+  late final GeneratedColumn<String> scopeFingerprint = GeneratedColumn<String>(
+    'scope_fingerprint',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 128,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cursorValueMeta = const VerificationMeta(
+    'cursorValue',
+  );
+  @override
+  late final GeneratedColumn<int> cursorValue = GeneratedColumn<int>(
+    'cursor_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastPulledAtUtcMeta = const VerificationMeta(
+    'lastPulledAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastPulledAtUtc =
+      GeneratedColumn<DateTime>(
+        'last_pulled_at_utc',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lastServerTimeUtcMeta = const VerificationMeta(
+    'lastServerTimeUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastServerTimeUtc =
+      GeneratedColumn<DateTime>(
+        'last_server_time_utc',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lastSuccessAtUtcMeta = const VerificationMeta(
+    'lastSuccessAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastSuccessAtUtc =
+      GeneratedColumn<DateTime>(
+        'last_success_at_utc',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _appliedChangeCountMeta =
+      const VerificationMeta('appliedChangeCount');
+  @override
+  late final GeneratedColumn<int> appliedChangeCount = GeneratedColumn<int>(
+    'applied_change_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    actorUserId,
+    scopeFingerprint,
+    cursorValue,
+    lastPulledAtUtc,
+    lastServerTimeUtc,
+    lastSuccessAtUtc,
+    appliedChangeCount,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_pull_cursors';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncPullCursorRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('actor_user_id')) {
+      context.handle(
+        _actorUserIdMeta,
+        actorUserId.isAcceptableOrUnknown(
+          data['actor_user_id']!,
+          _actorUserIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_actorUserIdMeta);
+    }
+    if (data.containsKey('scope_fingerprint')) {
+      context.handle(
+        _scopeFingerprintMeta,
+        scopeFingerprint.isAcceptableOrUnknown(
+          data['scope_fingerprint']!,
+          _scopeFingerprintMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_scopeFingerprintMeta);
+    }
+    if (data.containsKey('cursor_value')) {
+      context.handle(
+        _cursorValueMeta,
+        cursorValue.isAcceptableOrUnknown(
+          data['cursor_value']!,
+          _cursorValueMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_pulled_at_utc')) {
+      context.handle(
+        _lastPulledAtUtcMeta,
+        lastPulledAtUtc.isAcceptableOrUnknown(
+          data['last_pulled_at_utc']!,
+          _lastPulledAtUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_server_time_utc')) {
+      context.handle(
+        _lastServerTimeUtcMeta,
+        lastServerTimeUtc.isAcceptableOrUnknown(
+          data['last_server_time_utc']!,
+          _lastServerTimeUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_success_at_utc')) {
+      context.handle(
+        _lastSuccessAtUtcMeta,
+        lastSuccessAtUtc.isAcceptableOrUnknown(
+          data['last_success_at_utc']!,
+          _lastSuccessAtUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('applied_change_count')) {
+      context.handle(
+        _appliedChangeCountMeta,
+        appliedChangeCount.isAcceptableOrUnknown(
+          data['applied_change_count']!,
+          _appliedChangeCountMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncPullCursorRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncPullCursorRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      actorUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_user_id'],
+      )!,
+      scopeFingerprint: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}scope_fingerprint'],
+      )!,
+      cursorValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cursor_value'],
+      )!,
+      lastPulledAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_pulled_at_utc'],
+      ),
+      lastServerTimeUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_server_time_utc'],
+      ),
+      lastSuccessAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_success_at_utc'],
+      ),
+      appliedChangeCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}applied_change_count'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncPullCursorsTable createAlias(String alias) {
+    return $SyncPullCursorsTable(attachedDatabase, alias);
+  }
+}
+
+class SyncPullCursorRow extends DataClass
+    implements Insertable<SyncPullCursorRow> {
+  final String id;
+  final String actorUserId;
+  final String scopeFingerprint;
+  final int cursorValue;
+  final DateTime? lastPulledAtUtc;
+  final DateTime? lastServerTimeUtc;
+  final DateTime? lastSuccessAtUtc;
+  final int appliedChangeCount;
+  const SyncPullCursorRow({
+    required this.id,
+    required this.actorUserId,
+    required this.scopeFingerprint,
+    required this.cursorValue,
+    this.lastPulledAtUtc,
+    this.lastServerTimeUtc,
+    this.lastSuccessAtUtc,
+    required this.appliedChangeCount,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['actor_user_id'] = Variable<String>(actorUserId);
+    map['scope_fingerprint'] = Variable<String>(scopeFingerprint);
+    map['cursor_value'] = Variable<int>(cursorValue);
+    if (!nullToAbsent || lastPulledAtUtc != null) {
+      map['last_pulled_at_utc'] = Variable<DateTime>(lastPulledAtUtc);
+    }
+    if (!nullToAbsent || lastServerTimeUtc != null) {
+      map['last_server_time_utc'] = Variable<DateTime>(lastServerTimeUtc);
+    }
+    if (!nullToAbsent || lastSuccessAtUtc != null) {
+      map['last_success_at_utc'] = Variable<DateTime>(lastSuccessAtUtc);
+    }
+    map['applied_change_count'] = Variable<int>(appliedChangeCount);
+    return map;
+  }
+
+  SyncPullCursorsCompanion toCompanion(bool nullToAbsent) {
+    return SyncPullCursorsCompanion(
+      id: Value(id),
+      actorUserId: Value(actorUserId),
+      scopeFingerprint: Value(scopeFingerprint),
+      cursorValue: Value(cursorValue),
+      lastPulledAtUtc: lastPulledAtUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastPulledAtUtc),
+      lastServerTimeUtc: lastServerTimeUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastServerTimeUtc),
+      lastSuccessAtUtc: lastSuccessAtUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSuccessAtUtc),
+      appliedChangeCount: Value(appliedChangeCount),
+    );
+  }
+
+  factory SyncPullCursorRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncPullCursorRow(
+      id: serializer.fromJson<String>(json['id']),
+      actorUserId: serializer.fromJson<String>(json['actorUserId']),
+      scopeFingerprint: serializer.fromJson<String>(json['scopeFingerprint']),
+      cursorValue: serializer.fromJson<int>(json['cursorValue']),
+      lastPulledAtUtc: serializer.fromJson<DateTime?>(json['lastPulledAtUtc']),
+      lastServerTimeUtc: serializer.fromJson<DateTime?>(
+        json['lastServerTimeUtc'],
+      ),
+      lastSuccessAtUtc: serializer.fromJson<DateTime?>(
+        json['lastSuccessAtUtc'],
+      ),
+      appliedChangeCount: serializer.fromJson<int>(json['appliedChangeCount']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'actorUserId': serializer.toJson<String>(actorUserId),
+      'scopeFingerprint': serializer.toJson<String>(scopeFingerprint),
+      'cursorValue': serializer.toJson<int>(cursorValue),
+      'lastPulledAtUtc': serializer.toJson<DateTime?>(lastPulledAtUtc),
+      'lastServerTimeUtc': serializer.toJson<DateTime?>(lastServerTimeUtc),
+      'lastSuccessAtUtc': serializer.toJson<DateTime?>(lastSuccessAtUtc),
+      'appliedChangeCount': serializer.toJson<int>(appliedChangeCount),
+    };
+  }
+
+  SyncPullCursorRow copyWith({
+    String? id,
+    String? actorUserId,
+    String? scopeFingerprint,
+    int? cursorValue,
+    Value<DateTime?> lastPulledAtUtc = const Value.absent(),
+    Value<DateTime?> lastServerTimeUtc = const Value.absent(),
+    Value<DateTime?> lastSuccessAtUtc = const Value.absent(),
+    int? appliedChangeCount,
+  }) => SyncPullCursorRow(
+    id: id ?? this.id,
+    actorUserId: actorUserId ?? this.actorUserId,
+    scopeFingerprint: scopeFingerprint ?? this.scopeFingerprint,
+    cursorValue: cursorValue ?? this.cursorValue,
+    lastPulledAtUtc: lastPulledAtUtc.present
+        ? lastPulledAtUtc.value
+        : this.lastPulledAtUtc,
+    lastServerTimeUtc: lastServerTimeUtc.present
+        ? lastServerTimeUtc.value
+        : this.lastServerTimeUtc,
+    lastSuccessAtUtc: lastSuccessAtUtc.present
+        ? lastSuccessAtUtc.value
+        : this.lastSuccessAtUtc,
+    appliedChangeCount: appliedChangeCount ?? this.appliedChangeCount,
+  );
+  SyncPullCursorRow copyWithCompanion(SyncPullCursorsCompanion data) {
+    return SyncPullCursorRow(
+      id: data.id.present ? data.id.value : this.id,
+      actorUserId: data.actorUserId.present
+          ? data.actorUserId.value
+          : this.actorUserId,
+      scopeFingerprint: data.scopeFingerprint.present
+          ? data.scopeFingerprint.value
+          : this.scopeFingerprint,
+      cursorValue: data.cursorValue.present
+          ? data.cursorValue.value
+          : this.cursorValue,
+      lastPulledAtUtc: data.lastPulledAtUtc.present
+          ? data.lastPulledAtUtc.value
+          : this.lastPulledAtUtc,
+      lastServerTimeUtc: data.lastServerTimeUtc.present
+          ? data.lastServerTimeUtc.value
+          : this.lastServerTimeUtc,
+      lastSuccessAtUtc: data.lastSuccessAtUtc.present
+          ? data.lastSuccessAtUtc.value
+          : this.lastSuccessAtUtc,
+      appliedChangeCount: data.appliedChangeCount.present
+          ? data.appliedChangeCount.value
+          : this.appliedChangeCount,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncPullCursorRow(')
+          ..write('id: $id, ')
+          ..write('actorUserId: $actorUserId, ')
+          ..write('scopeFingerprint: $scopeFingerprint, ')
+          ..write('cursorValue: $cursorValue, ')
+          ..write('lastPulledAtUtc: $lastPulledAtUtc, ')
+          ..write('lastServerTimeUtc: $lastServerTimeUtc, ')
+          ..write('lastSuccessAtUtc: $lastSuccessAtUtc, ')
+          ..write('appliedChangeCount: $appliedChangeCount')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    actorUserId,
+    scopeFingerprint,
+    cursorValue,
+    lastPulledAtUtc,
+    lastServerTimeUtc,
+    lastSuccessAtUtc,
+    appliedChangeCount,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncPullCursorRow &&
+          other.id == this.id &&
+          other.actorUserId == this.actorUserId &&
+          other.scopeFingerprint == this.scopeFingerprint &&
+          other.cursorValue == this.cursorValue &&
+          other.lastPulledAtUtc == this.lastPulledAtUtc &&
+          other.lastServerTimeUtc == this.lastServerTimeUtc &&
+          other.lastSuccessAtUtc == this.lastSuccessAtUtc &&
+          other.appliedChangeCount == this.appliedChangeCount);
+}
+
+class SyncPullCursorsCompanion extends UpdateCompanion<SyncPullCursorRow> {
+  final Value<String> id;
+  final Value<String> actorUserId;
+  final Value<String> scopeFingerprint;
+  final Value<int> cursorValue;
+  final Value<DateTime?> lastPulledAtUtc;
+  final Value<DateTime?> lastServerTimeUtc;
+  final Value<DateTime?> lastSuccessAtUtc;
+  final Value<int> appliedChangeCount;
+  final Value<int> rowid;
+  const SyncPullCursorsCompanion({
+    this.id = const Value.absent(),
+    this.actorUserId = const Value.absent(),
+    this.scopeFingerprint = const Value.absent(),
+    this.cursorValue = const Value.absent(),
+    this.lastPulledAtUtc = const Value.absent(),
+    this.lastServerTimeUtc = const Value.absent(),
+    this.lastSuccessAtUtc = const Value.absent(),
+    this.appliedChangeCount = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncPullCursorsCompanion.insert({
+    this.id = const Value.absent(),
+    required String actorUserId,
+    required String scopeFingerprint,
+    this.cursorValue = const Value.absent(),
+    this.lastPulledAtUtc = const Value.absent(),
+    this.lastServerTimeUtc = const Value.absent(),
+    this.lastSuccessAtUtc = const Value.absent(),
+    this.appliedChangeCount = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : actorUserId = Value(actorUserId),
+       scopeFingerprint = Value(scopeFingerprint);
+  static Insertable<SyncPullCursorRow> custom({
+    Expression<String>? id,
+    Expression<String>? actorUserId,
+    Expression<String>? scopeFingerprint,
+    Expression<int>? cursorValue,
+    Expression<DateTime>? lastPulledAtUtc,
+    Expression<DateTime>? lastServerTimeUtc,
+    Expression<DateTime>? lastSuccessAtUtc,
+    Expression<int>? appliedChangeCount,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (actorUserId != null) 'actor_user_id': actorUserId,
+      if (scopeFingerprint != null) 'scope_fingerprint': scopeFingerprint,
+      if (cursorValue != null) 'cursor_value': cursorValue,
+      if (lastPulledAtUtc != null) 'last_pulled_at_utc': lastPulledAtUtc,
+      if (lastServerTimeUtc != null) 'last_server_time_utc': lastServerTimeUtc,
+      if (lastSuccessAtUtc != null) 'last_success_at_utc': lastSuccessAtUtc,
+      if (appliedChangeCount != null)
+        'applied_change_count': appliedChangeCount,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncPullCursorsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? actorUserId,
+    Value<String>? scopeFingerprint,
+    Value<int>? cursorValue,
+    Value<DateTime?>? lastPulledAtUtc,
+    Value<DateTime?>? lastServerTimeUtc,
+    Value<DateTime?>? lastSuccessAtUtc,
+    Value<int>? appliedChangeCount,
+    Value<int>? rowid,
+  }) {
+    return SyncPullCursorsCompanion(
+      id: id ?? this.id,
+      actorUserId: actorUserId ?? this.actorUserId,
+      scopeFingerprint: scopeFingerprint ?? this.scopeFingerprint,
+      cursorValue: cursorValue ?? this.cursorValue,
+      lastPulledAtUtc: lastPulledAtUtc ?? this.lastPulledAtUtc,
+      lastServerTimeUtc: lastServerTimeUtc ?? this.lastServerTimeUtc,
+      lastSuccessAtUtc: lastSuccessAtUtc ?? this.lastSuccessAtUtc,
+      appliedChangeCount: appliedChangeCount ?? this.appliedChangeCount,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (actorUserId.present) {
+      map['actor_user_id'] = Variable<String>(actorUserId.value);
+    }
+    if (scopeFingerprint.present) {
+      map['scope_fingerprint'] = Variable<String>(scopeFingerprint.value);
+    }
+    if (cursorValue.present) {
+      map['cursor_value'] = Variable<int>(cursorValue.value);
+    }
+    if (lastPulledAtUtc.present) {
+      map['last_pulled_at_utc'] = Variable<DateTime>(lastPulledAtUtc.value);
+    }
+    if (lastServerTimeUtc.present) {
+      map['last_server_time_utc'] = Variable<DateTime>(lastServerTimeUtc.value);
+    }
+    if (lastSuccessAtUtc.present) {
+      map['last_success_at_utc'] = Variable<DateTime>(lastSuccessAtUtc.value);
+    }
+    if (appliedChangeCount.present) {
+      map['applied_change_count'] = Variable<int>(appliedChangeCount.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncPullCursorsCompanion(')
+          ..write('id: $id, ')
+          ..write('actorUserId: $actorUserId, ')
+          ..write('scopeFingerprint: $scopeFingerprint, ')
+          ..write('cursorValue: $cursorValue, ')
+          ..write('lastPulledAtUtc: $lastPulledAtUtc, ')
+          ..write('lastServerTimeUtc: $lastServerTimeUtc, ')
+          ..write('lastSuccessAtUtc: $lastSuccessAtUtc, ')
+          ..write('appliedChangeCount: $appliedChangeCount, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncEntitySnapshotsTable extends SyncEntitySnapshots
+    with TableInfo<$SyncEntitySnapshotsTable, SyncEntitySnapshotRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncEntitySnapshotsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _entityTypeMeta = const VerificationMeta(
+    'entityType',
+  );
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+    'entity_type',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityIdMeta = const VerificationMeta(
+    'entityId',
+  );
+  @override
+  late final GeneratedColumn<String> entityId = GeneratedColumn<String>(
+    'entity_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _serverVersionMeta = const VerificationMeta(
+    'serverVersion',
+  );
+  @override
+  late final GeneratedColumn<int> serverVersion = GeneratedColumn<int>(
+    'server_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _serverChangedAtUtcMeta =
+      const VerificationMeta('serverChangedAtUtc');
+  @override
+  late final GeneratedColumn<DateTime> serverChangedAtUtc =
+      GeneratedColumn<DateTime>(
+        'server_changed_at_utc',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _snapshotJsonMeta = const VerificationMeta(
+    'snapshotJson',
+  );
+  @override
+  late final GeneratedColumn<String> snapshotJson = GeneratedColumn<String>(
+    'snapshot_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _appliedAtUtcMeta = const VerificationMeta(
+    'appliedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> appliedAtUtc = GeneratedColumn<DateTime>(
+    'applied_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    entityType,
+    entityId,
+    serverVersion,
+    serverChangedAtUtc,
+    snapshotJson,
+    appliedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_entity_snapshots';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncEntitySnapshotRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('entity_type')) {
+      context.handle(
+        _entityTypeMeta,
+        entityType.isAcceptableOrUnknown(data['entity_type']!, _entityTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityTypeMeta);
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(
+        _entityIdMeta,
+        entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('server_version')) {
+      context.handle(
+        _serverVersionMeta,
+        serverVersion.isAcceptableOrUnknown(
+          data['server_version']!,
+          _serverVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_serverVersionMeta);
+    }
+    if (data.containsKey('server_changed_at_utc')) {
+      context.handle(
+        _serverChangedAtUtcMeta,
+        serverChangedAtUtc.isAcceptableOrUnknown(
+          data['server_changed_at_utc']!,
+          _serverChangedAtUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('snapshot_json')) {
+      context.handle(
+        _snapshotJsonMeta,
+        snapshotJson.isAcceptableOrUnknown(
+          data['snapshot_json']!,
+          _snapshotJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_snapshotJsonMeta);
+    }
+    if (data.containsKey('applied_at_utc')) {
+      context.handle(
+        _appliedAtUtcMeta,
+        appliedAtUtc.isAcceptableOrUnknown(
+          data['applied_at_utc']!,
+          _appliedAtUtcMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncEntitySnapshotRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncEntitySnapshotRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      entityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_type'],
+      )!,
+      entityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_id'],
+      )!,
+      serverVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_version'],
+      )!,
+      serverChangedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}server_changed_at_utc'],
+      ),
+      snapshotJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}snapshot_json'],
+      )!,
+      appliedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}applied_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncEntitySnapshotsTable createAlias(String alias) {
+    return $SyncEntitySnapshotsTable(attachedDatabase, alias);
+  }
+}
+
+class SyncEntitySnapshotRow extends DataClass
+    implements Insertable<SyncEntitySnapshotRow> {
+  final String id;
+  final String entityType;
+  final String entityId;
+  final int serverVersion;
+  final DateTime? serverChangedAtUtc;
+  final String snapshotJson;
+  final DateTime appliedAtUtc;
+  const SyncEntitySnapshotRow({
+    required this.id,
+    required this.entityType,
+    required this.entityId,
+    required this.serverVersion,
+    this.serverChangedAtUtc,
+    required this.snapshotJson,
+    required this.appliedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['entity_type'] = Variable<String>(entityType);
+    map['entity_id'] = Variable<String>(entityId);
+    map['server_version'] = Variable<int>(serverVersion);
+    if (!nullToAbsent || serverChangedAtUtc != null) {
+      map['server_changed_at_utc'] = Variable<DateTime>(serverChangedAtUtc);
+    }
+    map['snapshot_json'] = Variable<String>(snapshotJson);
+    map['applied_at_utc'] = Variable<DateTime>(appliedAtUtc);
+    return map;
+  }
+
+  SyncEntitySnapshotsCompanion toCompanion(bool nullToAbsent) {
+    return SyncEntitySnapshotsCompanion(
+      id: Value(id),
+      entityType: Value(entityType),
+      entityId: Value(entityId),
+      serverVersion: Value(serverVersion),
+      serverChangedAtUtc: serverChangedAtUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverChangedAtUtc),
+      snapshotJson: Value(snapshotJson),
+      appliedAtUtc: Value(appliedAtUtc),
+    );
+  }
+
+  factory SyncEntitySnapshotRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncEntitySnapshotRow(
+      id: serializer.fromJson<String>(json['id']),
+      entityType: serializer.fromJson<String>(json['entityType']),
+      entityId: serializer.fromJson<String>(json['entityId']),
+      serverVersion: serializer.fromJson<int>(json['serverVersion']),
+      serverChangedAtUtc: serializer.fromJson<DateTime?>(
+        json['serverChangedAtUtc'],
+      ),
+      snapshotJson: serializer.fromJson<String>(json['snapshotJson']),
+      appliedAtUtc: serializer.fromJson<DateTime>(json['appliedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'entityType': serializer.toJson<String>(entityType),
+      'entityId': serializer.toJson<String>(entityId),
+      'serverVersion': serializer.toJson<int>(serverVersion),
+      'serverChangedAtUtc': serializer.toJson<DateTime?>(serverChangedAtUtc),
+      'snapshotJson': serializer.toJson<String>(snapshotJson),
+      'appliedAtUtc': serializer.toJson<DateTime>(appliedAtUtc),
+    };
+  }
+
+  SyncEntitySnapshotRow copyWith({
+    String? id,
+    String? entityType,
+    String? entityId,
+    int? serverVersion,
+    Value<DateTime?> serverChangedAtUtc = const Value.absent(),
+    String? snapshotJson,
+    DateTime? appliedAtUtc,
+  }) => SyncEntitySnapshotRow(
+    id: id ?? this.id,
+    entityType: entityType ?? this.entityType,
+    entityId: entityId ?? this.entityId,
+    serverVersion: serverVersion ?? this.serverVersion,
+    serverChangedAtUtc: serverChangedAtUtc.present
+        ? serverChangedAtUtc.value
+        : this.serverChangedAtUtc,
+    snapshotJson: snapshotJson ?? this.snapshotJson,
+    appliedAtUtc: appliedAtUtc ?? this.appliedAtUtc,
+  );
+  SyncEntitySnapshotRow copyWithCompanion(SyncEntitySnapshotsCompanion data) {
+    return SyncEntitySnapshotRow(
+      id: data.id.present ? data.id.value : this.id,
+      entityType: data.entityType.present
+          ? data.entityType.value
+          : this.entityType,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      serverVersion: data.serverVersion.present
+          ? data.serverVersion.value
+          : this.serverVersion,
+      serverChangedAtUtc: data.serverChangedAtUtc.present
+          ? data.serverChangedAtUtc.value
+          : this.serverChangedAtUtc,
+      snapshotJson: data.snapshotJson.present
+          ? data.snapshotJson.value
+          : this.snapshotJson,
+      appliedAtUtc: data.appliedAtUtc.present
+          ? data.appliedAtUtc.value
+          : this.appliedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncEntitySnapshotRow(')
+          ..write('id: $id, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('serverVersion: $serverVersion, ')
+          ..write('serverChangedAtUtc: $serverChangedAtUtc, ')
+          ..write('snapshotJson: $snapshotJson, ')
+          ..write('appliedAtUtc: $appliedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    entityType,
+    entityId,
+    serverVersion,
+    serverChangedAtUtc,
+    snapshotJson,
+    appliedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncEntitySnapshotRow &&
+          other.id == this.id &&
+          other.entityType == this.entityType &&
+          other.entityId == this.entityId &&
+          other.serverVersion == this.serverVersion &&
+          other.serverChangedAtUtc == this.serverChangedAtUtc &&
+          other.snapshotJson == this.snapshotJson &&
+          other.appliedAtUtc == this.appliedAtUtc);
+}
+
+class SyncEntitySnapshotsCompanion
+    extends UpdateCompanion<SyncEntitySnapshotRow> {
+  final Value<String> id;
+  final Value<String> entityType;
+  final Value<String> entityId;
+  final Value<int> serverVersion;
+  final Value<DateTime?> serverChangedAtUtc;
+  final Value<String> snapshotJson;
+  final Value<DateTime> appliedAtUtc;
+  final Value<int> rowid;
+  const SyncEntitySnapshotsCompanion({
+    this.id = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.serverVersion = const Value.absent(),
+    this.serverChangedAtUtc = const Value.absent(),
+    this.snapshotJson = const Value.absent(),
+    this.appliedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncEntitySnapshotsCompanion.insert({
+    this.id = const Value.absent(),
+    required String entityType,
+    required String entityId,
+    required int serverVersion,
+    this.serverChangedAtUtc = const Value.absent(),
+    required String snapshotJson,
+    this.appliedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : entityType = Value(entityType),
+       entityId = Value(entityId),
+       serverVersion = Value(serverVersion),
+       snapshotJson = Value(snapshotJson);
+  static Insertable<SyncEntitySnapshotRow> custom({
+    Expression<String>? id,
+    Expression<String>? entityType,
+    Expression<String>? entityId,
+    Expression<int>? serverVersion,
+    Expression<DateTime>? serverChangedAtUtc,
+    Expression<String>? snapshotJson,
+    Expression<DateTime>? appliedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (entityType != null) 'entity_type': entityType,
+      if (entityId != null) 'entity_id': entityId,
+      if (serverVersion != null) 'server_version': serverVersion,
+      if (serverChangedAtUtc != null)
+        'server_changed_at_utc': serverChangedAtUtc,
+      if (snapshotJson != null) 'snapshot_json': snapshotJson,
+      if (appliedAtUtc != null) 'applied_at_utc': appliedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncEntitySnapshotsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? entityType,
+    Value<String>? entityId,
+    Value<int>? serverVersion,
+    Value<DateTime?>? serverChangedAtUtc,
+    Value<String>? snapshotJson,
+    Value<DateTime>? appliedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return SyncEntitySnapshotsCompanion(
+      id: id ?? this.id,
+      entityType: entityType ?? this.entityType,
+      entityId: entityId ?? this.entityId,
+      serverVersion: serverVersion ?? this.serverVersion,
+      serverChangedAtUtc: serverChangedAtUtc ?? this.serverChangedAtUtc,
+      snapshotJson: snapshotJson ?? this.snapshotJson,
+      appliedAtUtc: appliedAtUtc ?? this.appliedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
+    if (serverVersion.present) {
+      map['server_version'] = Variable<int>(serverVersion.value);
+    }
+    if (serverChangedAtUtc.present) {
+      map['server_changed_at_utc'] = Variable<DateTime>(
+        serverChangedAtUtc.value,
+      );
+    }
+    if (snapshotJson.present) {
+      map['snapshot_json'] = Variable<String>(snapshotJson.value);
+    }
+    if (appliedAtUtc.present) {
+      map['applied_at_utc'] = Variable<DateTime>(appliedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncEntitySnapshotsCompanion(')
+          ..write('id: $id, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('serverVersion: $serverVersion, ')
+          ..write('serverChangedAtUtc: $serverChangedAtUtc, ')
+          ..write('snapshotJson: $snapshotJson, ')
+          ..write('appliedAtUtc: $appliedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncFieldVersionsTable extends SyncFieldVersions
+    with TableInfo<$SyncFieldVersionsTable, SyncFieldVersionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncFieldVersionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _entityTypeMeta = const VerificationMeta(
+    'entityType',
+  );
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+    'entity_type',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityIdMeta = const VerificationMeta(
+    'entityId',
+  );
+  @override
+  late final GeneratedColumn<String> entityId = GeneratedColumn<String>(
+    'entity_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fieldNameMeta = const VerificationMeta(
+    'fieldName',
+  );
+  @override
+  late final GeneratedColumn<String> fieldName = GeneratedColumn<String>(
+    'field_name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fieldVersionMeta = const VerificationMeta(
+    'fieldVersion',
+  );
+  @override
+  late final GeneratedColumn<int> fieldVersion = GeneratedColumn<int>(
+    'field_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    entityType,
+    entityId,
+    fieldName,
+    fieldVersion,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_field_versions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncFieldVersionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('entity_type')) {
+      context.handle(
+        _entityTypeMeta,
+        entityType.isAcceptableOrUnknown(data['entity_type']!, _entityTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityTypeMeta);
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(
+        _entityIdMeta,
+        entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('field_name')) {
+      context.handle(
+        _fieldNameMeta,
+        fieldName.isAcceptableOrUnknown(data['field_name']!, _fieldNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fieldNameMeta);
+    }
+    if (data.containsKey('field_version')) {
+      context.handle(
+        _fieldVersionMeta,
+        fieldVersion.isAcceptableOrUnknown(
+          data['field_version']!,
+          _fieldVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fieldVersionMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncFieldVersionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncFieldVersionRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      entityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_type'],
+      )!,
+      entityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_id'],
+      )!,
+      fieldName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}field_name'],
+      )!,
+      fieldVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}field_version'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncFieldVersionsTable createAlias(String alias) {
+    return $SyncFieldVersionsTable(attachedDatabase, alias);
+  }
+}
+
+class SyncFieldVersionRow extends DataClass
+    implements Insertable<SyncFieldVersionRow> {
+  final String id;
+  final String entityType;
+  final String entityId;
+  final String fieldName;
+  final int fieldVersion;
+  const SyncFieldVersionRow({
+    required this.id,
+    required this.entityType,
+    required this.entityId,
+    required this.fieldName,
+    required this.fieldVersion,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['entity_type'] = Variable<String>(entityType);
+    map['entity_id'] = Variable<String>(entityId);
+    map['field_name'] = Variable<String>(fieldName);
+    map['field_version'] = Variable<int>(fieldVersion);
+    return map;
+  }
+
+  SyncFieldVersionsCompanion toCompanion(bool nullToAbsent) {
+    return SyncFieldVersionsCompanion(
+      id: Value(id),
+      entityType: Value(entityType),
+      entityId: Value(entityId),
+      fieldName: Value(fieldName),
+      fieldVersion: Value(fieldVersion),
+    );
+  }
+
+  factory SyncFieldVersionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncFieldVersionRow(
+      id: serializer.fromJson<String>(json['id']),
+      entityType: serializer.fromJson<String>(json['entityType']),
+      entityId: serializer.fromJson<String>(json['entityId']),
+      fieldName: serializer.fromJson<String>(json['fieldName']),
+      fieldVersion: serializer.fromJson<int>(json['fieldVersion']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'entityType': serializer.toJson<String>(entityType),
+      'entityId': serializer.toJson<String>(entityId),
+      'fieldName': serializer.toJson<String>(fieldName),
+      'fieldVersion': serializer.toJson<int>(fieldVersion),
+    };
+  }
+
+  SyncFieldVersionRow copyWith({
+    String? id,
+    String? entityType,
+    String? entityId,
+    String? fieldName,
+    int? fieldVersion,
+  }) => SyncFieldVersionRow(
+    id: id ?? this.id,
+    entityType: entityType ?? this.entityType,
+    entityId: entityId ?? this.entityId,
+    fieldName: fieldName ?? this.fieldName,
+    fieldVersion: fieldVersion ?? this.fieldVersion,
+  );
+  SyncFieldVersionRow copyWithCompanion(SyncFieldVersionsCompanion data) {
+    return SyncFieldVersionRow(
+      id: data.id.present ? data.id.value : this.id,
+      entityType: data.entityType.present
+          ? data.entityType.value
+          : this.entityType,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      fieldName: data.fieldName.present ? data.fieldName.value : this.fieldName,
+      fieldVersion: data.fieldVersion.present
+          ? data.fieldVersion.value
+          : this.fieldVersion,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncFieldVersionRow(')
+          ..write('id: $id, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('fieldName: $fieldName, ')
+          ..write('fieldVersion: $fieldVersion')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, entityType, entityId, fieldName, fieldVersion);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncFieldVersionRow &&
+          other.id == this.id &&
+          other.entityType == this.entityType &&
+          other.entityId == this.entityId &&
+          other.fieldName == this.fieldName &&
+          other.fieldVersion == this.fieldVersion);
+}
+
+class SyncFieldVersionsCompanion extends UpdateCompanion<SyncFieldVersionRow> {
+  final Value<String> id;
+  final Value<String> entityType;
+  final Value<String> entityId;
+  final Value<String> fieldName;
+  final Value<int> fieldVersion;
+  final Value<int> rowid;
+  const SyncFieldVersionsCompanion({
+    this.id = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.fieldName = const Value.absent(),
+    this.fieldVersion = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncFieldVersionsCompanion.insert({
+    this.id = const Value.absent(),
+    required String entityType,
+    required String entityId,
+    required String fieldName,
+    required int fieldVersion,
+    this.rowid = const Value.absent(),
+  }) : entityType = Value(entityType),
+       entityId = Value(entityId),
+       fieldName = Value(fieldName),
+       fieldVersion = Value(fieldVersion);
+  static Insertable<SyncFieldVersionRow> custom({
+    Expression<String>? id,
+    Expression<String>? entityType,
+    Expression<String>? entityId,
+    Expression<String>? fieldName,
+    Expression<int>? fieldVersion,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (entityType != null) 'entity_type': entityType,
+      if (entityId != null) 'entity_id': entityId,
+      if (fieldName != null) 'field_name': fieldName,
+      if (fieldVersion != null) 'field_version': fieldVersion,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncFieldVersionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? entityType,
+    Value<String>? entityId,
+    Value<String>? fieldName,
+    Value<int>? fieldVersion,
+    Value<int>? rowid,
+  }) {
+    return SyncFieldVersionsCompanion(
+      id: id ?? this.id,
+      entityType: entityType ?? this.entityType,
+      entityId: entityId ?? this.entityId,
+      fieldName: fieldName ?? this.fieldName,
+      fieldVersion: fieldVersion ?? this.fieldVersion,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
+    if (fieldName.present) {
+      map['field_name'] = Variable<String>(fieldName.value);
+    }
+    if (fieldVersion.present) {
+      map['field_version'] = Variable<int>(fieldVersion.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncFieldVersionsCompanion(')
+          ..write('id: $id, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('fieldName: $fieldName, ')
+          ..write('fieldVersion: $fieldVersion, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncTombstonesTable extends SyncTombstones
+    with TableInfo<$SyncTombstonesTable, SyncTombstoneRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncTombstonesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _entityTypeMeta = const VerificationMeta(
+    'entityType',
+  );
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+    'entity_type',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 64,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityIdMeta = const VerificationMeta(
+    'entityId',
+  );
+  @override
+  late final GeneratedColumn<String> entityId = GeneratedColumn<String>(
+    'entity_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _serverVersionMeta = const VerificationMeta(
+    'serverVersion',
+  );
+  @override
+  late final GeneratedColumn<int> serverVersion = GeneratedColumn<int>(
+    'server_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tombstonedAtUtcMeta = const VerificationMeta(
+    'tombstonedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> tombstonedAtUtc =
+      GeneratedColumn<DateTime>(
+        'tombstoned_at_utc',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _appliedAtUtcMeta = const VerificationMeta(
+    'appliedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> appliedAtUtc = GeneratedColumn<DateTime>(
+    'applied_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: nowUtc,
+  );
+  static const VerificationMeta _hadLocalRowMeta = const VerificationMeta(
+    'hadLocalRow',
+  );
+  @override
+  late final GeneratedColumn<bool> hadLocalRow = GeneratedColumn<bool>(
+    'had_local_row',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("had_local_row" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    entityType,
+    entityId,
+    serverVersion,
+    tombstonedAtUtc,
+    appliedAtUtc,
+    hadLocalRow,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_tombstones';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncTombstoneRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('entity_type')) {
+      context.handle(
+        _entityTypeMeta,
+        entityType.isAcceptableOrUnknown(data['entity_type']!, _entityTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityTypeMeta);
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(
+        _entityIdMeta,
+        entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('server_version')) {
+      context.handle(
+        _serverVersionMeta,
+        serverVersion.isAcceptableOrUnknown(
+          data['server_version']!,
+          _serverVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_serverVersionMeta);
+    }
+    if (data.containsKey('tombstoned_at_utc')) {
+      context.handle(
+        _tombstonedAtUtcMeta,
+        tombstonedAtUtc.isAcceptableOrUnknown(
+          data['tombstoned_at_utc']!,
+          _tombstonedAtUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('applied_at_utc')) {
+      context.handle(
+        _appliedAtUtcMeta,
+        appliedAtUtc.isAcceptableOrUnknown(
+          data['applied_at_utc']!,
+          _appliedAtUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('had_local_row')) {
+      context.handle(
+        _hadLocalRowMeta,
+        hadLocalRow.isAcceptableOrUnknown(
+          data['had_local_row']!,
+          _hadLocalRowMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncTombstoneRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncTombstoneRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      entityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_type'],
+      )!,
+      entityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_id'],
+      )!,
+      serverVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_version'],
+      )!,
+      tombstonedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}tombstoned_at_utc'],
+      ),
+      appliedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}applied_at_utc'],
+      )!,
+      hadLocalRow: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}had_local_row'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncTombstonesTable createAlias(String alias) {
+    return $SyncTombstonesTable(attachedDatabase, alias);
+  }
+}
+
+class SyncTombstoneRow extends DataClass
+    implements Insertable<SyncTombstoneRow> {
+  final String id;
+  final String entityType;
+  final String entityId;
+  final int serverVersion;
+  final DateTime? tombstonedAtUtc;
+  final DateTime appliedAtUtc;
+  final bool hadLocalRow;
+  const SyncTombstoneRow({
+    required this.id,
+    required this.entityType,
+    required this.entityId,
+    required this.serverVersion,
+    this.tombstonedAtUtc,
+    required this.appliedAtUtc,
+    required this.hadLocalRow,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['entity_type'] = Variable<String>(entityType);
+    map['entity_id'] = Variable<String>(entityId);
+    map['server_version'] = Variable<int>(serverVersion);
+    if (!nullToAbsent || tombstonedAtUtc != null) {
+      map['tombstoned_at_utc'] = Variable<DateTime>(tombstonedAtUtc);
+    }
+    map['applied_at_utc'] = Variable<DateTime>(appliedAtUtc);
+    map['had_local_row'] = Variable<bool>(hadLocalRow);
+    return map;
+  }
+
+  SyncTombstonesCompanion toCompanion(bool nullToAbsent) {
+    return SyncTombstonesCompanion(
+      id: Value(id),
+      entityType: Value(entityType),
+      entityId: Value(entityId),
+      serverVersion: Value(serverVersion),
+      tombstonedAtUtc: tombstonedAtUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tombstonedAtUtc),
+      appliedAtUtc: Value(appliedAtUtc),
+      hadLocalRow: Value(hadLocalRow),
+    );
+  }
+
+  factory SyncTombstoneRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncTombstoneRow(
+      id: serializer.fromJson<String>(json['id']),
+      entityType: serializer.fromJson<String>(json['entityType']),
+      entityId: serializer.fromJson<String>(json['entityId']),
+      serverVersion: serializer.fromJson<int>(json['serverVersion']),
+      tombstonedAtUtc: serializer.fromJson<DateTime?>(json['tombstonedAtUtc']),
+      appliedAtUtc: serializer.fromJson<DateTime>(json['appliedAtUtc']),
+      hadLocalRow: serializer.fromJson<bool>(json['hadLocalRow']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'entityType': serializer.toJson<String>(entityType),
+      'entityId': serializer.toJson<String>(entityId),
+      'serverVersion': serializer.toJson<int>(serverVersion),
+      'tombstonedAtUtc': serializer.toJson<DateTime?>(tombstonedAtUtc),
+      'appliedAtUtc': serializer.toJson<DateTime>(appliedAtUtc),
+      'hadLocalRow': serializer.toJson<bool>(hadLocalRow),
+    };
+  }
+
+  SyncTombstoneRow copyWith({
+    String? id,
+    String? entityType,
+    String? entityId,
+    int? serverVersion,
+    Value<DateTime?> tombstonedAtUtc = const Value.absent(),
+    DateTime? appliedAtUtc,
+    bool? hadLocalRow,
+  }) => SyncTombstoneRow(
+    id: id ?? this.id,
+    entityType: entityType ?? this.entityType,
+    entityId: entityId ?? this.entityId,
+    serverVersion: serverVersion ?? this.serverVersion,
+    tombstonedAtUtc: tombstonedAtUtc.present
+        ? tombstonedAtUtc.value
+        : this.tombstonedAtUtc,
+    appliedAtUtc: appliedAtUtc ?? this.appliedAtUtc,
+    hadLocalRow: hadLocalRow ?? this.hadLocalRow,
+  );
+  SyncTombstoneRow copyWithCompanion(SyncTombstonesCompanion data) {
+    return SyncTombstoneRow(
+      id: data.id.present ? data.id.value : this.id,
+      entityType: data.entityType.present
+          ? data.entityType.value
+          : this.entityType,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      serverVersion: data.serverVersion.present
+          ? data.serverVersion.value
+          : this.serverVersion,
+      tombstonedAtUtc: data.tombstonedAtUtc.present
+          ? data.tombstonedAtUtc.value
+          : this.tombstonedAtUtc,
+      appliedAtUtc: data.appliedAtUtc.present
+          ? data.appliedAtUtc.value
+          : this.appliedAtUtc,
+      hadLocalRow: data.hadLocalRow.present
+          ? data.hadLocalRow.value
+          : this.hadLocalRow,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncTombstoneRow(')
+          ..write('id: $id, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('serverVersion: $serverVersion, ')
+          ..write('tombstonedAtUtc: $tombstonedAtUtc, ')
+          ..write('appliedAtUtc: $appliedAtUtc, ')
+          ..write('hadLocalRow: $hadLocalRow')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    entityType,
+    entityId,
+    serverVersion,
+    tombstonedAtUtc,
+    appliedAtUtc,
+    hadLocalRow,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncTombstoneRow &&
+          other.id == this.id &&
+          other.entityType == this.entityType &&
+          other.entityId == this.entityId &&
+          other.serverVersion == this.serverVersion &&
+          other.tombstonedAtUtc == this.tombstonedAtUtc &&
+          other.appliedAtUtc == this.appliedAtUtc &&
+          other.hadLocalRow == this.hadLocalRow);
+}
+
+class SyncTombstonesCompanion extends UpdateCompanion<SyncTombstoneRow> {
+  final Value<String> id;
+  final Value<String> entityType;
+  final Value<String> entityId;
+  final Value<int> serverVersion;
+  final Value<DateTime?> tombstonedAtUtc;
+  final Value<DateTime> appliedAtUtc;
+  final Value<bool> hadLocalRow;
+  final Value<int> rowid;
+  const SyncTombstonesCompanion({
+    this.id = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.serverVersion = const Value.absent(),
+    this.tombstonedAtUtc = const Value.absent(),
+    this.appliedAtUtc = const Value.absent(),
+    this.hadLocalRow = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncTombstonesCompanion.insert({
+    this.id = const Value.absent(),
+    required String entityType,
+    required String entityId,
+    required int serverVersion,
+    this.tombstonedAtUtc = const Value.absent(),
+    this.appliedAtUtc = const Value.absent(),
+    this.hadLocalRow = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : entityType = Value(entityType),
+       entityId = Value(entityId),
+       serverVersion = Value(serverVersion);
+  static Insertable<SyncTombstoneRow> custom({
+    Expression<String>? id,
+    Expression<String>? entityType,
+    Expression<String>? entityId,
+    Expression<int>? serverVersion,
+    Expression<DateTime>? tombstonedAtUtc,
+    Expression<DateTime>? appliedAtUtc,
+    Expression<bool>? hadLocalRow,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (entityType != null) 'entity_type': entityType,
+      if (entityId != null) 'entity_id': entityId,
+      if (serverVersion != null) 'server_version': serverVersion,
+      if (tombstonedAtUtc != null) 'tombstoned_at_utc': tombstonedAtUtc,
+      if (appliedAtUtc != null) 'applied_at_utc': appliedAtUtc,
+      if (hadLocalRow != null) 'had_local_row': hadLocalRow,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncTombstonesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? entityType,
+    Value<String>? entityId,
+    Value<int>? serverVersion,
+    Value<DateTime?>? tombstonedAtUtc,
+    Value<DateTime>? appliedAtUtc,
+    Value<bool>? hadLocalRow,
+    Value<int>? rowid,
+  }) {
+    return SyncTombstonesCompanion(
+      id: id ?? this.id,
+      entityType: entityType ?? this.entityType,
+      entityId: entityId ?? this.entityId,
+      serverVersion: serverVersion ?? this.serverVersion,
+      tombstonedAtUtc: tombstonedAtUtc ?? this.tombstonedAtUtc,
+      appliedAtUtc: appliedAtUtc ?? this.appliedAtUtc,
+      hadLocalRow: hadLocalRow ?? this.hadLocalRow,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
+    if (serverVersion.present) {
+      map['server_version'] = Variable<int>(serverVersion.value);
+    }
+    if (tombstonedAtUtc.present) {
+      map['tombstoned_at_utc'] = Variable<DateTime>(tombstonedAtUtc.value);
+    }
+    if (appliedAtUtc.present) {
+      map['applied_at_utc'] = Variable<DateTime>(appliedAtUtc.value);
+    }
+    if (hadLocalRow.present) {
+      map['had_local_row'] = Variable<bool>(hadLocalRow.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncTombstonesCompanion(')
+          ..write('id: $id, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('serverVersion: $serverVersion, ')
+          ..write('tombstonedAtUtc: $tombstonedAtUtc, ')
+          ..write('appliedAtUtc: $appliedAtUtc, ')
+          ..write('hadLocalRow: $hadLocalRow, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncPullLogsTable extends SyncPullLogs
+    with TableInfo<$SyncPullLogsTable, SyncPullLogRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncPullLogsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: newUuidV4,
+  );
+  static const VerificationMeta _actorUserIdMeta = const VerificationMeta(
+    'actorUserId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUserId = GeneratedColumn<String>(
+    'actor_user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scopeFingerprintMeta = const VerificationMeta(
+    'scopeFingerprint',
+  );
+  @override
+  late final GeneratedColumn<String> scopeFingerprint = GeneratedColumn<String>(
+    'scope_fingerprint',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 128),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fromCursorMeta = const VerificationMeta(
+    'fromCursor',
+  );
+  @override
+  late final GeneratedColumn<int> fromCursor = GeneratedColumn<int>(
+    'from_cursor',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _toCursorMeta = const VerificationMeta(
+    'toCursor',
+  );
+  @override
+  late final GeneratedColumn<int> toCursor = GeneratedColumn<int>(
+    'to_cursor',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _changeCountMeta = const VerificationMeta(
+    'changeCount',
+  );
+  @override
+  late final GeneratedColumn<int> changeCount = GeneratedColumn<int>(
+    'change_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _tombstoneCountMeta = const VerificationMeta(
+    'tombstoneCount',
+  );
+  @override
+  late final GeneratedColumn<int> tombstoneCount = GeneratedColumn<int>(
+    'tombstone_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _conflictCountMeta = const VerificationMeta(
+    'conflictCount',
+  );
+  @override
+  late final GeneratedColumn<int> conflictCount = GeneratedColumn<int>(
+    'conflict_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _outcomeMeta = const VerificationMeta(
+    'outcome',
+  );
+  @override
+  late final GeneratedColumn<String> outcome = GeneratedColumn<String>(
+    'outcome',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 32,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _safeErrorCodeMeta = const VerificationMeta(
+    'safeErrorCode',
+  );
+  @override
+  late final GeneratedColumn<String> safeErrorCode = GeneratedColumn<String>(
+    'safe_error_code',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 96),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _safeErrorMessageMeta = const VerificationMeta(
+    'safeErrorMessage',
+  );
+  @override
+  late final GeneratedColumn<String> safeErrorMessage = GeneratedColumn<String>(
+    'safe_error_message',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 512),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _finishedAtMeta = const VerificationMeta(
+    'finishedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> finishedAt = GeneratedColumn<DateTime>(
+    'finished_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    actorUserId,
+    scopeFingerprint,
+    fromCursor,
+    toCursor,
+    changeCount,
+    tombstoneCount,
+    conflictCount,
+    outcome,
+    safeErrorCode,
+    safeErrorMessage,
+    startedAt,
+    finishedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_pull_logs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncPullLogRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('actor_user_id')) {
+      context.handle(
+        _actorUserIdMeta,
+        actorUserId.isAcceptableOrUnknown(
+          data['actor_user_id']!,
+          _actorUserIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_actorUserIdMeta);
+    }
+    if (data.containsKey('scope_fingerprint')) {
+      context.handle(
+        _scopeFingerprintMeta,
+        scopeFingerprint.isAcceptableOrUnknown(
+          data['scope_fingerprint']!,
+          _scopeFingerprintMeta,
+        ),
+      );
+    }
+    if (data.containsKey('from_cursor')) {
+      context.handle(
+        _fromCursorMeta,
+        fromCursor.isAcceptableOrUnknown(data['from_cursor']!, _fromCursorMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fromCursorMeta);
+    }
+    if (data.containsKey('to_cursor')) {
+      context.handle(
+        _toCursorMeta,
+        toCursor.isAcceptableOrUnknown(data['to_cursor']!, _toCursorMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_toCursorMeta);
+    }
+    if (data.containsKey('change_count')) {
+      context.handle(
+        _changeCountMeta,
+        changeCount.isAcceptableOrUnknown(
+          data['change_count']!,
+          _changeCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('tombstone_count')) {
+      context.handle(
+        _tombstoneCountMeta,
+        tombstoneCount.isAcceptableOrUnknown(
+          data['tombstone_count']!,
+          _tombstoneCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('conflict_count')) {
+      context.handle(
+        _conflictCountMeta,
+        conflictCount.isAcceptableOrUnknown(
+          data['conflict_count']!,
+          _conflictCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('outcome')) {
+      context.handle(
+        _outcomeMeta,
+        outcome.isAcceptableOrUnknown(data['outcome']!, _outcomeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_outcomeMeta);
+    }
+    if (data.containsKey('safe_error_code')) {
+      context.handle(
+        _safeErrorCodeMeta,
+        safeErrorCode.isAcceptableOrUnknown(
+          data['safe_error_code']!,
+          _safeErrorCodeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('safe_error_message')) {
+      context.handle(
+        _safeErrorMessageMeta,
+        safeErrorMessage.isAcceptableOrUnknown(
+          data['safe_error_message']!,
+          _safeErrorMessageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('finished_at')) {
+      context.handle(
+        _finishedAtMeta,
+        finishedAt.isAcceptableOrUnknown(data['finished_at']!, _finishedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_finishedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncPullLogRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncPullLogRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      actorUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_user_id'],
+      )!,
+      scopeFingerprint: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}scope_fingerprint'],
+      ),
+      fromCursor: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}from_cursor'],
+      )!,
+      toCursor: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}to_cursor'],
+      )!,
+      changeCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}change_count'],
+      )!,
+      tombstoneCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}tombstone_count'],
+      )!,
+      conflictCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}conflict_count'],
+      )!,
+      outcome: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}outcome'],
+      )!,
+      safeErrorCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}safe_error_code'],
+      ),
+      safeErrorMessage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}safe_error_message'],
+      ),
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      )!,
+      finishedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}finished_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncPullLogsTable createAlias(String alias) {
+    return $SyncPullLogsTable(attachedDatabase, alias);
+  }
+}
+
+class SyncPullLogRow extends DataClass implements Insertable<SyncPullLogRow> {
+  final String id;
+  final String actorUserId;
+  final String? scopeFingerprint;
+  final int fromCursor;
+  final int toCursor;
+  final int changeCount;
+  final int tombstoneCount;
+  final int conflictCount;
+  final String outcome;
+  final String? safeErrorCode;
+  final String? safeErrorMessage;
+  final DateTime startedAt;
+  final DateTime finishedAt;
+  const SyncPullLogRow({
+    required this.id,
+    required this.actorUserId,
+    this.scopeFingerprint,
+    required this.fromCursor,
+    required this.toCursor,
+    required this.changeCount,
+    required this.tombstoneCount,
+    required this.conflictCount,
+    required this.outcome,
+    this.safeErrorCode,
+    this.safeErrorMessage,
+    required this.startedAt,
+    required this.finishedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['actor_user_id'] = Variable<String>(actorUserId);
+    if (!nullToAbsent || scopeFingerprint != null) {
+      map['scope_fingerprint'] = Variable<String>(scopeFingerprint);
+    }
+    map['from_cursor'] = Variable<int>(fromCursor);
+    map['to_cursor'] = Variable<int>(toCursor);
+    map['change_count'] = Variable<int>(changeCount);
+    map['tombstone_count'] = Variable<int>(tombstoneCount);
+    map['conflict_count'] = Variable<int>(conflictCount);
+    map['outcome'] = Variable<String>(outcome);
+    if (!nullToAbsent || safeErrorCode != null) {
+      map['safe_error_code'] = Variable<String>(safeErrorCode);
+    }
+    if (!nullToAbsent || safeErrorMessage != null) {
+      map['safe_error_message'] = Variable<String>(safeErrorMessage);
+    }
+    map['started_at'] = Variable<DateTime>(startedAt);
+    map['finished_at'] = Variable<DateTime>(finishedAt);
+    return map;
+  }
+
+  SyncPullLogsCompanion toCompanion(bool nullToAbsent) {
+    return SyncPullLogsCompanion(
+      id: Value(id),
+      actorUserId: Value(actorUserId),
+      scopeFingerprint: scopeFingerprint == null && nullToAbsent
+          ? const Value.absent()
+          : Value(scopeFingerprint),
+      fromCursor: Value(fromCursor),
+      toCursor: Value(toCursor),
+      changeCount: Value(changeCount),
+      tombstoneCount: Value(tombstoneCount),
+      conflictCount: Value(conflictCount),
+      outcome: Value(outcome),
+      safeErrorCode: safeErrorCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(safeErrorCode),
+      safeErrorMessage: safeErrorMessage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(safeErrorMessage),
+      startedAt: Value(startedAt),
+      finishedAt: Value(finishedAt),
+    );
+  }
+
+  factory SyncPullLogRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncPullLogRow(
+      id: serializer.fromJson<String>(json['id']),
+      actorUserId: serializer.fromJson<String>(json['actorUserId']),
+      scopeFingerprint: serializer.fromJson<String?>(json['scopeFingerprint']),
+      fromCursor: serializer.fromJson<int>(json['fromCursor']),
+      toCursor: serializer.fromJson<int>(json['toCursor']),
+      changeCount: serializer.fromJson<int>(json['changeCount']),
+      tombstoneCount: serializer.fromJson<int>(json['tombstoneCount']),
+      conflictCount: serializer.fromJson<int>(json['conflictCount']),
+      outcome: serializer.fromJson<String>(json['outcome']),
+      safeErrorCode: serializer.fromJson<String?>(json['safeErrorCode']),
+      safeErrorMessage: serializer.fromJson<String?>(json['safeErrorMessage']),
+      startedAt: serializer.fromJson<DateTime>(json['startedAt']),
+      finishedAt: serializer.fromJson<DateTime>(json['finishedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'actorUserId': serializer.toJson<String>(actorUserId),
+      'scopeFingerprint': serializer.toJson<String?>(scopeFingerprint),
+      'fromCursor': serializer.toJson<int>(fromCursor),
+      'toCursor': serializer.toJson<int>(toCursor),
+      'changeCount': serializer.toJson<int>(changeCount),
+      'tombstoneCount': serializer.toJson<int>(tombstoneCount),
+      'conflictCount': serializer.toJson<int>(conflictCount),
+      'outcome': serializer.toJson<String>(outcome),
+      'safeErrorCode': serializer.toJson<String?>(safeErrorCode),
+      'safeErrorMessage': serializer.toJson<String?>(safeErrorMessage),
+      'startedAt': serializer.toJson<DateTime>(startedAt),
+      'finishedAt': serializer.toJson<DateTime>(finishedAt),
+    };
+  }
+
+  SyncPullLogRow copyWith({
+    String? id,
+    String? actorUserId,
+    Value<String?> scopeFingerprint = const Value.absent(),
+    int? fromCursor,
+    int? toCursor,
+    int? changeCount,
+    int? tombstoneCount,
+    int? conflictCount,
+    String? outcome,
+    Value<String?> safeErrorCode = const Value.absent(),
+    Value<String?> safeErrorMessage = const Value.absent(),
+    DateTime? startedAt,
+    DateTime? finishedAt,
+  }) => SyncPullLogRow(
+    id: id ?? this.id,
+    actorUserId: actorUserId ?? this.actorUserId,
+    scopeFingerprint: scopeFingerprint.present
+        ? scopeFingerprint.value
+        : this.scopeFingerprint,
+    fromCursor: fromCursor ?? this.fromCursor,
+    toCursor: toCursor ?? this.toCursor,
+    changeCount: changeCount ?? this.changeCount,
+    tombstoneCount: tombstoneCount ?? this.tombstoneCount,
+    conflictCount: conflictCount ?? this.conflictCount,
+    outcome: outcome ?? this.outcome,
+    safeErrorCode: safeErrorCode.present
+        ? safeErrorCode.value
+        : this.safeErrorCode,
+    safeErrorMessage: safeErrorMessage.present
+        ? safeErrorMessage.value
+        : this.safeErrorMessage,
+    startedAt: startedAt ?? this.startedAt,
+    finishedAt: finishedAt ?? this.finishedAt,
+  );
+  SyncPullLogRow copyWithCompanion(SyncPullLogsCompanion data) {
+    return SyncPullLogRow(
+      id: data.id.present ? data.id.value : this.id,
+      actorUserId: data.actorUserId.present
+          ? data.actorUserId.value
+          : this.actorUserId,
+      scopeFingerprint: data.scopeFingerprint.present
+          ? data.scopeFingerprint.value
+          : this.scopeFingerprint,
+      fromCursor: data.fromCursor.present
+          ? data.fromCursor.value
+          : this.fromCursor,
+      toCursor: data.toCursor.present ? data.toCursor.value : this.toCursor,
+      changeCount: data.changeCount.present
+          ? data.changeCount.value
+          : this.changeCount,
+      tombstoneCount: data.tombstoneCount.present
+          ? data.tombstoneCount.value
+          : this.tombstoneCount,
+      conflictCount: data.conflictCount.present
+          ? data.conflictCount.value
+          : this.conflictCount,
+      outcome: data.outcome.present ? data.outcome.value : this.outcome,
+      safeErrorCode: data.safeErrorCode.present
+          ? data.safeErrorCode.value
+          : this.safeErrorCode,
+      safeErrorMessage: data.safeErrorMessage.present
+          ? data.safeErrorMessage.value
+          : this.safeErrorMessage,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      finishedAt: data.finishedAt.present
+          ? data.finishedAt.value
+          : this.finishedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncPullLogRow(')
+          ..write('id: $id, ')
+          ..write('actorUserId: $actorUserId, ')
+          ..write('scopeFingerprint: $scopeFingerprint, ')
+          ..write('fromCursor: $fromCursor, ')
+          ..write('toCursor: $toCursor, ')
+          ..write('changeCount: $changeCount, ')
+          ..write('tombstoneCount: $tombstoneCount, ')
+          ..write('conflictCount: $conflictCount, ')
+          ..write('outcome: $outcome, ')
+          ..write('safeErrorCode: $safeErrorCode, ')
+          ..write('safeErrorMessage: $safeErrorMessage, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('finishedAt: $finishedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    actorUserId,
+    scopeFingerprint,
+    fromCursor,
+    toCursor,
+    changeCount,
+    tombstoneCount,
+    conflictCount,
+    outcome,
+    safeErrorCode,
+    safeErrorMessage,
+    startedAt,
+    finishedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncPullLogRow &&
+          other.id == this.id &&
+          other.actorUserId == this.actorUserId &&
+          other.scopeFingerprint == this.scopeFingerprint &&
+          other.fromCursor == this.fromCursor &&
+          other.toCursor == this.toCursor &&
+          other.changeCount == this.changeCount &&
+          other.tombstoneCount == this.tombstoneCount &&
+          other.conflictCount == this.conflictCount &&
+          other.outcome == this.outcome &&
+          other.safeErrorCode == this.safeErrorCode &&
+          other.safeErrorMessage == this.safeErrorMessage &&
+          other.startedAt == this.startedAt &&
+          other.finishedAt == this.finishedAt);
+}
+
+class SyncPullLogsCompanion extends UpdateCompanion<SyncPullLogRow> {
+  final Value<String> id;
+  final Value<String> actorUserId;
+  final Value<String?> scopeFingerprint;
+  final Value<int> fromCursor;
+  final Value<int> toCursor;
+  final Value<int> changeCount;
+  final Value<int> tombstoneCount;
+  final Value<int> conflictCount;
+  final Value<String> outcome;
+  final Value<String?> safeErrorCode;
+  final Value<String?> safeErrorMessage;
+  final Value<DateTime> startedAt;
+  final Value<DateTime> finishedAt;
+  final Value<int> rowid;
+  const SyncPullLogsCompanion({
+    this.id = const Value.absent(),
+    this.actorUserId = const Value.absent(),
+    this.scopeFingerprint = const Value.absent(),
+    this.fromCursor = const Value.absent(),
+    this.toCursor = const Value.absent(),
+    this.changeCount = const Value.absent(),
+    this.tombstoneCount = const Value.absent(),
+    this.conflictCount = const Value.absent(),
+    this.outcome = const Value.absent(),
+    this.safeErrorCode = const Value.absent(),
+    this.safeErrorMessage = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.finishedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncPullLogsCompanion.insert({
+    this.id = const Value.absent(),
+    required String actorUserId,
+    this.scopeFingerprint = const Value.absent(),
+    required int fromCursor,
+    required int toCursor,
+    this.changeCount = const Value.absent(),
+    this.tombstoneCount = const Value.absent(),
+    this.conflictCount = const Value.absent(),
+    required String outcome,
+    this.safeErrorCode = const Value.absent(),
+    this.safeErrorMessage = const Value.absent(),
+    required DateTime startedAt,
+    required DateTime finishedAt,
+    this.rowid = const Value.absent(),
+  }) : actorUserId = Value(actorUserId),
+       fromCursor = Value(fromCursor),
+       toCursor = Value(toCursor),
+       outcome = Value(outcome),
+       startedAt = Value(startedAt),
+       finishedAt = Value(finishedAt);
+  static Insertable<SyncPullLogRow> custom({
+    Expression<String>? id,
+    Expression<String>? actorUserId,
+    Expression<String>? scopeFingerprint,
+    Expression<int>? fromCursor,
+    Expression<int>? toCursor,
+    Expression<int>? changeCount,
+    Expression<int>? tombstoneCount,
+    Expression<int>? conflictCount,
+    Expression<String>? outcome,
+    Expression<String>? safeErrorCode,
+    Expression<String>? safeErrorMessage,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? finishedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (actorUserId != null) 'actor_user_id': actorUserId,
+      if (scopeFingerprint != null) 'scope_fingerprint': scopeFingerprint,
+      if (fromCursor != null) 'from_cursor': fromCursor,
+      if (toCursor != null) 'to_cursor': toCursor,
+      if (changeCount != null) 'change_count': changeCount,
+      if (tombstoneCount != null) 'tombstone_count': tombstoneCount,
+      if (conflictCount != null) 'conflict_count': conflictCount,
+      if (outcome != null) 'outcome': outcome,
+      if (safeErrorCode != null) 'safe_error_code': safeErrorCode,
+      if (safeErrorMessage != null) 'safe_error_message': safeErrorMessage,
+      if (startedAt != null) 'started_at': startedAt,
+      if (finishedAt != null) 'finished_at': finishedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncPullLogsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? actorUserId,
+    Value<String?>? scopeFingerprint,
+    Value<int>? fromCursor,
+    Value<int>? toCursor,
+    Value<int>? changeCount,
+    Value<int>? tombstoneCount,
+    Value<int>? conflictCount,
+    Value<String>? outcome,
+    Value<String?>? safeErrorCode,
+    Value<String?>? safeErrorMessage,
+    Value<DateTime>? startedAt,
+    Value<DateTime>? finishedAt,
+    Value<int>? rowid,
+  }) {
+    return SyncPullLogsCompanion(
+      id: id ?? this.id,
+      actorUserId: actorUserId ?? this.actorUserId,
+      scopeFingerprint: scopeFingerprint ?? this.scopeFingerprint,
+      fromCursor: fromCursor ?? this.fromCursor,
+      toCursor: toCursor ?? this.toCursor,
+      changeCount: changeCount ?? this.changeCount,
+      tombstoneCount: tombstoneCount ?? this.tombstoneCount,
+      conflictCount: conflictCount ?? this.conflictCount,
+      outcome: outcome ?? this.outcome,
+      safeErrorCode: safeErrorCode ?? this.safeErrorCode,
+      safeErrorMessage: safeErrorMessage ?? this.safeErrorMessage,
+      startedAt: startedAt ?? this.startedAt,
+      finishedAt: finishedAt ?? this.finishedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (actorUserId.present) {
+      map['actor_user_id'] = Variable<String>(actorUserId.value);
+    }
+    if (scopeFingerprint.present) {
+      map['scope_fingerprint'] = Variable<String>(scopeFingerprint.value);
+    }
+    if (fromCursor.present) {
+      map['from_cursor'] = Variable<int>(fromCursor.value);
+    }
+    if (toCursor.present) {
+      map['to_cursor'] = Variable<int>(toCursor.value);
+    }
+    if (changeCount.present) {
+      map['change_count'] = Variable<int>(changeCount.value);
+    }
+    if (tombstoneCount.present) {
+      map['tombstone_count'] = Variable<int>(tombstoneCount.value);
+    }
+    if (conflictCount.present) {
+      map['conflict_count'] = Variable<int>(conflictCount.value);
+    }
+    if (outcome.present) {
+      map['outcome'] = Variable<String>(outcome.value);
+    }
+    if (safeErrorCode.present) {
+      map['safe_error_code'] = Variable<String>(safeErrorCode.value);
+    }
+    if (safeErrorMessage.present) {
+      map['safe_error_message'] = Variable<String>(safeErrorMessage.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (finishedAt.present) {
+      map['finished_at'] = Variable<DateTime>(finishedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncPullLogsCompanion(')
+          ..write('id: $id, ')
+          ..write('actorUserId: $actorUserId, ')
+          ..write('scopeFingerprint: $scopeFingerprint, ')
+          ..write('fromCursor: $fromCursor, ')
+          ..write('toCursor: $toCursor, ')
+          ..write('changeCount: $changeCount, ')
+          ..write('tombstoneCount: $tombstoneCount, ')
+          ..write('conflictCount: $conflictCount, ')
+          ..write('outcome: $outcome, ')
+          ..write('safeErrorCode: $safeErrorCode, ')
+          ..write('safeErrorMessage: $safeErrorMessage, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('finishedAt: $finishedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   late final $BranchesTable branches = $BranchesTable(this);
@@ -25002,6 +27728,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SyncFileUploadsTable syncFileUploads = $SyncFileUploadsTable(
     this,
   );
+  late final $SyncPullCursorsTable syncPullCursors = $SyncPullCursorsTable(
+    this,
+  );
+  late final $SyncEntitySnapshotsTable syncEntitySnapshots =
+      $SyncEntitySnapshotsTable(this);
+  late final $SyncFieldVersionsTable syncFieldVersions =
+      $SyncFieldVersionsTable(this);
+  late final $SyncTombstonesTable syncTombstones = $SyncTombstonesTable(this);
+  late final $SyncPullLogsTable syncPullLogs = $SyncPullLogsTable(this);
   late final Index idxStockBalancesBatched = Index(
     'idx_stock_balances_batched',
     'CREATE UNIQUE INDEX idx_stock_balances_batched ON stock_balances (location_id, item_id, batch_id) WHERE batch_id IS NOT NULL',
@@ -25490,6 +28225,30 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_sync_file_uploads_actor_status',
     'CREATE INDEX idx_sync_file_uploads_actor_status ON sync_file_uploads (actor_user_id, status)',
   );
+  late final Index idxSyncPullCursorsScope = Index(
+    'idx_sync_pull_cursors_scope',
+    'CREATE UNIQUE INDEX idx_sync_pull_cursors_scope ON sync_pull_cursors (actor_user_id, scope_fingerprint)',
+  );
+  late final Index idxSyncEntitySnapshotsEntity = Index(
+    'idx_sync_entity_snapshots_entity',
+    'CREATE UNIQUE INDEX idx_sync_entity_snapshots_entity ON sync_entity_snapshots (entity_type, entity_id)',
+  );
+  late final Index idxSyncFieldVersionsField = Index(
+    'idx_sync_field_versions_field',
+    'CREATE UNIQUE INDEX idx_sync_field_versions_field ON sync_field_versions (entity_type, entity_id, field_name)',
+  );
+  late final Index idxSyncTombstonesEntity = Index(
+    'idx_sync_tombstones_entity',
+    'CREATE UNIQUE INDEX idx_sync_tombstones_entity ON sync_tombstones (entity_type, entity_id)',
+  );
+  late final Index idxSyncPullLogsFinished = Index(
+    'idx_sync_pull_logs_finished',
+    'CREATE INDEX idx_sync_pull_logs_finished ON sync_pull_logs (finished_at)',
+  );
+  late final Index idxSyncPullLogsActor = Index(
+    'idx_sync_pull_logs_actor',
+    'CREATE INDEX idx_sync_pull_logs_actor ON sync_pull_logs (actor_user_id)',
+  );
   late final MasterDataDao masterDataDao = MasterDataDao(this as AppDatabase);
   late final MasterAdminDao masterAdminDao = MasterAdminDao(
     this as AppDatabase,
@@ -25556,6 +28315,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     syncAttemptLogs,
     syncConflictLogs,
     syncFileUploads,
+    syncPullCursors,
+    syncEntitySnapshots,
+    syncFieldVersions,
+    syncTombstones,
+    syncPullLogs,
     idxStockBalancesBatched,
     idxStockBalancesUnbatched,
     idxStockMovementsItem,
@@ -25678,6 +28442,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxSyncFileUploadsRequest,
     idxSyncFileUploadsStatus,
     idxSyncFileUploadsActorStatus,
+    idxSyncPullCursorsScope,
+    idxSyncEntitySnapshotsEntity,
+    idxSyncFieldVersionsField,
+    idxSyncTombstonesEntity,
+    idxSyncPullLogsFinished,
+    idxSyncPullLogsActor,
   ];
   @override
   DriftDatabaseOptions get options =>

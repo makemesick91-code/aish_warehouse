@@ -55,6 +55,11 @@ exact reuse UUID movement. Flutter fakes menguji lease recovery, actor filtering
 bounded draining, retry/no-retry, successor request, safe acknowledgement, upload
 worker, dan UI.
 
+Jalur baca dan skenario multi-device diuji terpisah oleh
+`supabase_12c_local_e2e.md`. Jalankan `npx supabase db reset` di antara kedua
+runner: runner ini meninggalkan dokumen dan posisi jurnal, sedangkan 12C
+mengasserikan aritmetika cursor.
+
 Harness ini tidak dianggap bukti deployment remote. Skenario beban lintas workflow
 yang lebih luas tetap harus diulang di staging dengan traffic dan observability
 production sebelum remote rollout.

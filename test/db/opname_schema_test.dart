@@ -113,6 +113,11 @@ void main() {
         'sync_attempt_logs',
         'sync_conflict_logs',
         'sync_file_uploads',
+        'sync_pull_cursors',
+        'sync_entity_snapshots',
+        'sync_field_versions',
+        'sync_tombstones',
+        'sync_pull_logs',
       });
     });
 

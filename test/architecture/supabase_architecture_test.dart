@@ -13,7 +13,7 @@ void main() {
   test('Drift schema is v14', () {
     expect(
       _read('lib/core/db/app_database.dart'),
-      contains('schemaVersion => 14'),
+      contains('schemaVersion => 15'),
     );
   });
 

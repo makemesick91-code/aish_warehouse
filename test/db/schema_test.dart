@@ -22,7 +22,7 @@ void main() {
     // Purchase Request; v6 adds Delivery Order; v7 adds Good Receipt; v8 adds
     // Distribusi; v9 adds Pemusnahan; v10 adds Pemakaian; v11 adds Retur Barang;
     // v12 adds the reporting export audit (`export_logs`).
-    expect(context.database.schemaVersion, 14);
+    expect(context.database.schemaVersion, 15);
   });
 
   test('kolom kuantitas ledger bertipe INTEGER, bukan REAL', () async {

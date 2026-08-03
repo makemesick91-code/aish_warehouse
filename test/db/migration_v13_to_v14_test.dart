@@ -41,12 +41,16 @@ void main() {
     final version = await database
         .customSelect('PRAGMA user_version;')
         .getSingle();
-    expect(version.read<int>('user_version'), 14);
+    expect(version.read<int>('user_version'), 15);
     final tables = await database
         .customSelect(
           "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'sync_%' ORDER BY name;",
         )
         .get();
+    // A migration always runs to the latest version, so the observable end
+    // state also holds the five tables schema v15 adds. The six that were
+    // dropped above are the ones this step is responsible for, and all six are
+    // back.
     expect(tables.map((row) => row.read<String>('name')).toSet(), {
       'sync_devices',
       'sync_outbox',
@@ -54,6 +58,11 @@ void main() {
       'sync_attempt_logs',
       'sync_conflict_logs',
       'sync_file_uploads',
+      'sync_pull_cursors',
+      'sync_entity_snapshots',
+      'sync_field_versions',
+      'sync_tombstones',
+      'sync_pull_logs',
     });
     expect(
       (await database

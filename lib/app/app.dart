@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/supabase/supabase_client_provider.dart';
+import '../core/sync/realtime_invalidation_coordinator.dart';
+import '../core/sync/sync_providers.dart';
 import '../features/auth/presentation/providers/auth_providers.dart';
 import 'router.dart';
 import 'theme.dart';
@@ -34,6 +36,12 @@ class _AishWarehouseAppState extends ConsumerState<AishWarehouseApp>
     if (state == AppLifecycleState.resumed &&
         ref.read(supabaseConfigProvider).enabled) {
       unawaited(ref.read(authStateProvider.notifier).revalidate());
+      // Coming back from the background is the one moment a device is certain to
+      // have missed Realtime frames, and the one moment a user is about to look
+      // at the data. The pull is debounced, so this costs at most one request.
+      ref
+          .read(syncInvalidationCoordinatorProvider)
+          .invalidate(SyncInvalidationSource.appResume);
     }
   }
 

@@ -6,6 +6,7 @@ import 'core/config/supabase_config.dart';
 import 'core/session/current_user_session.dart';
 import 'core/supabase/supabase_bootstrap.dart';
 import 'core/supabase/supabase_client_provider.dart';
+import 'core/sync/sync_providers.dart';
 import 'features/auth/presentation/providers/auth_providers.dart';
 
 Future<void> main() async {
@@ -23,6 +24,11 @@ Future<void> main() async {
             supabaseClientProvider.overrideWithValue(client),
             currentSessionValueProvider.overrideWith(
               (ref) => ref.watch(productionSessionProvider),
+            ),
+            // `core/sync` must not reach into a feature package, so the actor a
+            // sync cycle belongs to is bound here, where both layers are visible.
+            syncActorUserIdProvider.overrideWith(
+              (ref) => ref.watch(currentDomainUserProvider)?.id,
             ),
           ],
           child: const AishWarehouseApp(),

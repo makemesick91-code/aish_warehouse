@@ -53,7 +53,7 @@ class SupabaseConfig {
   final String url;
   final String publishableKey;
 
-  static const expectedSchemaRevision = 'aish-supabase-002';
+  static const expectedSchemaRevision = 'aish-supabase-003';
 
   void validate() {
     if (!enabled) {
