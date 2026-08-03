@@ -13,13 +13,27 @@
 # It never prints a variable's value except the ones that belong in the change
 # record: branch, commit and ticket.
 
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  echo "production_preflight_library_only: use an approved production runner" >&2
+  exit 64
+fi
+
 production_require_var() {
   local name="$1"
-  if [[ -z "${!name:-}" ]]; then
+  local value="${!name:-}"
+
+  if [[ -z "$value" ]]; then
     echo "production_env_missing: ${name}" >&2
     echo "load the production operator environment first; see .env.production.example" >&2
     return 1
   fi
+
+  case "$value" in
+    *replace-with*|*"<"*|*">"*)
+      echo "production_env_placeholder_refused: ${name}" >&2
+      return 1
+      ;;
+  esac
 }
 
 # A staging environment still loaded in this shell means two contracts are live
