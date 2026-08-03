@@ -10,7 +10,16 @@
 // operator reviews, not in a value some other module re-exports.
 //
 // Run with:
-//   deno test --allow-read tool/production_canary_safety_test.ts
+//   deno test --allow-read=tool tool/production_canary_safety_test.ts
+//
+// The permission is not optional and the scope is not decoration. Without
+// `--allow-read` Deno refuses the suite access to the sources it inspects and
+// it reports 0 tests — which is what happened before the 2026-08-03 production
+// canary, where this suite was invoked bare, reported 0/11, and the write went
+// ahead behind a gate that had never run. Prefer the approved runner, which
+// cannot be retyped wrong:
+//
+//   bash tool/run_production_canary_local_gates.sh
 
 import { assert, assertEquals } from "jsr:@std/assert@1";
 
@@ -198,4 +207,187 @@ Deno.test("the e2e harness tracks every purchase request child row it names", as
     !/opname_links:\s*\[\{\s*id:\s*crypto\.randomUUID\(\)/.test(body),
     "the opname link id is generated inline and cannot be tracked",
   );
+});
+
+// ---------------------------------------------------------------------------
+// Realtime diagnostics, added after the 2026-08-03 production canary failed
+// `realtime/a_scope_change_produces_an_invalidation` and recorded nothing an
+// operator could act on. The hardening that followed makes the failure
+// *legible*; these fences make sure a later edit cannot quietly make it
+// *tolerated* instead.
+// ---------------------------------------------------------------------------
+
+const REPRO = "tool/realtime_journal_local_repro.ts";
+
+Deno.test("the Realtime verdict is still a positive assertion", async () => {
+  const body = code(await source(HARNESSES[0]));
+  const check = "a_scope_change_produces_an_invalidation";
+  const index = body.indexOf(`record("realtime", "${check}"`);
+  assert(index > 0, "the Realtime invalidation check is gone");
+  const call = body.slice(index, index + 260);
+  // The verdict must still be gated on a frame that actually arrived in time.
+  assert(
+    call.includes("sawFrame") && call.includes("outcomeIsPass"),
+    "the Realtime verdict no longer requires a frame inside the deadline",
+  );
+  // Nothing may downgrade it to a warning, a skip or an optional expectation.
+  for (const softener of ["warn", "optional", "skip", "|| true", "?? true"]) {
+    assert(
+      !call.toLowerCase().includes(softener),
+      `the Realtime verdict has been softened with ${softener}`,
+    );
+  }
+});
+
+Deno.test("the grace window is bounded and cannot rescue a failure", async () => {
+  const body = code(await source(HARNESSES[0]));
+  assert(/FRAME_GRACE_MS\s*=\s*[0-9_]+;/.test(body), "the grace window is not a constant");
+  const grace = Number(
+    body.match(/FRAME_GRACE_MS\s*=\s*([0-9_]+)/)![1].replaceAll("_", ""),
+  );
+  assert(grace > 0 && grace <= 30_000, `grace window ${grace}ms is not bounded`);
+  const timeout = Number(
+    body.match(/FRAME_TIMEOUT_MS\s*=\s*([0-9_]+)/)![1].replaceAll("_", ""),
+  );
+  // The deadline the verdict uses must not have been quietly inflated.
+  assertEquals(timeout, 20_000, "the frame deadline changed without evidence");
+});
+
+Deno.test("no harness retries the Realtime observation without a bound", async () => {
+  for (const path of [...HARNESSES, REPRO]) {
+    const body = code(await source(path));
+    assert(!/while\s*\(\s*true\s*\)/.test(body), `${path} has an unbounded while(true)`);
+    assert(!/for\s*\(\s*;\s*;\s*\)/.test(body), `${path} has an unbounded for(;;)`);
+    // Every wait loop must close against a deadline rather than a condition
+    // the server controls.
+    for (const match of body.matchAll(/while\s*\(([^)]*)\)/g)) {
+      assert(
+        /deadline|< *[a-zA-Z]*[Dd]eadline|performance\.now|Date\.now/.test(match[1]),
+        `${path} has a wait loop with no deadline: while (${match[1].trim()})`,
+      );
+    }
+  }
+});
+
+Deno.test("the diagnostic probes are reads, and the actor session precedes the subscription", async () => {
+  const body = code(await source(HARNESSES[0]));
+  // Anchored on code, not on section comments: `code()` strips those, and a
+  // fence that depends on a comment is a fence an edit can walk through.
+  const start = body.indexOf("const frames:");
+  const end = body.indexOf('record("catchup", "subscription_closed"');
+  assert(start > 0 && end > start, "the Realtime section could not be located");
+  const section = body.slice(start, end);
+  // The post-timeout diagnosis may only select.
+  for (const forbidden of [".insert(", ".upsert(", ".delete(", ".rpc(\"admin_"]) {
+    assert(
+      !section.includes(forbidden),
+      `the Realtime diagnostics perform ${forbidden}; they must only read`,
+    );
+  }
+  assert(
+    section.indexOf("auth.getSession()") < section.indexOf("headA.channel("),
+    "the channel is opened before the actor session is confirmed",
+  );
+  // The subscriber must stay the authenticated actor; a service-role
+  // subscription would bypass the very RLS check under test.
+  assert(
+    !/service\.channel\(/.test(section),
+    "the Realtime subscription uses the service role",
+  );
+});
+
+Deno.test("both harnesses confirm a session before opening a channel", async () => {
+  for (const path of HARNESSES) {
+    const body = code(await source(path));
+    if (!body.includes(".channel(")) continue;
+    assert(
+      body.includes("auth.getSession()"),
+      `${path} opens a channel without confirming the actor session first`,
+    );
+  }
+});
+
+Deno.test("the local reproduction can never point at a managed project", async () => {
+  const body = code(await source(REPRO));
+  assert(body.includes("assertLocalTarget"), "the local repro has no target guard");
+  assert(
+    body.includes("127.0.0.1") && body.includes("supabase\\.(co|in|net)"),
+    "the local repro guard does not pin loopback and reject managed hosts",
+  );
+  assert(
+    body.includes('AISH_TARGET_ENV") ?? "").toLowerCase() === "production"'),
+    "the local repro does not refuse a loaded production contract",
+  );
+  // It must not carry any production credential name or runner.
+  for (const forbidden of [
+    "AISH_PRODUCTION_CONFIRM",
+    "resolveProductionTarget",
+    "AISH_ALLOW_DESTRUCTIVE_CLEANUP",
+    ".delete(",
+    "deleteUser",
+  ]) {
+    assert(!body.includes(forbidden), `the local repro references ${forbidden}`);
+  }
+  // Bounded by construction, so a diagnostic can never become a load generator.
+  assert(/Math\.min\(\s*Number\(Deno\.env\.get\("AISH_REPRO_ITERATIONS"\)/.test(body),
+    "the local repro's iteration count is not clamped");
+});
+
+Deno.test("isolation assertions were not relaxed alongside the Realtime work", async () => {
+  const body = code(await source(HARNESSES[0]));
+  for (const check of [
+    "branch_b_never_sees_branch_as_room",
+    "branch_b_never_sees_branch_as_store",
+    "branch_b_never_sees_branch_as_document",
+    "branch_a_never_sees_branch_bs_room",
+    "scope_fingerprints_differ_between_actors",
+    "another_actors_device_is_refused",
+    "a_client_cannot_write_the_journal",
+  ]) {
+    assert(body.includes(`"${check}"`), `the isolation check ${check} is gone`);
+  }
+});
+
+Deno.test("the local gate runner grants the narrowest permissions and no network", async () => {
+  const runner = await source("tool/run_production_canary_local_gates.sh");
+  const body = runner.split("\n").filter((line) => !line.trimStart().startsWith("#")).join("\n");
+  assert(body.includes("set -euo pipefail"), "the runner does not fail closed");
+  // The defect this whole runner exists to prevent: the safety suite invoked
+  // without the read permission it needs, reporting 0 tests and exiting 0.
+  assert(
+    body.includes("--allow-read=tool tool/production_canary_safety_test.ts"),
+    "the runner does not invoke the safety suite with --allow-read=tool",
+  );
+  for (const overbroad of ["-A ", "--allow-all", "--allow-net", "--allow-run", "--allow-write", "--allow-sys", "--allow-ffi"]) {
+    assert(!body.includes(overbroad), `the runner grants ${overbroad}`);
+  }
+  // A local gate that sources the production contract is not a local gate.
+  for (const forbidden of [".env.production.local", "run_supabase_production", "supabase db push", "supabase migration up"]) {
+    assert(!body.includes(forbidden), `the runner references ${forbidden}`);
+  }
+  // Every suite the gates are supposed to cover has to actually be listed.
+  for (const suite of [
+    "production_guard_test.ts",
+    "production_canary_namespace_test.ts",
+    "production_canary_safety_test.ts",
+    "realtime_diagnostics_test.ts",
+    "readonly_sql_check_test.ts",
+    "production_preflight_shell_test.sh",
+  ]) {
+    assert(body.includes(suite), `the runner does not run ${suite}`);
+  }
+});
+
+Deno.test("the documented safety-test invocation carries the read permission", async () => {
+  // The header comment is what an operator copies. It was the source of the
+  // 2026-08-03 miss, so it is fenced like code.
+  const header = await source("tool/production_canary_safety_test.ts");
+  const documented = header.match(/deno test[^\n]*production_canary_safety_test\.ts/g) ?? [];
+  assert(documented.length > 0, "the suite documents no invocation at all");
+  for (const line of documented) {
+    assert(
+      line.includes("--allow-read"),
+      `documented invocation lacks --allow-read: ${line}`,
+    );
+  }
 });
