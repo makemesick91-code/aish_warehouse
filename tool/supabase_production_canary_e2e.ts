@@ -36,7 +36,11 @@ import {
   utcStamp,
   writeProductionArtifact,
 } from "./production_guard.ts";
-import { ProductionCanaryNamespace } from "./production_canary_namespace.ts";
+import {
+  type CanaryRetirement,
+  pendingRetirement,
+  ProductionCanaryNamespace,
+} from "./production_canary_namespace.ts";
 import { drain, envelope, pull, push } from "./production_sync_envelope.ts";
 import { ProductionInvariants } from "./production_invariants.ts";
 
@@ -89,9 +93,7 @@ async function main(): Promise<number> {
     Number(Deno.env.get("AISH_PRODUCTION_INVARIANT_SAMPLE") ?? "5000"),
   );
 
-  let retirement: Awaited<ReturnType<ProductionCanaryNamespace["retire"]>> = {
-    ok: true, problems: [], retired: 0, left_in_place: [],
-  };
+  let retirement: CanaryRetirement = pendingRetirement();
   const startedAt = new Date().toISOString();
   const occurredAt = new Date().toISOString();
   let ledgerScan: Record<string, unknown> = {};
@@ -125,10 +127,17 @@ async function main(): Promise<number> {
       status: "submitted", submitted_at: occurredAt,
     });
     assertCondition(!opname.error, `canary_opname_failed:${redact(opname.error)}`);
-    canary.track("stock_opnames", opnameId, false);
+    canary.trackDocument("stock_opnames", opnameId);
 
+    // Every id the RPC will use for a child row is chosen here and sent in the
+    // payload — `sync_submit_purchase_request` inserts `purchase_request_lines`
+    // and `purchase_request_opnames` with `(line->>'id')::uuid`, never a
+    // server-generated id. So the harness knows the exact primary key of every
+    // row the push creates, and each one is tracked rather than inferred from
+    // its parent.
     const prId = crypto.randomUUID();
     const prLineId = crypto.randomUUID();
+    const prOpnameLinkId = crypto.randomUUID();
     const requestId = crypto.randomUUID();
     const prEnvelope = await envelope({
       request_id: requestId, device_id: deviceHead,
@@ -143,13 +152,17 @@ async function main(): Promise<number> {
           id: prLineId, item_id: canary.set.itemId,
           suggested_qty: 1000, requested_qty: 1000,
         }],
-        opname_links: [{ id: crypto.randomUUID(), opname_id: opnameId }],
+        opname_links: [{ id: prOpnameLinkId, opname_id: opnameId }],
       },
     });
     const submitted = await push(headA, prEnvelope, "canary_submit_pr");
     record("push", "a_12b_push_is_accepted", submitted.outcome === "accepted",
       submitted.outcome);
-    if (submitted.outcome === "accepted") canary.track("purchase_requests", prId, false);
+    if (submitted.outcome === "accepted") {
+      canary.trackDocument("purchase_requests", prId);
+      canary.trackDocument("purchase_request_lines", prLineId);
+      canary.trackDocument("purchase_request_opnames", prOpnameLinkId);
+    }
     record("push", "the_server_assigned_the_document_number",
       typeof submitted.final_document_number === "string" &&
         submitted.final_document_number.length > 0);
@@ -327,10 +340,21 @@ async function main(): Promise<number> {
   } catch (error) {
     record("harness", "harness_completed", false, redact(error));
   } finally {
+    // `create()` already retired the namespace if setup failed; `retire()` is
+    // idempotent, so reaching here after that returns the same report rather
+    // than banning an identity twice.
     retirement = await canary.retire();
   }
   record("harness", "canary_namespace_retired", retirement.ok,
     retirement.problems.join(" | "));
+  record("harness", "every_created_row_was_confirmed_retired",
+    retirement.retired === retirement.requested && retirement.missing.length === 0,
+    `${retirement.retired}/${retirement.requested} matched, ` +
+      `${retirement.missing.length} missing`);
+  record("harness", "every_auth_identity_was_disabled",
+    retirement.auth_users_banned === retirement.auth_users_created &&
+      retirement.auth_users_failed.length === 0,
+    `${retirement.auth_users_banned}/${retirement.auth_users_created} banned`);
 
   const failed = results.filter((entry) => !entry.ok);
   const report = {
@@ -349,8 +373,17 @@ async function main(): Promise<number> {
       balance_method: ledgerBefore.balances.method,
     },
     rows_created: canary.createdRows().length,
+    rows_requested_for_retirement: retirement.requested,
     rows_retired: retirement.retired,
+    rows_missing_after_retirement: retirement.missing,
+    retirement_reason: retirement.reason,
+    retirement_ok: retirement.ok,
+    retirement_problems: retirement.problems,
+    auth_users_created: retirement.auth_users_created,
+    auth_users_banned: retirement.auth_users_banned,
+    auth_users_failed: retirement.auth_users_failed,
     left_in_place: retirement.left_in_place,
+    left_in_place_detail: retirement.left_in_place_detail,
     checks_total: results.length,
     checks_failed: failed.length,
     failed_checks: failed.map((entry) => `${entry.group}/${entry.id}`),

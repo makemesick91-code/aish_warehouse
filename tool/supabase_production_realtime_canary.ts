@@ -35,7 +35,11 @@ import {
   utcStamp,
   writeProductionArtifact,
 } from "./production_guard.ts";
-import { ProductionCanaryNamespace } from "./production_canary_namespace.ts";
+import {
+  type CanaryRetirement,
+  pendingRetirement,
+  ProductionCanaryNamespace,
+} from "./production_canary_namespace.ts";
 
 const FRAME_TIMEOUT_MS = 20_000;
 const SUBSCRIBE_TIMEOUT_MS = 20_000;
@@ -220,9 +224,7 @@ async function main(): Promise<number> {
   const canary = await ProductionCanaryNamespace.create(
     target, runNamespace(`${target.namespacePrefix}-realtime`),
   );
-  let retirement: Awaited<ReturnType<ProductionCanaryNamespace["retire"]>> = {
-    ok: true, problems: [], retired: 0, left_in_place: [],
-  };
+  let retirement: CanaryRetirement = pendingRetirement();
   const startedAt = new Date().toISOString();
 
   try {
@@ -327,9 +329,19 @@ async function main(): Promise<number> {
   } catch (error) {
     record("harness_completed", false, redact(error));
   } finally {
+    // Idempotent: `create()` retires a failed setup itself, so a second call
+    // here returns that same report rather than repeating its side effects.
     retirement = await canary.retire();
   }
   record("canary_namespace_retired", retirement.ok, retirement.problems.join(" | "));
+  record("every_created_row_was_confirmed_retired",
+    retirement.retired === retirement.requested && retirement.missing.length === 0,
+    `${retirement.retired}/${retirement.requested} matched, ` +
+      `${retirement.missing.length} missing`);
+  record("every_auth_identity_was_disabled",
+    retirement.auth_users_banned === retirement.auth_users_created &&
+      retirement.auth_users_failed.length === 0,
+    `${retirement.auth_users_banned}/${retirement.auth_users_created} banned`);
 
   const failed = results.filter((entry) => !entry.ok);
   const report = {
@@ -341,8 +353,17 @@ async function main(): Promise<number> {
     canary_writes: canaryWrites,
     canary_write_budget: MAX_CANARY_WRITES,
     rows_created: canary.createdRows().length,
+    rows_requested_for_retirement: retirement.requested,
     rows_retired: retirement.retired,
+    rows_missing_after_retirement: retirement.missing,
+    retirement_reason: retirement.reason,
+    retirement_ok: retirement.ok,
+    retirement_problems: retirement.problems,
+    auth_users_created: retirement.auth_users_created,
+    auth_users_banned: retirement.auth_users_banned,
+    auth_users_failed: retirement.auth_users_failed,
     left_in_place: retirement.left_in_place,
+    left_in_place_detail: retirement.left_in_place_detail,
     checks_total: results.length,
     checks_failed: failed.length,
     failed_checks: failed.map((entry) => entry.id),
