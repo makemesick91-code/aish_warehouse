@@ -211,3 +211,95 @@ diulang dari HEAD baru**. Langkah operator berikutnya: review manusia atas
 perubahan fail-safe ini, lalu preflight ulang. Canary baru menjadi eligible bila
 preflight baru PASS — dan tetap memerlukan backup pre-change tersendiri, karena
 `20260803T133929Z-pre-canary` adalah backup pasca-migrasi.
+
+---
+
+## Production canary sudah dijalankan, 2026-08-03 — FAIL 32/33
+
+Status di atas sudah tidak berlaku: canary tidak lagi `NOT RUN`. Ia dijalankan
+terhadap produksi pada commit `8193560` dan **gagal**. Catatan lengkap ada di
+`docs/supabase_12c_production_rollout_incident.md` §12.
+
+| Item | Status |
+| --- | --- |
+| Backup `20260803T152802Z-pre-canary-8193560`, 15:28:02Z | **PASS** — checksum terverifikasi |
+| Preflight produksi, 15:31:19Z, commit `8193560` | **PASS — 28/28**, 0 stop condition |
+| Production E2E canary, 15:32:41Z → 15:33:12Z | **FAIL — 32/33** |
+| Check yang gagal | `realtime/a_scope_change_produces_an_invalidation` |
+| Retirement namespace canary | **PASS** — 19/19, 0 hilang |
+| Auth identity canary | **PASS** — 4/4 dinonaktifkan (di-ban, bukan dihapus) |
+| Ledger | **PASS** — 0 movement diposting, 0 duplikat, 0 saldo negatif |
+| Standalone Realtime canary | **NOT RUN** |
+| Benchmark produksi | **NOT RUN** |
+| Backfill | **SKIPPED** |
+| Verifikasi retirement read-only di produksi | **PENDING** |
+| Audit Realtime read-only di produksi | **PENDING** |
+| Preflight `8193560` | **STALE** — commit baru sudah mendarat |
+| **GO/NO-GO** | **HOLD** |
+| **Production retry** | **BLOCKED** |
+
+Yang lulus: push 12B dan pengenalan replay, penomoran dokumen server, pull 12C
+deterministik, cursor monotonic, drain dari cursor 0, halaman ganjil tanpa
+duplikasi atau lompatan, cursor di kepala dan di luar server, isolasi cabang,
+isolasi device, klien tidak dapat menulis jurnal, subscription Realtime
+`SUBSCRIBED`, pull setelah update memberi state terbaru, catch-up setelah
+disconnect, dan seluruh invariant ledger.
+
+### Dua deviasi proses — ditemukan **setelah** canary
+
+1. **Static safety test tidak pernah berjalan.** Dipanggil sebagai
+   `deno test tool/production_canary_safety_test.ts` tanpa `--allow-read`. Deno
+   menolak akses file source, hasilnya **0/11**. Ini bukan kegagalan assertion —
+   gate-nya memang tidak dieksekusi, dan production write tetap berjalan di
+   belakangnya. Setelah dijalankan dengan permission yang benar: **11/11 PASS**,
+   kini 20/20 setelah hardening.
+2. **Tidak ada bukti restore rehearsal untuk backup ini.**
+   `.env.production.local` menyatakan `AISH_RESTORE_REHEARSAL_CONFIRMED=true`,
+   tetapi pada saat canary berjalan tidak ada bukti rehearsal terhadap
+   `20260803T152802Z-pre-canary-8193560`. Rehearsal baru dilakukan setelahnya dan
+   **PASS** — dicatat sebagai POST-CANARY VALIDATION, bukan gate yang selesai
+   sebelum write.
+
+Keduanya tidak boleh dinyatakan sebagai gate yang sudah selesai sebelum write.
+
+### Akar masalah Realtime
+
+Publication bukan penyebabnya: preflight mencatat `in_realtime_publication =
+true`, dan dump pre-canary sendiri memuat
+`ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."sync_change_journal"`.
+RLS juga bukan: pada reproduksi lokal, actor yang berlangganan **dapat**
+membaca baris jurnal itu. Trigger juga bukan: baris jurnalnya ada, dan pull
+mengembalikannya.
+
+Reproduksi lokal — Realtime kini diaktifkan di `config.toml`, sebelumnya
+`enabled = false` sehingga jalur ini tidak pernah diuji di luar project remote —
+menunjukkan satu pola yang konsisten: **subscription pertama setelah service
+Realtime start tidak menerima frame sama sekali**, sedangkan iterasi berikutnya
+terkirim dalam 67–349 ms. Frame-nya tidak terlambat, melainkan hilang. Karena
+itu menaikkan timeout tidak akan memperbaiki apa pun, dan timeout 20 detik tetap
+tidak diubah.
+
+Produksi belum pernah punya subscriber Realtime sebelum canary ini (preflight:
+0 baris jurnal, 0 device terdaftar). Itu menjadikan cold start sebagai hipotesis
+utama — **hipotesis, bukan fakta produksi**. Yang menentukan adalah
+`artifacts/production/read-only-realtime-audit-8193560.sql`, dan statusnya masih
+**PENDING** sampai operator menjalankannya.
+
+### Langkah operator berikutnya
+
+1. Baca `docs/supabase_12c_production_rollout_incident.md` §12.
+2. Jalankan kedua file SQL read-only di Supabase SQL Editor dan lampirkan
+   hasilnya. Keduanya murni `SELECT`, dibuktikan `tool/readonly_sql_check.ts`.
+3. Putuskan secara eksplisit apakah canary boleh melakukan warm-up Realtime
+   sebelum mutasi. Sengaja **tidak** diimplementasikan: itu akan menutupi
+   properti produksi yang nyata di balik perilaku harness.
+4. Backup baru, lalu restore rehearsal terhadap backup itu, dengan file bukti.
+5. Preflight ulang dari HEAD baru — preflight `8193560` sudah **STALE**.
+6. Persetujuan manusia. Sampai itu ada, retry **BLOCKED** dan PR #1 tidak boleh
+   di-merge.
+
+Gate lokal kini satu perintah, agar tidak bisa salah ketik lagi:
+
+```bash
+bash tool/run_production_canary_local_gates.sh
+```

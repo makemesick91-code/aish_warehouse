@@ -863,3 +863,112 @@ Next operator step: human review of this change, then a fresh production
 preflight from the new HEAD. Only if that passes does the canary become
 eligible — and it still needs its own pre-change backup, since
 `20260803T133929Z-pre-canary` is a post-migration backup.
+
+## 18. The canary was run, 2026-08-03 — FAIL 32/33, rollout still HELD
+
+Everything in §15 and §17 above describes the state *before* the canary ran. It
+has now run against production. The full incident record, root-cause analysis
+and corrective actions are in
+`docs/supabase_12c_production_rollout_incident.md` §12; this section carries what
+changes for the runbook.
+
+| Field | Value |
+| --- | --- |
+| Commit | `8193560` |
+| Backup | `20260803T152802Z-pre-canary-8193560`, 2026-08-03T15:28:02Z |
+| Preflight | **PASS — 28/28**, 0 stop conditions, 2026-08-03T15:31:19Z |
+| Namespace | `aish-12c-canary-e2e-2026-08-03T15-32-38-154Z-cafc2d3d-5a11a3cc96` |
+| Started / finished | 2026-08-03T15:32:41Z / 15:33:12Z |
+| **Result** | **FAIL — 32/33** |
+| Failed check | `realtime/a_scope_change_produces_an_invalidation` |
+| Retirement | 19/19, 0 missing |
+| Auth identities | 4/4 disabled |
+| Ledger | unchanged — 0 movements posted, 0 duplicates, 0 negative balances |
+| Standalone Realtime canary | **NOT RUN** |
+| Benchmark | **NOT RUN** |
+| Backfill | **SKIPPED** |
+| **GO/NO-GO** | **HOLD** |
+| **Production retry** | **BLOCKED** |
+
+### 18.1 The GO/NO-GO table needs one correction
+
+§14 lists "Realtime publication absent — proceed with a note". That row did not
+apply here and must not be used to wave this failure through. The publication
+was present: the preflight recorded `in_realtime_publication = true`, and the
+pre-canary dump itself contains
+`ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."sync_change_journal"`.
+The publication was there and the frame still did not arrive. That is a
+different fault, and it is a **NO-GO**.
+
+### 18.2 The local gate command is now one command
+
+The 2026-08-03 run invoked the static safety suite as
+`deno test tool/production_canary_safety_test.ts`, without `--allow-read`. Deno
+refused it access to the sources it reads, it reported **0/11**, and the
+production write went ahead behind a gate that had never executed. Do not retype
+the individual commands. Run:
+
+```bash
+bash tool/run_production_canary_local_gates.sh
+```
+
+It fails closed at the first failing gate and grants each suite the narrowest
+permission that works — `--allow-read=tool` for the safety fences, `--allow-env`
+for the guard refusals, nothing at all for the rest. It never sources
+`.env.production.local`, has no network permission, and cannot reach production.
+
+Gates it runs: shell syntax, the preflight shell regression, the guard refusals
+(21), the namespace behaviour suite (25), the source safety fences (20), the
+Realtime diagnostics classification (13), the read-only SQL checker (10),
+`deno check tool/*.ts`, and `git diff --check`.
+
+### 18.3 The backup gate needs evidence, not a declaration
+
+`AISH_RESTORE_REHEARSAL_CONFIRMED=true` was set, and no rehearsal against
+`20260803T152802Z-pre-canary-8193560` had been performed when the canary ran.
+The variable records that someone asserted a rehearsal; it does not record that
+one happened. Until the gate demands an artefact, treat the rehearsal as a
+manual step with its own written evidence file beside the backup, as in
+`evidence/RESTORE_REHEARSAL_8193560.txt`.
+
+### 18.4 Realtime is now testable locally
+
+`supabase/config.toml` had `[realtime] enabled = false`, so the local stack had
+no `supabase_realtime` publication and the subscribe-and-invalidate path had
+never been exercised anywhere but a remote project. Realtime is now enabled
+locally, and `tool/realtime_journal_local_repro.ts` walks the production
+sequence hop by hop against the local stack only:
+
+```bash
+set -a; eval "$(npx supabase status -o env)"; set +a
+export SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY" \
+       SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+deno run --node-modules-dir=auto --allow-env --allow-net \
+  tool/realtime_journal_local_repro.ts
+```
+
+It refuses any host that is not loopback and refuses to run with a production
+contract in the environment. Iterations are clamped at 25: it is a diagnostic,
+not a load generator.
+
+Locally, delivery takes 67–349 ms. The single reproducible failure is the
+**first subscription after the Realtime service starts**, where no frame arrives
+at all — not late, never. Warm runs deliver 100%.
+
+### 18.5 Before any production retry
+
+1. Read `docs/supabase_12c_production_rollout_incident.md` §12 in full.
+2. Run `artifacts/production/read-only-realtime-audit-8193560.sql` and
+   `artifacts/production/read-only-retirement-verification-8193560.sql` in the
+   Supabase SQL Editor and attach both outputs. Both are `SELECT`-only, proven
+   by `tool/readonly_sql_check.ts`.
+3. Decide explicitly, and record the decision, whether the canary should warm the
+   Realtime subscription before mutating. It is deliberately not implemented:
+   it would probably make the check pass, and it would do so by hiding a real
+   production property behind harness behaviour.
+4. Take a fresh backup and rehearse restoring **that** backup, with an evidence
+   file.
+5. Re-run the production preflight from the new HEAD. The `8193560` preflight is
+   **STALE**: commits have landed since, and it checks the working tree and the
+   tooling.
+6. Get human approval. The retry is **BLOCKED** until then.

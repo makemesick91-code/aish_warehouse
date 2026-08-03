@@ -554,3 +554,365 @@ requested rows actually changed.
 after the work is convenient and, for anything that creates a login, wrong. The
 window between "the server has it" and "cleanup knows about it" is now one
 statement wide.
+
+---
+
+## 12. Production E2E canary, 2026-08-03 — FAIL 32/33
+
+The canary described in §11 was run against production. It failed. This section
+is the record of that run, of two process deviations found afterwards, and of
+the work done to contain and diagnose it. Nothing here was retried against
+production, and nothing here changes the verdict.
+
+| Field | Value |
+| --- | --- |
+| Branch / commit | `chore/12c-staging-rollout` / `8193560` |
+| Project | `mfj*…**tp`, server revision `aish-supabase-003` |
+| Change ticket | GH-2, PR #1 |
+| Backup | `20260803T152802Z-pre-canary-8193560`, taken 2026-08-03T15:28:02Z |
+| Backup manifest sha256 | `6d675c145016dbce8997f14fd0a52ebd88d28d2770dd86710d03ebe28c09b4ed` |
+| Preflight | **PASS — 28/28**, 0 stop conditions, READ-ONLY, 2026-08-03T15:31:19.752Z |
+| Canary namespace | `aish-12c-canary-e2e-2026-08-03T15-32-38-154Z-cafc2d3d-5a11a3cc96` |
+| Canary started | 2026-08-03T15:32:41.208Z |
+| Canary finished | 2026-08-03T15:33:12.670Z |
+| **Result** | **FAIL — 32/33** |
+| Failed check | `realtime/a_scope_change_produces_an_invalidation` |
+| Standalone Realtime canary | **NOT RUN** |
+| Benchmark | **NOT RUN** |
+| Backfill | **SKIPPED** |
+| **GO/NO-GO** | **HOLD** |
+| **Production retry** | **BLOCKED** |
+
+### 12.1 Timeline
+
+| UTC | Event |
+| --- | --- |
+| 15:28:02 | Pre-canary backup taken; `roles.sql`, `schema.sql`, `data.sql`, `SHA256SUMS` written, checksums verified |
+| 15:31:19 | Production preflight — PASS 28/28, read-only, 0 stop conditions. Journal 0 rows, max cursor 0, 0 registered devices, `in_realtime_publication = true` |
+| ~15:32:38 | Canary namespace minted |
+| 15:32:41 | Canary run started |
+| 15:33:12 | Canary run finished — FAIL 32/33 |
+| 15:52 | Evidence preserved and checksummed; containment begins |
+| 15:58–16:01 | Restore rehearsal of the pre-canary backup on an isolated scratch database — **post-canary**, see §12.5 |
+| 16:04–16:10 | Realtime failure reproduced locally, root cause isolated — see §12.7 |
+
+### 12.2 What passed
+
+Thirty-two of thirty-three. The sync contract itself held under production:
+
+* **12B push** accepted; an identical replay recognised as a replay; the server
+  assigned the document number.
+* **Deterministic 12C pull** — a drain from cursor 0 terminated inside budget,
+  the cursor advanced monotonically, draining twice returned the same sequence,
+  an odd page size repeated nothing and skipped nothing, a cursor at the head
+  returned an empty page, and a cursor beyond the server was refused.
+* **Isolation** — branch B never saw branch A's room, store or document; branch
+  A never saw branch B's room; scope fingerprints differed between actors;
+  another actor's device was refused; a client could not write the journal.
+* **Realtime subscription** reached `SUBSCRIBED`.
+* **Pull after the update supplied the current state.**
+* **Disconnect and catch-up** from the durable cursor worked; the cursor
+  advanced; the caught-up state was the server's current state.
+* **Ledger** — duplicate movements 0, negative balances 0, the canary posted no
+  stock movement and changed no stock balance. `covers_whole_ledger = true`.
+* **Retirement** — 19 rows created, 19 requested, **19 retired**, 0 missing.
+* **Auth identities** — 4 created, **4 disabled**, 0 failures. Banned, not
+  deleted; that is the policy.
+
+### 12.3 What failed
+
+```
+realtime/a_scope_change_produces_an_invalidation   FAIL
+```
+
+No Realtime invalidation frame reached the subscriber inside the harness's
+20-second window, for a room the same actor could read and that the pull
+returned correctly moments later.
+
+The report recorded this as a bare `false` with an **empty detail string**. That
+is itself a defect: the single boolean cannot distinguish a missing journal row
+from an RLS drop from a late frame, and an operator holding the report had no
+way to tell which had happened. §12.8 fixes it.
+
+### 12.4 Process deviations — found AFTER the canary
+
+These are recorded as found. Neither is restated as a gate that completed before
+the production write, because neither did.
+
+**Deviation 1 — the static safety suite never ran.** It was invoked as
+
+```bash
+deno test tool/production_canary_safety_test.ts
+```
+
+without `--allow-read`. Deno refused the suite access to the source files it
+reads and it reported **0/11**. This was *not* an assertion failure. It was the
+gate not executing at all, and the production write proceeding behind it.
+
+**Deviation 2 — no restore rehearsal specific to this backup.**
+`.env.production.local` declared `AISH_RESTORE_REHEARSAL_CONFIRMED=true` and the
+canary report carries `restore_rehearsal_confirmed: true`, but at the time the
+canary ran there was no evidence of a rehearsal against
+`20260803T152802Z-pre-canary-8193560`. The backup itself was created correctly
+and its checksums verify. An environment variable asserting a rehearsal is a
+declaration, not evidence — the two were not the same thing here.
+
+Both were found after the write, during containment.
+
+### 12.5 Post-canary validation
+
+Everything below happened **after** the failed canary. None of it may be read as
+a gate that completed before the write.
+
+| Item | Result | Timing |
+| --- | --- | --- |
+| Evidence preserved and checksummed | **PASS** | post-canary |
+| `deno test --allow-read tool/production_canary_safety_test.ts` | **PASS — 11/11**, then 20/20 after hardening | post-canary |
+| `bash -n tool/*.sh` | PASS | post-canary |
+| `bash tool/production_preflight_shell_test.sh` | PASS | post-canary |
+| `deno test --allow-env tool/production_guard_test.ts` | PASS — 21/21 | post-canary |
+| `deno test tool/production_canary_namespace_test.ts` | PASS — 25/25 | post-canary |
+| `deno check tool/*.ts` | PASS | post-canary |
+| Restore rehearsal of `20260803T152802Z-pre-canary-8193560` | **PASS** | post-canary |
+
+The safety suite's eleven assertions all pass once the permission is right. The
+gate was sound; the invocation was not.
+
+**Evidence, mode 700, alongside the backup it belongs to:**
+
+```
+$HOME/backups/aish_warehouse/20260803T152802Z-pre-canary-8193560/evidence/
+  production-preflight-2026-08-03T15-31-19-752Z.json
+  production-canary-e2e-2026-08-03T15-33-12-670Z.json
+  ARTIFACT_SHA256SUMS          # sha256sum -c: OK, digests match the repo originals
+  INCIDENT_METADATA.txt
+  RESTORE_REHEARSAL_8193560.txt
+```
+
+The originals under `artifacts/production/` were copied with
+`cp --preserve=mode,timestamps` and not modified.
+
+**Restore rehearsal, 2026-08-03T15:58:29Z → 16:01:05Z.** Isolated scratch
+database `aish_rehearsal_8193560` on the local Docker stack at `127.0.0.1:54322`
+— not `mfjbqethoizpozgtqqtp.supabase.co`, no remote password, no linked-project
+operation. Restored in order: roles, schema, data. Verified: 39 public tables,
+11 public functions, 53 `app_private` functions, 34 policies, 69 user triggers;
+`app_meta.schema_revisions` carrying `aish-supabase-003`; `pull_sync_changes`
+executable by `authenticated` and refused to `anon`; `app_private.
+pull_entity_visible` reachable by neither; journal RLS forced with the single
+`sync_change_journal_read_scope` SELECT policy; `SELECT` granted to
+`authenticated` and not to `anon`; statement timeouts 3s/8s/8s; every row count 0,
+matching the preflight snapshot. Full record in `RESTORE_REHEARSAL_8193560.txt`.
+
+Two compatibility exceptions, both on derived copies, the original dump
+unchanged and still checksum-verifying: the managed-role grant
+`GRANT SET ON PARAMETER "log_min_messages" TO "supabase_realtime_admin"` was
+removed from a rehearsal copy of `roles.sql`, and the data restore ran with
+`session_replication_role = 'replica'` for the circular `stock_movements` FK.
+
+### 12.6 Read-only production verification — PENDING
+
+Two operator files were prepared. Every statement in both is a `SELECT`, proven
+by `tool/readonly_sql_check.ts`, and both were executed against the restored
+production schema inside a `default_transaction_read_only` session to confirm
+they parse and run without mutating:
+
+```
+artifacts/production/read-only-retirement-verification-8193560.sql
+artifacts/production/read-only-realtime-audit-8193560.sql
+```
+
+They are run by pasting into the Supabase SQL Editor. Until an operator does
+that and attaches the output:
+
+* **REMOTE RETIREMENT VERIFICATION = PENDING**
+* **READ-ONLY REALTIME AUDIT = PENDING**
+
+Neither may be recorded as PASS on the strength of the canary's own report.
+
+**Evidence gap found while writing them.** The canary report records retirement
+*counts* — 19 created, 19 retired, 0 missing — but **not the exact row ids**.
+Verification by exact id, the strongest form, is therefore impossible from the
+artefact alone, and the queries fall back to the namespace token carried in each
+row's name or reached through its canary branch. That is sound for a `SELECT`,
+but weaker than an id list, and it is why corrective action 24 exists.
+
+### 12.7 Realtime root cause
+
+Facts, hypotheses and unknowns are kept apart deliberately.
+
+#### Facts from the report
+
+1. `realtime/subscription_established` **PASS** — the channel reached
+   `SUBSCRIBED`.
+2. `realtime/a_scope_change_produces_an_invalidation` **FAIL** — no frame naming
+   the room inside 20 seconds.
+3. `realtime/the_pull_triggered_by_the_frame_supplies_the_state` **PASS** — the
+   drain after the mutation returned the room with the new name. The journal row
+   therefore existed. (The check's name overstates it: the drain runs on the
+   harness's own schedule, not on a frame. §12.8 makes the report say so.)
+4. The preflight recorded `journal.in_realtime_publication = true` at 15:31:19Z,
+   ninety seconds before the run.
+5. The preflight recorded **0 journal rows, max cursor 0, 0 registered devices**.
+   Production had never carried sync traffic.
+
+#### Facts from the code
+
+6. `pull_sync_changes` is `SECURITY DEFINER` and reads `sync_change_journal`
+   directly. Since the post-mutation drain returned the row, the trigger wrote
+   it, and it was committed before the 20-second wait even began — the trigger
+   fires inside the `UPDATE`'s transaction, and the update had already returned.
+   **The row was present for the whole window.**
+7. Because the pull is `SECURITY DEFINER`, **no check in the canary exercises
+   `sync_change_journal_read_scope`** — the policy Realtime evaluates per
+   subscriber. The Realtime frame was the only thing that depended on it, and it
+   was the only thing that failed.
+8. `supabase/config.toml` had `[realtime] enabled = false`. The local stack had
+   no `supabase_realtime` publication at all, so the Realtime path had **never
+   been exercised outside a remote project**. Staging and production were the
+   only places it had ever run.
+
+#### Facts from the backup
+
+9. The dump taken at 15:28:02Z contains, at `schema.sql:6158`:
+   `ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."sync_change_journal";`
+   Independent, offline, timestamped confirmation of fact 4. **Publication
+   absence is refuted by two sources.**
+
+#### Facts from local reproduction
+
+Realtime was enabled locally and `tool/realtime_journal_local_repro.ts` was
+written to walk the production sequence hop by hop. Ten bounded iterations, no
+burst, no load:
+
+| Run | Condition | Result |
+| --- | --- | --- |
+| 1 | 10 iterations, Realtime service freshly started | **iteration 1 failed**, 2–10 delivered |
+| 2 | 3 iterations, service already warm | 3/3 delivered |
+| 3 | 3 iterations, immediately after `docker restart` of Realtime | **iteration 1 failed**, 2–3 delivered |
+
+10. Delivery latency when it works: **min 67 ms, median 310 ms, p95 338 ms,
+    max 349 ms.** Two orders of magnitude inside the 20-second deadline.
+11. In every failing iteration the journal row **was** created, and the
+    subscribing actor **could** `SELECT` it under RLS — the probe the canary
+    never had. Classified `journal_visible_via_select_but_no_frame`.
+12. The failing iterations were given 20 s plus a 10 s grace window. **No frame
+    ever arrived.** The change was lost, not delayed.
+13. The failure tracks the Realtime service's cold start, not the data, not the
+    actor, not the policy: same fixture, same actor, same mutation, failing only
+    on the first subscription after the service starts.
+
+#### Leading hypothesis
+
+**The first `postgres_changes` subscriber after the Realtime service starts can
+miss changes, because `SUBSCRIBED` is acknowledged before the tenant's CDC
+pipeline is streaming.** A logical replication slot only ever delivers WAL
+written after it exists, so a mutation landing in that window is not late — it
+is never replicated at all. Production had never had a Realtime subscriber
+(fact 5), so the canary was plausibly the first, and would have hit exactly this
+window.
+
+This is a hypothesis about production, supported by a reproduction elsewhere. It
+is not yet a fact about production. Section 5 of the read-only Realtime audit is
+written to settle it.
+
+#### Refuted
+
+* Publication membership — facts 4 and 9.
+* RLS on the journal — fact 11: the actor could read the row.
+* The journal trigger — facts 3, 6 and 11: the row existed.
+* Latency, and therefore any fix that consists of raising the timeout — facts 10
+  and 12. The frame never arrives; twenty more seconds would have changed
+  nothing.
+
+#### Still unknown
+
+* Whether production's Realtime service was in fact cold at 15:32:5x. Only the
+  read-only audit, or Supabase's own service logs, can say.
+* Whether the managed Realtime service idles a tenant with no subscribers, and
+  on what schedule.
+* Whether the canary was genuinely the first-ever subscriber on that project.
+
+### 12.8 Corrective actions
+
+| # | Action | Status |
+| --- | --- | --- |
+| 20 | Preserve preflight and canary reports with checksums, mode 700, beside the backup | **Done** |
+| 21 | Run the safety suite with the permission it needs — 11/11, then 20/20 | **Done — post-canary** |
+| 22 | One approved local-gate runner, `tool/run_production_canary_local_gates.sh`, so the invocation cannot be retyped wrong | **Done** |
+| 23 | Restore rehearsal against this specific backup, isolated scratch | **Done — post-canary** |
+| 24 | Record the created row ids in the canary report so retirement is verifiable from the artefact alone | **Open** |
+| 25 | Diagnose the Realtime failure into named outcomes rather than one boolean | **Done** |
+| 26 | Reproduce Realtime locally; enable Realtime in `config.toml` so the path is testable off-production | **Done** |
+| 27 | Read-only production retirement verification | **PENDING operator** |
+| 28 | Read-only production Realtime audit | **PENDING operator** |
+| 29 | Fresh preflight before any future production activity — `8193560`'s is stale once new commits land | **PENDING operator** |
+| 30 | Human review and explicit approval before any production retry | **PENDING operator** |
+
+**Harness changes.** `tool/realtime_diagnostics.ts` classifies a Realtime
+observation into one of seven named outcomes, and `outcomeIsPass` says yes to
+exactly one of them, `delivered`. The production canary now records the channel's
+status transitions, the subscription and mutation timestamps, first-frame time
+and delivery latency, the frame count and masked frame entity ids, a sanitised
+channel error, whether the journal row was created, and whether the subscribing
+actor could `SELECT` it — the probe whose absence made the original failure
+unreadable. It also asserts the actor's session exists **before** the channel is
+opened, because a channel opened first is evaluated by Realtime as `anon`, which
+has no `SELECT` on the journal and would drop every frame while the transport
+looked healthy.
+
+**What was deliberately not changed.** The 20-second deadline stands — the
+evidence says the frame never arrives, so a longer wait buys nothing. The check
+is still a positive assertion: a late frame, a frame for another entity and a
+silent healthy channel all remain failures. No retry was added, no assertion was
+made optional, no check was removed, and no isolation assertion was touched. The
+one added observation window is bounded at 10 seconds, opens only after the
+verdict is already decided, and exists solely so a report can say "arrived at
+24 s" instead of "never arrived".
+
+A **cold-start warm-up before subscribing** would very likely make the canary
+pass. It is deliberately **not** implemented: it would mask a real production
+Realtime property behind harness behaviour, and that is an operator's decision
+to take knowingly, not one to slip in during containment.
+
+### 12.9 Status after this section
+
+| Item | Status |
+| --- | --- |
+| Production preflight for `8193560` | **PASS at the time**, now **STALE** — new commits have landed |
+| Production E2E canary | **FAIL — 32/33** |
+| Standalone production Realtime canary | **NOT RUN** |
+| Production benchmark | **NOT RUN** |
+| Production backfill | **SKIPPED** |
+| Remote retirement verification | **PENDING** |
+| Read-only Realtime audit | **PENDING** |
+| Local gates | **PASS** |
+| Restore rehearsal | **PASS — post-canary** |
+| **GO/NO-GO** | **HOLD** |
+| **Production retry** | **BLOCKED** |
+| PR #1 | **Must not merge** |
+
+### 12.10 Lessons
+
+**Lesson 8. A gate that cannot fail loudly will fail silently.** `deno test`
+without `--allow-read` reported zero tests and exited zero. Nothing in the
+pipeline treated "0 tests passed" as different from "all tests passed". The
+invocation now lives in one runner with the narrowest permission each suite
+needs, and a test asserts that the documented command still carries it.
+
+**Lesson 9. A confirmation is not evidence.** `AISH_RESTORE_REHEARSAL_CONFIRMED=true`
+is an operator asserting something. The gate accepted the assertion and never
+asked for the artefact. A backup identifier and a checksum were demanded; proof
+that *this* dump had been restored was not.
+
+**Lesson 10. A code path only production exercises is a failure mode only
+production can find.** Realtime was switched off locally, so the entire
+subscribe-and-invalidate path had never run outside a managed project. The first
+time it was exercised under production conditions, it failed — and the local
+suite could not even be pointed at the question. Realtime is now on in
+`config.toml` and the path has a local reproduction.
+
+**Lesson 11. One boolean is not a diagnosis.** `false` with an empty detail
+string collapsed six distinct failures into one and sent the investigation to
+the database to work out which. The verdict is unchanged and just as strict; what
+changed is that the report now says *why*.
