@@ -8,6 +8,16 @@ It does not cover production. Every script referenced here refuses to run
 against a host that is not on the operator's staging allowlist, and none of them
 has a destructive mode.
 
+> **Production is a separate path.** If no staging project is available, do
+> **not** point these tools at production and do **not** relax the allowlist to
+> make them start. Production has its own guard, its own environment contract,
+> its own confirmations and its own runbook:
+> `supabase_production_canary_rollout.md`. Nothing in this document was changed
+> to accommodate it, and no production tool reads a `AISH_STAGING_*` variable —
+> the two contracts refuse to coexist in one shell, and
+> `tool/production_guard_test.ts` asserts that neither confirmation token is
+> accepted by the other environment.
+
 Design lives in `supabase_12c_sync_design.md`, the contract in
 `supabase_rpc_contracts.md`, the security posture in `supabase_security_model.md`
 and the deployment inventory in `supabase_12c_remote_handoff.md`.

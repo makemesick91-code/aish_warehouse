@@ -40,12 +40,14 @@ node_modules/
 .env.*
 !.env.example
 !.env.staging.example
+!.env.production.example
 config/supabase.dev.json
 config/supabase.staging.json
 config/supabase.production.json
 
-# Staging rollout artifacts. Benchmark and verification reports name the target
-# project and the fixture actors that ran against it, so they stay local and are
+# Rollout artifacts, staging and production alike. Verification, backfill and
+# benchmark reports name the target project, the change ticket, the operator and
+# the fixture or canary actors that ran against it, so they stay local and are
 # attached to the rollout ticket by hand rather than committed.
 artifacts/
 supabase/.env

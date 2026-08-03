@@ -7,6 +7,13 @@ Seluruh verifikasi pada `supabase_12c_local_e2e.md` berjalan di stack lokal.
 > verifikasi, E2E staging, benchmark, retensi, fix-forward, dan tabel GO/NO-GO —
 > ada di `supabase_12c_staging_rollout.md`. Dokumen ini tetap menjadi inventaris
 > revisi 003 dan catatan risiko; dokumen itu yang dijalankan.
+>
+> **Production canary.** Bila project remote yang tersedia adalah produksi dan
+> bukan staging, jalurnya terpisah: `supabase_production_canary_rollout.md`.
+> Jalur itu punya guard sendiri (`tool/production_guard.ts`), konfirmasi ganda,
+> blocker backup + restore rehearsal, jendela maintenance, dan seluruh tool-nya
+> read-only atau dry-run secara default. Staging tooling tidak diubah dan tidak
+> dilemahkan untuk itu.
 
 ## 1. Yang ditambahkan revisi 003
 
