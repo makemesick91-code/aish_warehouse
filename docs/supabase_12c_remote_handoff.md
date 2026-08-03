@@ -164,3 +164,12 @@ Tabel GO/NO-GO lengkap ada di `supabase_12c_staging_rollout.md` §10. Ringkasnya
 - Fix-forward (cabut execute pull) sudah dilatih di staging.
 - Kebijakan retensi disepakati pemilik produk — belum ada prune yang dijadwalkan.
 - Rilis klien dijadwalkan setelah migrasi server.
+
+Status produksi per 2026-08-03: migrasi sudah diterapkan ke produksi sebelum
+preflight yang disetujui sempat berjalan — catatan lengkapnya di
+`supabase_12c_production_rollout_incident.md`. Backup pre-canary
+`20260803T133929Z-pre-canary` PASS beserta checksum, dan restore rehearsal pada
+stack lokal terisolasi PASS. Preflight produksi yang disetujui **belum
+dijalankan**: kontrak environment masih kekurangan change ticket, maintenance
+window, operator acknowledgement, dan dua kunci Supabase. Canary **BLOCKED**
+sampai preflight benar-benar PASS.

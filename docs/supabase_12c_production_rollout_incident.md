@@ -352,10 +352,9 @@ check or the dirty-tree check.
 
 The production credentials, change ticket, maintenance window and operator
 acknowledgement required by the runbook are **not present** in this environment.
-No `.env.production` exists, and none of `AISH_TARGET_ENV`,
-`AISH_PRODUCTION_CONFIRM`, `AISH_PRODUCTION_PROJECT_REF`, `AISH_CHANGE_TICKET`,
-`AISH_MAINTENANCE_WINDOW`, `AISH_BACKUP_IDENTIFIER`,
-`AISH_RESTORE_REHEARSAL_CONFIRMED` or `AISH_OPERATOR_ACKNOWLEDGEMENT` is set.
+An operator file `.env.production.local` now exists (untracked, `chmod 600`), but
+the fields that must carry real operational data are still unavailable — see
+§8.1.
 
 | Gate | Status |
 | --- | --- |
@@ -375,6 +374,98 @@ correct behaviour. It must not be recorded as `PASS` on the strength of the
 live read-only verification — that verification proves the schema and privilege
 posture, not that the sync contract works end to end under a real session.
 
+### 8.1 Environment contract audit — 2026-08-03
+
+An operator environment file was prepared at `.env.production.local`. It is
+untracked, `git check-ignore` confirms it is ignored, and its mode is `600`. Its
+contents were never printed; every check below reports a status, never a value.
+
+**The state it was found in.** The file was the 110-line
+`.env.production.example` copied verbatim, with a second block appended. That
+produced 13 duplicate keys, and the appended
+`AISH_MAINTENANCE_WINDOW=<FORMAT_WINDOW_SESUAI_FILE_EXAMPLE>` made `bash -n`
+fail at line 121. An unquoted `<` is a redirection, so sourcing the file aborted
+part-way through — which is why the earlier run appeared to fail on
+`AISH_BACKUP_IDENTIFIER` rather than on the syntax error that actually stopped
+it. A partially-sourced environment is the failure mode this contract exists to
+prevent: it leaves some variables set and others not, with no error at the point
+of use.
+
+**What the appended block contained.** Two fields were checked for provenance
+without disclosing them. The appended `AISH_CHANGE_TICKET` differed from the
+example and satisfied the guard's regex, but its shape was a self-descriptive
+identifier assembled from the task itself, not an identifier issued by a change
+management system. It was removed. A ticket that passes a regex but names no
+real change record defeats the entire purpose of the gate — the guard can only
+check the shape, so the honesty of the value is the operator's contribution, and
+it cannot be manufactured here. The appended `AISH_OPERATOR_ACKNOWLEDGEMENT` was
+a 5-character string of unverified origin; it too was removed rather than
+recorded as an acknowledgement nobody gave.
+
+**What the file was rebuilt to contain.** A single deduplicated block holding
+only values that follow from the authorised rollout facts:
+
+| Variable | Status | Source |
+| --- | --- | --- |
+| `AISH_TARGET_ENV` | SET | fixed — `production` |
+| `APP_ENV` | SET | fixed — `production` |
+| `AISH_PRODUCTION_CONFIRM` | SET | fixed token in `production_guard.ts` |
+| `AISH_PRODUCTION_SECOND_CONFIRM` | SET | restates the project ref |
+| `AISH_PRODUCTION_PROJECT_REF` | SET | authorised project ref |
+| `AISH_PRODUCTION_ALLOWED_HOST` | SET | exact hostname, no scheme |
+| `AISH_PRODUCTION_ALLOWED_BRANCH` | SET | `chore/12c-staging-rollout` |
+| `AISH_BACKUP_IDENTIFIER` | SET | `20260803T133929Z-pre-canary`, §3 |
+| `AISH_RESTORE_REHEARSAL_CONFIRMED` | SET | `true`, justified by §4 |
+| `SUPABASE_URL` | SET | non-secret endpoint |
+| `AISH_CHANGE_TICKET` | **MISSING** | requires a real change record |
+| `AISH_MAINTENANCE_WINDOW` | **MISSING** | requires the real approved window |
+| `AISH_OPERATOR_ACKNOWLEDGEMENT` | **MISSING** | requires a named operator |
+| `SUPABASE_ANON_KEY` | **MISSING** | operator secret store |
+| `SUPABASE_SERVICE_ROLE_KEY` | **MISSING** | operator secret store |
+
+`AISH_PRODUCTION_ALLOWED_HOST` takes a bare hostname, not a URL: the guard
+compares it against `new URL(SUPABASE_URL).hostname` and separately derives the
+project ref from its first label, so a scheme, a wildcard or a list is refused.
+
+The five MISSING variables are absent from the file rather than filled with a
+plausible value. The guard would reject a placeholder anyway, but the reason for
+leaving them out is not that the guard would catch them — it is that a canary
+authorised by an invented ticket, inside an invented window, acknowledged by
+nobody, produces evidence that cannot be audited afterwards.
+
+**Validation after the rebuild.**
+
+| Check | Result |
+| --- | --- |
+| `bash -n .env.production.local` | **PASS** — exit 0, no output |
+| Placeholder scan (`replace-with`, `PLACEHOLDER`, `FORMAT_`, `TODO`, `CHANGEME`, `<`, `>`) | **PASS** — no matches |
+| Duplicate key scan | **PASS** — no duplicates |
+| Mode | **PASS** — `600` |
+| `git check-ignore` | **PASS** — ignored |
+| Tracked by git | **PASS** — not tracked |
+
+The file was never sourced. With five required variables missing, sourcing it
+and invoking the runner would only reproduce a refusal that is already known
+with certainty, while loading a half-complete production contract into a live
+shell.
+
+**Preflight status: BLOCKED, not run.** The approved runner is
+`bash tool/run_supabase_production_preflight.sh`. It was not invoked. The first
+refusal it would emit is `production_env_missing: AISH_CHANGE_TICKET`, from
+`production_require_var` in `tool/production_preflight.sh`, before any
+credential is read. No refusal code is recorded below as observed output,
+because none was observed.
+
+**Backup re-validation, 2026-08-03.** Independently re-checked at the time of
+this audit:
+
+| Check | Result |
+| --- | --- |
+| `20260803T133929Z-pre-canary` directory exists | **PASS** |
+| `roles.sql`, `schema.sql`, `data.sql`, `SHA256SUMS` present | **PASS** |
+| `sha256sum -c SHA256SUMS` | **PASS** — 3/3 OK |
+| No rehearsal artefacts mixed into the canonical set | **PASS** — 4 files, exactly the canonical set |
+
 ## 9. Corrective actions
 
 | # | Action | Status |
@@ -385,7 +476,10 @@ posture, not that the sync contract works end to end under a real session.
 | 4 | Verify live production row counts and privileges | Done — §5 |
 | 5 | Record backup and restore evidence honestly, including the missing pre-deployment restore point | Done — §3 |
 | 6 | Correct §15 of the canary runbook, which claimed no remote command had run | Done |
-| 7 | Run the approved preflight through `tool/run_supabase_production_preflight.sh` | **Pending operator** |
+| 7 | Run the approved preflight through `tool/run_supabase_production_preflight.sh` | **Pending operator** — blocked on §8.1 |
+| 7a | Rebuild `.env.production.local` free of duplicates, placeholders and syntax errors | Done — §8.1 |
+| 7b | Remove the synthesised change ticket and unverified acknowledgement | Done — §8.1 |
+| 7c | Supply a real change ticket, maintenance window, operator acknowledgement and the two Supabase keys | **Pending operator** |
 | 8 | Run the production canary inside a dedicated namespace | **Pending operator** |
 | 9 | Obtain a pre-change backup before any future production operation | **Pending operator** |
 

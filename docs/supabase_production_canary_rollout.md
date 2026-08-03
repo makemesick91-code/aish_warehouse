@@ -188,6 +188,31 @@ What it records — this is the change record the ticket is closed against:
 Exit code 0 is GO. Anything else is NO-GO, and the artifact says which item or
 stop condition caused it.
 
+### 4.1 Validate the environment file before sourcing it
+
+Check the file with `bash -n` first, and only then source it:
+
+```bash
+bash -n /path/to/production.env || exit 1
+( set -a; . /path/to/production.env; set +a
+  bash tool/run_supabase_production_preflight.sh )
+```
+
+An unquoted `<` or `>` in a value — the shape most placeholders take — is a
+redirection, not text. Sourcing such a file aborts part-way through, leaving
+some variables set and others not, and the first refusal you see then names
+whichever variable happened to come after the broken line rather than the real
+fault. This has already cost one debugging cycle; the incident record's §8.1
+has the details.
+
+Three fields cannot be derived from anything in this repository and must not be
+improvised: `AISH_CHANGE_TICKET` must name a real approved change record,
+`AISH_MAINTENANCE_WINDOW` must be the real window and must contain the moment
+the command runs, and `AISH_OPERATOR_ACKNOWLEDGEMENT` must name the accountable
+operator. The guard checks their shape; only the operator can supply their
+truth. `AISH_PRODUCTION_ALLOWED_HOST` takes a bare hostname — no scheme, no
+wildcard, no list.
+
 ## 5. Runbook order
 
 Each step's gate must pass before the next begins. Re-run step 1 between steps.
@@ -598,11 +623,19 @@ applied to production before an approved preflight ran; the full record is in
 | Live row-count verification | PASS — all fifteen relations 0, 2026-08-03 10:42 UTC |
 | Live privilege verification | PASS — `authenticated` may pull, `anon` may not, no private helper reachable |
 | Journal backfill | **SKIPPED** — zero rows to baseline |
-| Approved production preflight run | **BLOCKED** — no credentials, ticket, window or acknowledgement |
+| Pre-canary backup + checksums | PASS — `20260803T133929Z-pre-canary`, re-verified 2026-08-03 |
+| Pre-canary restore rehearsal, isolated local stack | PASS — 2026-08-03 13:45:12 UTC |
+| Operator environment contract | **BLOCKED** — file is valid and placeholder-free, five required variables missing; incident record §8.1 |
+| Approved production preflight run | **BLOCKED — not run** — no ticket, window, acknowledgement or Supabase keys |
+| Live empty-state recheck before canary | **NOT RUN** — requires the guarded read path, which the preflight gates |
 | Production canary E2E | **BLOCKED** |
 | Realtime canary | **BLOCKED** |
 | Low-load benchmark | **NOT RUN** |
 | GO / NO-GO | **HOLD** |
+
+The pre-canary backup is a logical dump (`roles.sql`, `schema.sql`, `data.sql`
+plus `SHA256SUMS`), not a binary or storage-object backup. It restores the
+database; it does not restore Storage objects.
 
 ### The `flutter test` failures are pre-existing and unrelated
 
