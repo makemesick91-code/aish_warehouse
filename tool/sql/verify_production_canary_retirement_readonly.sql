@@ -44,7 +44,6 @@
 --   follow-up; see docs/supabase_12c_production_rollout_incident.md.
 -- =====================================================================
 
-\set ns 'aish-12c-canary-e2e-2026-08-03T15-32-38-154Z-cafc2d3d-5a11a3cc96'
 
 -- ---------------------------------------------------------------------
 -- 1. Per-table retirement state
@@ -268,4 +267,20 @@ select count(*) as active_canary_rows_remaining from (
    where o.branch_id in (select id from canary_branches) and o.deleted_at is null
   union all select 1 from public.purchase_requests p
    where p.branch_id in (select id from canary_branches) and p.deleted_at is null
+
+  union all select 1 from public.purchase_request_lines l
+   where l.pr_id in (
+     select p.id
+     from public.purchase_requests p
+     where p.branch_id in (select id from canary_branches)
+   )
+   and l.deleted_at is null
+
+  union all select 1 from public.purchase_request_opnames k
+   where k.pr_id in (
+     select p.id
+     from public.purchase_requests p
+     where p.branch_id in (select id from canary_branches)
+   )
+   and k.deleted_at is null
 ) still_active;
