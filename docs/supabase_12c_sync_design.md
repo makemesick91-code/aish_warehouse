@@ -300,3 +300,42 @@ Fungsi ini privat, tidak dijadwalkan otomatis pada 12C, dan didokumentasikan di
 `supabase_12c_remote_handoff.md`. Perangkat yang tertinggal di bawah horizon
 pemangkasan menerima `sync_cursor_expired` dan melakukan resync penuh dari 0 —
 aman, karena apply bersifat idempoten.
+
+Angka yang membuat sebuah batas aman — cursor terendah di seluruh perangkat
+aktif — tersimpan di perangkat, bukan di server, sehingga tidak ada query yang
+dapat menghasilkannya. `tool/plan_supabase_12c_journal_retention.ts` melaporkan
+batas usulan berdasarkan safety window yang diputuskan produk dan secara
+eksplisit melaporkan `current_min_active_cursor` sebagai tidak diketahui, alih-
+alih menebaknya. Script itu tidak menghapus dan tidak menjadwalkan apa pun.
+
+## 12. Baseline journal untuk data pra-migrasi
+
+Journal dimulai kosong. Baris yang sudah ada sebelum migrasi 12C tidak punya
+entry, sehingga cursor 0 tidak membawanya — instalasi baru akan hidup tanpa
+katalog. Baseline karena itu harus ditulis sekali sebelum klien 12C dirilis.
+
+Baseline **bukan** sebuah perubahan bisnis. Ia menyisipkan satu entry `upsert`
+(atau `tombstone` bila `deleted_at` sudah terisi) per baris hidup, membawa
+`server_version` dan `server_updated_at` baris itu **apa adanya**, ditambah baris
+`sync_entity_field_versions` untuk tiap field mergeable dengan `field_version`
+sama dengan `server_version` entity. Tidak ada kolom bisnis yang ditulis.
+
+Alternatif yang ditolak — `UPDATE ... SET updated_at = updated_at` agar trigger
+menulis jurnalnya sendiri — menaikkan `server_version` setiap baris, yang
+menggerakkan seluruh `field_version`, yang membuat server memenangkan setiap
+kolom pada merge tiga arah berikutnya (§6). Perangkat dengan edit lokal pending
+kehilangan edit itu tanpa jejak. Baseline karena itu ditulis langsung ke journal,
+bukan lewat trigger.
+
+Granularitasnya sama dengan feed normal: master dan header dokumen dijurnal per
+aggregate (child line ikut lewat parent-nya), sedangkan `stock_movement` dan
+`stock_balance` dijurnal per baris.
+
+Idempotensinya struktural. Primary key `(backfill_revision, entity_type,
+entity_id)` membuat dua operator yang berjalan bersamaan, atau satu operator yang
+menjalankan ulang, tidak mungkin menghasilkan dua baseline untuk satu entity —
+insert kedua kalah balapan dan dihitung sebagai skipped. Entity yang sudah punya
+entry runtime juga dilewati: feed sudah memuatnya, dan mengirim ulang berarti
+mengulang perubahan yang sudah diterapkan perangkat.
+
+Mekanisme, batasan, dan prosedurnya ada di `supabase_12c_staging_rollout.md` §6.

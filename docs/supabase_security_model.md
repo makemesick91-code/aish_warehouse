@@ -149,10 +149,53 @@ generic read lintas scope.
 - Realtime tidak pernah menjadi sumber kebenaran: payload event tidak dibaca,
   tidak menulis ledger, dan tidak mengganti entity. Ia hanya menjadwalkan pull.
 
+# Permukaan operator rollout 12C
+
+Migrasi `20260803000200` menambahkan jalur administratif untuk backfill,
+coverage, verifikasi rollout, dan perencanaan retensi. Jalur itu tidak menambah
+satu pun kemampuan bagi role klien.
+
+- Empat RPC publik baru — `admin_backfill_sync_change_journal`,
+  `admin_sync_backfill_coverage`, `admin_sync_rollout_verification`,
+  `admin_sync_journal_retention_plan` — dicabut dari `public`, `anon`, dan
+  `authenticated`, lalu di-grant **hanya** ke `service_role`. Keempatnya berada
+  di `public` karena PostgREST hanya mengekspos schema itu; jika tidak, satu-
+  satunya cara operator menjangkaunya adalah koneksi PostgreSQL langsung, yang
+  justru dilarang model ini.
+- Setiap wrapper memeriksa ulang `request.jwt.claims ->> 'role'` dan menolak
+  apa pun selain `service_role` dengan `42501 sync_backfill_forbidden`. GRANT
+  tetap kontrol utamanya; pemeriksaan klaim adalah kunci kedua pada pintu yang
+  sama, sehingga migrasi masa depan yang salah memberi grant tetap gagal
+  tertutup. Request tanpa klaim sama sekali adalah koneksi `psql` langsung, yang
+  sudah dibatasi GRANT ke `service_role` dan superuser.
+- Worker-nya (`app_private.backfill_sync_change_journal`,
+  `sync_backfill_coverage`, `sync_rollout_verification`,
+  `sync_journal_retention_plan`) `SECURITY DEFINER` dengan `search_path = ''`
+  dan dicabut dari seluruh role klien.
+- `sync_change_journal_backfill_runs` dan `sync_change_journal_backfill_marks`
+  memaksa RLS, tidak punya satu pun policy, dan seluruh privilege-nya dicabut
+  dari role klien — sebuah sesi `authenticated` mendapat `42501` bahkan sebelum
+  RLS dievaluasi. `journal_backfill.test.sql` membuktikannya.
+- `sync_rollout_verification` sengaja mengembalikan *fakta untuk di-assert*,
+  bukan kemampuan bertanya: grant, flag RLS, bentuk policy, keberadaan trigger,
+  keanggotaan publication, daftar kolom jurnal, dan hitungan. Tidak ada payload
+  bisnis di dalamnya, dan tidak ada parameter yang bisa dipakai memilih baris.
+- Backfill tidak menulis satu kolom bisnis pun. Ia tidak menaikkan
+  `server_version`, tidak menyentuh `updated_at`, tidak membuat movement, dan
+  karena itu tidak dapat mengubah hasil rekonsiliasi field-level milik perangkat
+  mana pun.
+- Prune tetap privat, tetap tidak dijadwalkan, dan planner-nya read-only.
+
 ## Residual risks revisi 003
 
-- Backfill jurnal belum dijalankan; data pra-migrasi tidak muncul di feed sampai
-  barisnya tersentuh. Strategi ada di `supabase_12c_remote_handoff.md`.
+- Backfill jurnal sudah diimplementasikan dan diuji lokal, tetapi belum
+  dijalankan terhadap project remote; sampai itu terjadi, data pra-migrasi tidak
+  muncul di feed sampai barisnya tersentuh. Prosedurnya ada di
+  `supabase_12c_staging_rollout.md` §6.
+- Penolakan backfill konkuren dari dua sesi berbeda tidak dapat dibuktikan di
+  pgTAP (satu transaksi, satu sesi). Yang dibuktikan adalah mekanismenya —
+  advisory lock hadir di `pg_locks` — dan properti yang bertahan tanpa lock
+  sekalipun: primary key marks membuat entry ganda mustahil.
 - Retensi jurnal tersedia tetapi tidak dijadwalkan; jurnal tumbuh monoton.
 - Policy RLS jurnal melakukan satu probe keberadaan per baris — benar, tetapi
   biayanya belum diukur pada volume produksi.

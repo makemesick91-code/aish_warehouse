@@ -3,6 +3,11 @@
 Revisi server `aish-supabase-003`. Belum pernah dijalankan di project remote.
 Seluruh verifikasi pada `supabase_12c_local_e2e.md` berjalan di stack lokal.
 
+> **Rollout staging.** Runbook operasional — backup, urutan deploy, backfill,
+> verifikasi, E2E staging, benchmark, retensi, fix-forward, dan tabel GO/NO-GO —
+> ada di `supabase_12c_staging_rollout.md`. Dokumen ini tetap menjadi inventaris
+> revisi 003 dan catatan risiko; dokumen itu yang dijalankan.
+
 ## 1. Yang ditambahkan revisi 003
 
 Satu migrasi additive, `20260803000100_deterministic_pull_change_feed.sql`:
@@ -47,23 +52,32 @@ yang berubah. `push_sync_operation` tetap apa adanya.
 AFTER. Beban tulis naik dan tabel jurnal tumbuh monoton. Ukur di staging dengan
 volume produksi sebelum melanjutkan.
 
-**Backfill tidak dilakukan.** Jurnal dimulai kosong, jadi data yang sudah ada
-sebelum migrasi tidak muncul di feed sampai baris itu tersentuh. Konsekuensinya
-perangkat baru tidak menerima master data lama lewat pull.
+**Backfill.** Jurnal dimulai kosong, jadi data yang sudah ada sebelum migrasi
+tidak muncul di feed sampai baris itu tersentuh. Konsekuensinya perangkat baru
+tidak menerima master data lama lewat pull.
 
-Ini keputusan yang harus diambil sadar sebelum rollout. Dua opsi:
+Dua opsi pernah dipertimbangkan:
 
-- **Backfill sekali jalan** — insert satu baris jurnal `upsert` per baris hidup
-  di setiap tabel syncable, dengan `server_version` baris itu. Aman karena apply
-  bersifat idempoten, tetapi menghasilkan feed awal sebesar seluruh dataset.
+- **Backfill eksplisit** — insert satu baris jurnal `upsert` per baris hidup di
+  setiap tabel syncable, dengan `server_version` baris itu apa adanya. Aman
+  karena apply bersifat idempoten, tetapi menghasilkan feed awal sebesar seluruh
+  dataset.
 - **Sentuh ulang** — `UPDATE ... SET updated_at = updated_at` per tabel, yang
   membiarkan trigger menulis jurnalnya sendiri. Lebih sederhana tetapi menaikkan
   `server_version` setiap baris dan karena itu menggerakkan seluruh
   `field_version`, sehingga merge berikutnya akan memenangkan server pada setiap
-  kolom. **Jangan pakai opsi ini bila ada perangkat dengan edit lokal pending.**
+  kolom. Perangkat dengan edit lokal pending kehilangan edit itu diam-diam.
 
-Rekomendasi: backfill eksplisit, dijalankan pada jendela maintenance, sebelum
-klien 12C dirilis.
+Opsi kedua **ditolak**. Yang diimplementasikan adalah opsi pertama, lewat
+migrasi `20260803000200_sync_change_journal_backfill_support.sql`: fungsi
+administratif privat yang dijalankan batch demi batch oleh
+`tool/run_supabase_12c_backfill_staging.sh`, idempoten lewat primary key
+`(backfill_revision, entity_type, entity_id)`, resumable dari checkpoint yang
+disimpan server, punya dry-run, dan tidak pernah menulis satu kolom bisnis pun.
+Migrasi itu sendiri tidak menjalankan backfill apa pun saat deploy.
+
+Prosedurnya ada di `supabase_12c_staging_rollout.md` §6; regresinya dijaga
+`supabase/tests/database/journal_backfill.test.sql`.
 
 **Realtime publication.** Migrasi menambahkan `sync_change_journal` ke publikasi
 `supabase_realtime` bila ada. Policy RLS-nya melakukan satu probe keberadaan
@@ -107,18 +121,25 @@ memperlakukan kegagalan pull sebagai retryable dan tetap dapat push.
 ## 6. Yang belum terverifikasi
 
 - Perilaku di bawah volume produksi — semua angka di sini dari stack lokal.
-- Backfill: strateginya didokumentasikan, belum dijalankan.
-- Retensi: fungsinya ada, belum pernah dieksekusi terhadap data nyata.
+- Backfill: mekanismenya sudah diimplementasikan dan diuji lokal (pgTAP), tetapi
+  belum dijalankan terhadap project remote mana pun.
+- Retensi: fungsinya ada, planner-nya ada, belum pernah dieksekusi terhadap data
+  nyata — dan memang tidak boleh sebelum keputusan produk di
+  `supabase_12c_staging_rollout.md` §8.
 - Head-of-line horizon di bawah transaksi panjang produksi.
 - Beban probe keberadaan policy jurnal per baris pada tabel jurnal besar.
 - Multi-device melampaui lima device dan empat actor fixture.
 
 ## 7. Gate sebelum rollout
 
+Tabel GO/NO-GO lengkap ada di `supabase_12c_staging_rollout.md` §10. Ringkasnya:
+
 - Backup dan restore terverifikasi di staging.
-- Strategi backfill dipilih dan dijalankan di staging.
+- Backfill dijalankan di staging dan `missing_baseline_total = 0`.
 - `supabase test db` lulus di staging.
-- Runner 12C dijalankan terhadap staging, bukan hanya lokal.
+- Runner 12B dan 12C staging lulus, bukan hanya lokal.
+- Realtime diuji lewat frame nyata, termasuk isolasi lintas cabang.
 - Beban tulis dan ukuran jurnal diukur dengan traffic realistis.
-- Kebijakan retensi disepakati pemilik produk.
+- Fix-forward (cabut execute pull) sudah dilatih di staging.
+- Kebijakan retensi disepakati pemilik produk — belum ada prune yang dijadwalkan.
 - Rilis klien dijadwalkan setelah migrasi server.
