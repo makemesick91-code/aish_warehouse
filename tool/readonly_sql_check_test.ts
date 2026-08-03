@@ -85,23 +85,24 @@ Deno.test("psql meta-commands are ignored", () => {
 });
 
 Deno.test("the shipped production audit files are read-only", async () => {
-  // The whole point. If either file ever gains a write, this fails in the local
-  // gates rather than in production.
-  for (
-    const file of [
-      "artifacts/production/read-only-retirement-verification-8193560.sql",
-      "artifacts/production/read-only-realtime-audit-8193560.sql",
-    ]
-  ) {
-    let sql: string;
-    try {
-      sql = await Deno.readTextFile(new URL(`../${file}`, import.meta.url));
-    } catch {
-      // `artifacts/` is git-ignored, so a fresh clone will not have these.
-      // Skipping is correct there; failing would make the gate lie about a
-      // file that is genuinely absent.
-      continue;
-    }
+  // These SQL files are tracked release evidence. A missing file is a failed
+  // gate, not a condition that may be skipped.
+  const shippedFiles = [
+    "tool/sql/verify_production_canary_retirement_readonly.sql",
+    "tool/sql/audit_production_realtime_readonly.sql",
+  ];
+
+  for (const file of shippedFiles) {
+    const url = new URL(`../${file}`, import.meta.url);
+    const stat = await Deno.stat(url);
+
+    assertEquals(
+      stat.isFile,
+      true,
+      `${file} is missing or is not a regular file`,
+    );
+
+    const sql = await Deno.readTextFile(url);
     assertEquals(findViolations(sql), [], `${file} is not read-only`);
   }
 });

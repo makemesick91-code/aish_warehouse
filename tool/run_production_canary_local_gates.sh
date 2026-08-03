@@ -36,9 +36,29 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 # local gate run. Unsetting is not a refusal — these gates are meant to be
 # runnable at any time, including outside a maintenance window — it just makes
 # sure nothing here can be pointed at production by accident.
-unset AISH_TARGET_ENV AISH_PRODUCTION_CONFIRM AISH_PRODUCTION_CONFIRM_REF \
-      SUPABASE_URL SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY \
-      SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD AISH_CANARY_PASSWORD 2>/dev/null || true
+unset \
+APP_ENV \
+  AISH_TARGET_ENV \
+  AISH_PRODUCTION_CONFIRM \
+  AISH_PRODUCTION_SECOND_CONFIRM \
+  AISH_PRODUCTION_PROJECT_REF \
+  AISH_PRODUCTION_ALLOWED_HOST \
+  AISH_PRODUCTION_ALLOWED_BRANCH \
+  AISH_PRODUCTION_WRITE_SCOPE \
+  AISH_PRODUCTION_CANARY_NAMESPACE \
+  AISH_PRODUCTION_CANARY_PASSWORD \
+  AISH_CHANGE_TICKET \
+  AISH_MAINTENANCE_WINDOW \
+  AISH_BACKUP_IDENTIFIER \
+  AISH_BACKUP_SHA256 \
+  AISH_RESTORE_REHEARSAL_CONFIRMED \
+  AISH_OPERATOR_ACKNOWLEDGEMENT \
+  SUPABASE_URL \
+  SUPABASE_ANON_KEY \
+  SUPABASE_SERVICE_ROLE_KEY \
+  SUPABASE_ACCESS_TOKEN \
+  SUPABASE_DB_PASSWORD \
+  2>/dev/null || true
 
 failures=0
 gate() {
@@ -67,7 +87,7 @@ gate "canary source safety fences" \
 gate "realtime diagnostics classification" \
   deno test tool/realtime_diagnostics_test.ts
 gate "read-only SQL checker" \
-  deno test --allow-read=artifacts tool/readonly_sql_check_test.ts
+  deno test --allow-read=tool/sql tool/readonly_sql_check_test.ts
 gate "type check (deno check tool/*.ts)" deno check tool/*.ts
 gate "no whitespace or conflict damage in the diff" git diff --check
 
