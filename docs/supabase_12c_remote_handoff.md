@@ -173,3 +173,41 @@ stack lokal terisolasi PASS. Preflight produksi yang disetujui **belum
 dijalankan**: kontrak environment masih kekurangan change ticket, maintenance
 window, operator acknowledgement, dan dua kunci Supabase. Canary **BLOCKED**
 sampai preflight benar-benar PASS.
+
+## 8. Status canary per 2026-08-03 (setelah audit namespace)
+
+Production canary **belum dijalankan** dan tetap **BLOCKED**.
+
+Audit terhadap `tool/production_canary_namespace.ts` — dilakukan sebelum tulisan
+produksi pertama — menemukan celah cleanup pada setup parsial: seluruh remote
+write setup terjadi sebelum instance dikembalikan, sehingga `try`/`finally`
+harness tidak dapat memanggil `retire()` bila setup gagal di tengah. Kasus
+terburuknya adalah Auth user yang sudah dibuat tetapi insert `public.users` atau
+`user_auth_links`-nya gagal: kredensial produksi tersebut tidak tercatat untuk
+diblokir. Rollout ditahan di titik itu.
+
+Perbaikan (kode, test, dan dokumen lokal saja) ada di
+`supabase_production_canary_rollout.md` §17 dan
+`supabase_12c_production_rollout_incident.md` §11. Ringkasnya: setup kini
+fail-closed, Auth identity dicatat segera setelah `createUser`, retirement
+diverifikasi terhadap id yang benar-benar berubah, `user_auth_links` dan child
+row purchase request punya kebijakan eksplisit, dan `retire()` idempotent. Tidak
+ada hard-delete, tidak ada filter selain `.in("id", <id yang dicatat run ini>)`,
+dan tidak ada migration baru.
+
+| Item | Status |
+| --- | --- |
+| Live production empty-state recheck 2026-08-03T14:42:28Z | **PASS** — 15 relasi bernilai 0 |
+| Backfill | **SKIP** |
+| Preflight produksi 28/28 pada commit `14380dc` | **STALE** — kode yang diperiksanya sudah berubah |
+| Production canary | **NOT RUN / BLOCKED** |
+| Realtime canary | **NOT RUN / BLOCKED** |
+| Performance | **NOT RUN** |
+| GO/NO-GO | **HOLD** |
+
+Preflight 28/28 itu berlaku untuk commit `14380dc` saja. Ia memeriksa working
+tree dan tooling, keduanya berubah pada commit ini, jadi preflight **wajib
+diulang dari HEAD baru**. Langkah operator berikutnya: review manusia atas
+perubahan fail-safe ini, lalu preflight ulang. Canary baru menjadi eligible bila
+preflight baru PASS — dan tetap memerlukan backup pre-change tersendiri, karena
+`20260803T133929Z-pre-canary` adalah backup pasca-migrasi.

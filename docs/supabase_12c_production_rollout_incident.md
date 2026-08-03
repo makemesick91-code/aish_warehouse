@@ -497,3 +497,60 @@ this audit:
 4. **An empty database is not a licence to skip verification.** The row counts
    are zero, but that is a *finding* from live production, not an assumption —
    and it is what justifies the backfill SKIP.
+
+## 11. Canary namespace audit, 2026-08-03 — held before the first write
+
+A second audit, run before the canary was allowed to write anything to
+production, found a fail-safe gap in `tool/production_canary_namespace.ts`. The
+canary was **not run**. Full detail is in
+`supabase_production_canary_rollout.md` §17; the incident-relevant summary:
+
+**Finding.** `ProductionCanaryNamespace.create()` performed all fifteen domain
+inserts and four Auth `createUser` calls before returning the instance, so the
+harnesses' `try`/`finally` could not reach `retire()` until setup had already
+fully succeeded. A fault partway through left production rows active with
+nothing tracking them. The worst case was an Auth identity created successfully
+whose `public.users` or `user_auth_links` insert then failed: the actor was only
+appended to `actors` after all three steps, so a live production credential
+would have been invisible to cleanup.
+
+Two further defects: retirement counted `entry.ids.length` as retired whenever
+PostgREST returned no error — proof the statement was accepted, not that any row
+matched — and `user_auth_links` was created but appeared in neither the
+retirement list nor the left-in-place report.
+
+**Why it did not become an incident.** The gap was found by reading the tooling,
+not by running it. No production canary command has been executed. The live
+production empty-state recheck at 2026-08-03T14:42:28Z is a read, and it
+returned 0 for all fifteen relations, which is what keeps the backfill at SKIP.
+
+**Corrective actions.**
+
+| # | Action | Status |
+| --- | --- | --- |
+| 10 | Construct the namespace instance before the first remote write and run setup inside a cleanup-protected `try` | Done |
+| 11 | Record each Auth identity immediately after `createUser`, before the inserts that depend on it | Done |
+| 12 | Drive cleanup from created identities rather than fully configured actors | Done |
+| 13 | Verify retirement against the ids the server actually updated; report `requested`/`matched`/`retired`/`missing` | Done |
+| 14 | Give `user_auth_links` an explicit policy — left in place, never deleted, credential neutralised at the Auth identity | Done |
+| 15 | Track the purchase-request child rows the push payload names | Done |
+| 16 | Make `retire()` idempotent | Done |
+| 17 | Add deterministic failure-injection and static-regression tests | Done — 36 tests |
+| 18 | Re-run the approved production preflight from the new HEAD | **Pending operator** — the `14380dc` PASS is stale |
+| 19 | Human review of the fail-safe change before any canary run | **Pending operator** |
+
+**Lesson 5. A cleanup path that has never been made to run is not a cleanup
+path.** The retirement logic was correct in isolation and unreachable in exactly
+the situation it existed for. What proved it now is not review but deterministic
+failure injection at every setup step — thirteen of them — asserted against the
+calls a fake backend actually received.
+
+**Lesson 6. "No error" is not "it happened".** A write path that reports success
+from the absence of an error reports the one thing the server never told it. The
+retirement update now returns its matched ids and the report says how many of the
+requested rows actually changed.
+
+**Lesson 7. Record a credential the moment it exists.** Ordering the bookkeeping
+after the work is convenient and, for anything that creates a login, wrong. The
+window between "the server has it" and "cleanup knows about it" is now one
+statement wide.
