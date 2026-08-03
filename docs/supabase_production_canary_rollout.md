@@ -8,9 +8,10 @@ dedicated canary namespace, taking low-load measurements, and deciding whether
 the client canary may proceed.
 
 > **Status.** Local validation has been run in full: analyzer clean, pgTAP
-> green, every guard refusal exercised. The Flutter suite has 42 pre-existing,
-> date-dependent failures that also reproduce on `HEAD` without this branch —
-> §15 names them. **No command in this document has been run against any remote
+> green, every guard refusal exercised. The Flutter suite has 40 pre-existing,
+> date-dependent failures — the same 40 the staging commit recorded, and they
+> reproduce on `HEAD` without this branch. §15 names them. **No command in this
+> document has been run against any remote
 > project.** Every remote step is BLOCKED pending production credentials, a
 > recorded backup with a rehearsed restore, and an approved maintenance window.
 > See §15.
@@ -564,7 +565,7 @@ release.
 | Gate | Status |
 | --- | --- |
 | `flutter analyze` | PASS — no issues |
-| `flutter test` (full suite) | 4097 pass, **42 fail** — pre-existing, see below |
+| `flutter test` (full suite) | 4099 pass, **40 fail** — pre-existing, see below |
 | `deno check tool/*.ts` | PASS — all 23 tools, staging and production |
 | `deno test --allow-env tool/production_guard_test.ts` | PASS — 21 refusal cases |
 | `supabase test db` (pgTAP, local stack, after `db reset`) | PASS — 289 tests |
@@ -574,8 +575,7 @@ release.
 
 ### The `flutter test` failures are pre-existing and unrelated
 
-40 of the 42 are in three wall-clock-dependent seed fixtures and all share one
-cause:
+All 40 are in three wall-clock-dependent seed fixtures and share one cause:
 
 ```text
 16  test/db/distribution_seed_test.dart
@@ -590,7 +590,8 @@ The seed builds a stock opname for an ISO week that
 `PurchaseRequestSuggestionBuilder._requireEligible` considers not yet started, so
 the failure depends on the date the suite is run, not on any code in this branch.
 Verified by stashing every change on this branch and running the same file
-against a clean `HEAD` (`cfcfb47`): identical failures, identical message.
+against a clean `HEAD` (`cfcfb47`): identical failures, identical message. The
+count also matches the baseline the staging commit recorded — 4099 pass, 40 fail.
 
 This branch adds no Dart. It touches `tool/*`, `docs/*`, `.gitignore` and two
 example config files only. Fixing the seed's week arithmetic is a domain change
