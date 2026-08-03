@@ -10,11 +10,20 @@ the client canary may proceed.
 > **Status.** Local validation has been run in full: analyzer clean, pgTAP
 > green, every guard refusal exercised. The Flutter suite has 40 pre-existing,
 > date-dependent failures — the same 40 the staging commit recorded, and they
-> reproduce on `HEAD` without this branch. §15 names them. **No command in this
-> document has been run against any remote
-> project.** Every remote step is BLOCKED pending production credentials, a
-> recorded backup with a rehearsed restore, and an approved maintenance window.
-> See §15.
+> reproduce on `HEAD` without this branch. §15 names them.
+>
+> **The migrations have since been applied to the production project, before an
+> approved preflight ever ran.** That is an incident, and it is recorded in
+> `supabase_12c_production_rollout_incident.md` — cause, containment, backup and
+> restore evidence, and live verification. Earlier revisions of this document
+> stated that no command here had been run against a remote project; that
+> statement was true when written and is no longer true. §15 carries the
+> corrected status.
+>
+> The **canary** steps — backfill, E2E, Realtime, benchmark — remain BLOCKED
+> pending production credentials, a change ticket, an approved maintenance
+> window and an operator acknowledgement. Backfill is separately **SKIPPED**:
+> live production holds zero rows in every table it would touch.
 
 ## 1. This is a separate path, not a staging variant
 
@@ -571,7 +580,29 @@ release.
 | `supabase test db` (pgTAP, local stack, after `db reset`) | PASS — 289 tests |
 | `bash -n` on every new shell script | PASS |
 | Guard refusals exercised through the runners | PASS — missing env, staging env present, restore not rehearsed, wrong branch, dirty tree, missing write scope |
-| **Every remote production command** | **BLOCKED — never executed** |
+| `bash tool/production_preflight.sh` refuses direct execution | PASS — exit 64, since `a98fd5d` |
+| `bash tool/production_preflight_shell_test.sh` | PASS |
+
+### Remote status — corrected
+
+An earlier revision of this table recorded "every remote production command
+BLOCKED — never executed". That is no longer accurate. The migrations were
+applied to production before an approved preflight ran; the full record is in
+`supabase_12c_production_rollout_incident.md`.
+
+| Remote step | Status |
+| --- | --- |
+| Migration deploy (11 migrations) | **APPLIED — ungated**, see the incident record |
+| Post-migration backup + checksums | PASS — `20260803T095905Z-post-migration` |
+| Restore rehearsal, isolated local stack | PASS — 2026-08-03 10:34:53 UTC |
+| Live row-count verification | PASS — all fifteen relations 0, 2026-08-03 10:42 UTC |
+| Live privilege verification | PASS — `authenticated` may pull, `anon` may not, no private helper reachable |
+| Journal backfill | **SKIPPED** — zero rows to baseline |
+| Approved production preflight run | **BLOCKED** — no credentials, ticket, window or acknowledgement |
+| Production canary E2E | **BLOCKED** |
+| Realtime canary | **BLOCKED** |
+| Low-load benchmark | **NOT RUN** |
+| GO / NO-GO | **HOLD** |
 
 ### The `flutter test` failures are pre-existing and unrelated
 
@@ -611,8 +642,17 @@ supply:
    `AISH_OPERATOR_ACKNOWLEDGEMENT`.
 
 Until all four exist, every production tool in this branch refuses to start, by
-design. The refusals themselves are tested locally; the tools have not been run
-against any remote project, and no report in this branch claims otherwise.
+design, and the refusals themselves are tested locally.
+
+Two corrections to what that used to imply:
+
+1. The **migration deploy** did reach production, and it reached it outside
+   these tools — through `supabase db push`, with a preflight that silently did
+   nothing. No canary tool in this branch has been run against a remote project.
+2. A backup and a rehearsed restore now exist, so blocker (2) is satisfied. It
+   is satisfied by a **post-migration** backup, which is not a pre-deployment
+   restore point; any future production operation needs its own backup taken
+   beforehand.
 
 ## 16. What a production canary cannot tell you
 

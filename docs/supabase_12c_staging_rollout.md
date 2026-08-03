@@ -8,6 +8,13 @@ It does not cover production. Every script referenced here refuses to run
 against a host that is not on the operator's staging allowlist, and none of them
 has a destructive mode.
 
+> **This runbook was never executed.** No staging project exists. Revision 003
+> went to the production project instead, by the production path, and it went
+> there before an approved preflight ran — see
+> `supabase_12c_production_rollout_incident.md`. Nothing in this document was
+> used, relaxed or pointed at production to make that happen, and the staging
+> tooling is unchanged. Treat every gate below as **NOT RUN**.
+
 > **Production is a separate path.** If no staging project is available, do
 > **not** point these tools at production and do **not** relax the allowlist to
 > make them start. Production has its own guard, its own environment contract,

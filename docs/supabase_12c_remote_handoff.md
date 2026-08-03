@@ -1,6 +1,20 @@
 # Remote deployment handoff — Milestone 12C
 
-Revisi server `aish-supabase-003`. Belum pernah dijalankan di project remote.
+Revisi server `aish-supabase-003`.
+
+> **Status deploy — sudah diterapkan ke produksi.** Kalimat "belum pernah
+> dijalankan di project remote" pada revisi dokumen sebelumnya sudah tidak
+> berlaku. Seluruh 11 migrasi sampai
+> `20260803000200_sync_change_journal_backfill_support.sql` sudah diterapkan ke
+> project produksi, tanpa error, **sebelum approved preflight benar-benar
+> berjalan**. Insiden, penyebab, containment, bukti backup/restore, dan
+> verifikasi live tercatat di `supabase_12c_production_rollout_incident.md`.
+>
+> Tidak ada rollback, tidak ada `migration repair`, tidak ada `db reset` remote.
+> Backfill **SKIP** (seluruh tabel live bernilai 0). Canary, Realtime canary,
+> dan benchmark **BLOCKED** — menunggu credential, change ticket, maintenance
+> window, dan operator acknowledgement. GO/NO-GO = **HOLD**.
+
 Seluruh verifikasi pada `supabase_12c_local_e2e.md` berjalan di stack lokal.
 
 > **Rollout staging.** Runbook operasional — backup, urutan deploy, backfill,
