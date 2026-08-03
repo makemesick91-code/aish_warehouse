@@ -71,6 +71,16 @@ class FrameCollector {
   constructor(private readonly client: SupabaseClient, private readonly label: string) {}
 
   async subscribe(): Promise<void> {
+    // The session has to exist before the channel does. supabase-js hands the
+    // access token to the Realtime socket on the auth state change, so a
+    // channel opened ahead of it is evaluated by Realtime as `anon` — which has
+    // no SELECT on the journal and would silently drop every frame while the
+    // transport looked healthy. Refusing here turns that into a named failure
+    // instead of an empty collector.
+    const session = (await this.client.auth.getSession()).data.session;
+    if (!session?.access_token) {
+      throw new Error(`realtime_session_missing_before_subscribe:${this.label}`);
+    }
     const channel = this.client.channel(`canary-journal-${this.label}`)
       .on(
         "postgres_changes",

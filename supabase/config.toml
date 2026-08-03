@@ -85,7 +85,15 @@ allowed_cidrs_v6 = ["::/0"]
 # enabled = true
 
 [realtime]
-enabled = false
+# Enabled since the 2026-08-03 production canary failed
+# `realtime/a_scope_change_produces_an_invalidation` with the local stack unable
+# to reproduce it: with Realtime off there is no `supabase_realtime` publication
+# locally, so `sync_change_journal`'s Realtime path — publication membership,
+# the RLS check `walrus` performs per subscriber, and frame delivery itself —
+# had never once been exercised outside a remote project. A production-only code
+# path is a production-only failure mode. See
+# docs/supabase_12c_production_rollout_incident.md.
+enabled = true
 # Bind realtime via either IPv4 or IPv6. (default: IPv4)
 # ip_version = "IPv6"
 # The maximum length in bytes of HTTP request headers. (default: 4096)

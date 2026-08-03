@@ -43,6 +43,14 @@ import {
 } from "./production_canary_namespace.ts";
 import { drain, envelope, pull, push } from "./production_sync_envelope.ts";
 import { ProductionInvariants } from "./production_invariants.ts";
+import {
+  classifyRealtimeOutcome,
+  describeOutcome,
+  maskId,
+  outcomeIsPass,
+  type RealtimeOutcome,
+  sanitiseChannelError,
+} from "./realtime_diagnostics.ts";
 
 /// How many pages a canary drain may spend. Production's feed is as long as
 /// production is old; a drain has to be a budget, not a loop that ends when the
@@ -59,6 +67,13 @@ const MOVEMENT_SCAN_ROWS = Number(
 );
 
 const FRAME_TIMEOUT_MS = 20_000;
+
+/// A bounded observation window that opens only after the deadline has already
+/// been missed and the check has already failed. It exists so a report can say
+/// "arrived at 24s" instead of "never arrived", which are different faults with
+/// different fixes. It is not a retry and it cannot turn a failure into a pass:
+/// see `outcomeIsPass`.
+const FRAME_GRACE_MS = 10_000;
 
 const results: Array<{ id: string; group: string; ok: boolean; detail: string }> = [];
 
@@ -97,6 +112,11 @@ async function main(): Promise<number> {
   const startedAt = new Date().toISOString();
   const occurredAt = new Date().toISOString();
   let ledgerScan: Record<string, unknown> = {};
+  /// Populated by section 4. Carries no credential: booleans, millisecond
+  /// offsets, counts, masked ids and a sanitised transport error.
+  let realtimeDiagnostics: Record<string, unknown> = {
+    outcome: "not_reached",
+  };
 
   const ledgerBefore = await invariants.snapshot("e2e_start", null);
   safeLog(
@@ -252,18 +272,44 @@ async function main(): Promise<number> {
     // ---------------------------------------------------------------------
     // 4. Realtime invalidation — one event, no burst
     // ---------------------------------------------------------------------
-    const frames: Array<{ entity_id: string }> = [];
+    // The 2026-08-03 canary recorded this section's failure as a bare `false`
+    // with an empty detail, which is not enough to act on: it cannot tell a
+    // missing journal row from an RLS drop from a late frame. Every hop is now
+    // timed and named separately, and the diagnostics travel in the report. The
+    // verdict is unchanged — a frame naming the room, inside the deadline, or
+    // this check fails.
+    const frames: Array<{ entity_id: string; at_ms: number }> = [];
+    const statuses: Array<{ status: string; at_ms: number }> = [];
+    const realtimeT0 = Date.now();
+    const since = () => Date.now() - realtimeT0;
+    let channelError: string | null = null;
+
+    // The session has to exist before the channel does. supabase-js only hands
+    // the access token to the Realtime socket on the auth state change, so a
+    // channel opened ahead of it is evaluated by Realtime as `anon` — which has
+    // no SELECT on the journal, and would drop every frame with the transport
+    // looking perfectly healthy.
+    const headSession = (await headA.auth.getSession()).data.session;
+    record("realtime", "the_actor_session_precedes_the_subscription",
+      Boolean(headSession?.access_token),
+      headSession?.access_token ? "session present" : "NO SESSION");
+
     const channel = headA.channel(`canary-e2e-${canary.set.token}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "sync_change_journal" },
         (payload) => {
-          frames.push({ entity_id: String((payload.new as Record<string, unknown>).entity_id) });
+          frames.push({
+            entity_id: String((payload.new as Record<string, unknown>).entity_id),
+            at_ms: since(),
+          });
         },
       );
     const subscribed = await new Promise<boolean>((resolve) => {
       const timer = setTimeout(() => resolve(false), FRAME_TIMEOUT_MS);
-      channel.subscribe((status) => {
+      channel.subscribe((status, error) => {
+        statuses.push({ status: String(status), at_ms: since() });
+        if (error) channelError = sanitiseChannelError(error);
         if (status === "SUBSCRIBED") {
           clearTimeout(timer);
           resolve(true);
@@ -273,6 +319,7 @@ async function main(): Promise<number> {
         }
       });
     });
+    const subscribedAtMs = subscribed ? since() : null;
     record("realtime", "subscription_established", subscribed);
 
     const cursorBeforeEvent = bulk.cursor;
@@ -281,18 +328,91 @@ async function main(): Promise<number> {
       updated_at: new Date().toISOString(),
     }).eq("id", canary.set.roomA);
     assertCondition(!renamed.error, `canary_rename_failed:${redact(renamed.error)}`);
+    const mutationAtMs = since();
 
     const sawFrame = await waitFor(
       () => frames.some((frame) => frame.entity_id === canary.set.roomA),
       FRAME_TIMEOUT_MS,
     );
-    record("realtime", "a_scope_change_produces_an_invalidation", sawFrame);
+    const firstFrame = frames.find((frame) => frame.entity_id === canary.set.roomA);
+
+    // Post-timeout diagnosis. Both probes are reads, both are bounded, and
+    // neither can change the verdict that was already decided above.
+    let journalSeq: number | null = null;
+    let actorSelectVisible: boolean | null = null;
+    let lateFrame = false;
+    if (!sawFrame) {
+      // Hop 1 — did the trigger write the row at all? Service role, so RLS is
+      // not in the way of the answer.
+      const journalProbe = await service.from("sync_change_journal")
+        .select("change_seq")
+        .eq("entity_id", canary.set.roomA)
+        .gt("change_seq", cursorBeforeEvent)
+        .order("change_seq", { ascending: false })
+        .limit(1);
+      journalSeq = journalProbe.data?.[0]?.change_seq ?? null;
+
+      // Hop 2 — can the subscriber SELECT that row under RLS? This is the same
+      // predicate Realtime evaluates per subscriber, and nothing else in this
+      // canary exercises it: the pull RPC is SECURITY DEFINER and never touches
+      // the journal policy.
+      if (journalSeq !== null) {
+        const visible = await headA.from("sync_change_journal")
+          .select("change_seq").eq("change_seq", journalSeq);
+        actorSelectVisible = !visible.error && (visible.data?.length ?? 0) > 0;
+      }
+
+      // Hop 3 — a short bounded grace window, so "never arrived" is told apart
+      // from "arrived late". Late is still a failure; this only names it.
+      lateFrame = await waitFor(
+        () => frames.some((frame) => frame.entity_id === canary.set.roomA),
+        FRAME_GRACE_MS,
+      );
+    }
+
+    realtimeDiagnostics = {
+      subscribed,
+      subscribed_at_ms: subscribedAtMs,
+      mutation_at_ms: mutationAtMs,
+      first_frame_at_ms: firstFrame?.at_ms ?? null,
+      delivery_latency_ms: firstFrame ? firstFrame.at_ms - mutationAtMs : null,
+      frame_count: frames.length,
+      frame_entity_ids: frames.map((frame) => maskId(frame.entity_id)),
+      status_transitions: statuses,
+      channel_error: channelError,
+      journal_change_seq_after_mutation: journalSeq,
+      actor_can_select_the_journal_row: actorSelectVisible,
+      late_frame_within_grace: lateFrame,
+      grace_window_ms: FRAME_GRACE_MS,
+      outcome: classifyRealtimeOutcome({
+        subscribed,
+        channelError,
+        journalCreated: sawFrame || journalSeq !== null,
+        actorSelectVisible,
+        frameSeen: sawFrame,
+        lateFrameSeen: lateFrame,
+        otherEntityFrames: frames.filter((f) => f.entity_id !== canary.set.roomA).length,
+      }),
+    };
+    const outcome = realtimeDiagnostics.outcome as RealtimeOutcome;
+
+    // `outcomeIsPass` is the single place that decides, and it only ever says
+    // yes to `delivered`. A late frame, a frame for another entity and a
+    // healthy-looking channel with nothing on it all remain failures.
+    record("realtime", "a_scope_change_produces_an_invalidation",
+      sawFrame && outcomeIsPass(outcome),
+      `${outcome} — ${describeOutcome(outcome)}`);
+
     const afterEvent = await drain(headA, deviceHead, cursorBeforeEvent, 200, MAX_PULL_PAGES);
     record("realtime", "the_pull_triggered_by_the_frame_supplies_the_state",
       afterEvent.changes.some((change) =>
         change.entity_id === canary.set.roomA &&
         String((change.payload ?? {}).name ?? "").endsWith("invalidated")
-      ));
+      ),
+      sawFrame
+        ? "frame-triggered"
+        : "NOT frame-triggered — the drain ran on the harness's own schedule " +
+          "because no frame arrived; this check is about the pull, not about Realtime");
 
     // ---------------------------------------------------------------------
     // 5. Disconnect and catch up
@@ -366,6 +486,7 @@ async function main(): Promise<number> {
     pull_page_budget: MAX_PULL_PAGES,
     movement_scan_rows: MOVEMENT_SCAN_ROWS,
     ledger_scan: ledgerScan,
+    realtime_diagnostics: realtimeDiagnostics,
     ledger_before: {
       movements: ledgerBefore.movements.rows,
       balances: ledgerBefore.balances.total_rows,
