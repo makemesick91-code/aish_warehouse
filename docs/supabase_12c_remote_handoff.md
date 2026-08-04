@@ -1,7 +1,33 @@
 # Remote deployment handoff — Milestone 12C
 
-Revisi server `aish-supabase-003`. Belum pernah dijalankan di project remote.
+Revisi server `aish-supabase-003`.
+
+> **Status deploy — sudah diterapkan ke produksi.** Kalimat "belum pernah
+> dijalankan di project remote" pada revisi dokumen sebelumnya sudah tidak
+> berlaku. Seluruh 11 migrasi sampai
+> `20260803000200_sync_change_journal_backfill_support.sql` sudah diterapkan ke
+> project produksi, tanpa error, **sebelum approved preflight benar-benar
+> berjalan**. Insiden, penyebab, containment, bukti backup/restore, dan
+> verifikasi live tercatat di `supabase_12c_production_rollout_incident.md`.
+>
+> Tidak ada rollback, tidak ada `migration repair`, tidak ada `db reset` remote.
+> Backfill **SKIP** (seluruh tabel live bernilai 0). Canary, Realtime canary,
+> dan benchmark **BLOCKED** — menunggu credential, change ticket, maintenance
+> window, dan operator acknowledgement. GO/NO-GO = **HOLD**.
+
 Seluruh verifikasi pada `supabase_12c_local_e2e.md` berjalan di stack lokal.
+
+> **Rollout staging.** Runbook operasional — backup, urutan deploy, backfill,
+> verifikasi, E2E staging, benchmark, retensi, fix-forward, dan tabel GO/NO-GO —
+> ada di `supabase_12c_staging_rollout.md`. Dokumen ini tetap menjadi inventaris
+> revisi 003 dan catatan risiko; dokumen itu yang dijalankan.
+>
+> **Production canary.** Bila project remote yang tersedia adalah produksi dan
+> bukan staging, jalurnya terpisah: `supabase_production_canary_rollout.md`.
+> Jalur itu punya guard sendiri (`tool/production_guard.ts`), konfirmasi ganda,
+> blocker backup + restore rehearsal, jendela maintenance, dan seluruh tool-nya
+> read-only atau dry-run secara default. Staging tooling tidak diubah dan tidak
+> dilemahkan untuk itu.
 
 ## 1. Yang ditambahkan revisi 003
 
@@ -47,23 +73,32 @@ yang berubah. `push_sync_operation` tetap apa adanya.
 AFTER. Beban tulis naik dan tabel jurnal tumbuh monoton. Ukur di staging dengan
 volume produksi sebelum melanjutkan.
 
-**Backfill tidak dilakukan.** Jurnal dimulai kosong, jadi data yang sudah ada
-sebelum migrasi tidak muncul di feed sampai baris itu tersentuh. Konsekuensinya
-perangkat baru tidak menerima master data lama lewat pull.
+**Backfill.** Jurnal dimulai kosong, jadi data yang sudah ada sebelum migrasi
+tidak muncul di feed sampai baris itu tersentuh. Konsekuensinya perangkat baru
+tidak menerima master data lama lewat pull.
 
-Ini keputusan yang harus diambil sadar sebelum rollout. Dua opsi:
+Dua opsi pernah dipertimbangkan:
 
-- **Backfill sekali jalan** — insert satu baris jurnal `upsert` per baris hidup
-  di setiap tabel syncable, dengan `server_version` baris itu. Aman karena apply
-  bersifat idempoten, tetapi menghasilkan feed awal sebesar seluruh dataset.
+- **Backfill eksplisit** — insert satu baris jurnal `upsert` per baris hidup di
+  setiap tabel syncable, dengan `server_version` baris itu apa adanya. Aman
+  karena apply bersifat idempoten, tetapi menghasilkan feed awal sebesar seluruh
+  dataset.
 - **Sentuh ulang** — `UPDATE ... SET updated_at = updated_at` per tabel, yang
   membiarkan trigger menulis jurnalnya sendiri. Lebih sederhana tetapi menaikkan
   `server_version` setiap baris dan karena itu menggerakkan seluruh
   `field_version`, sehingga merge berikutnya akan memenangkan server pada setiap
-  kolom. **Jangan pakai opsi ini bila ada perangkat dengan edit lokal pending.**
+  kolom. Perangkat dengan edit lokal pending kehilangan edit itu diam-diam.
 
-Rekomendasi: backfill eksplisit, dijalankan pada jendela maintenance, sebelum
-klien 12C dirilis.
+Opsi kedua **ditolak**. Yang diimplementasikan adalah opsi pertama, lewat
+migrasi `20260803000200_sync_change_journal_backfill_support.sql`: fungsi
+administratif privat yang dijalankan batch demi batch oleh
+`tool/run_supabase_12c_backfill_staging.sh`, idempoten lewat primary key
+`(backfill_revision, entity_type, entity_id)`, resumable dari checkpoint yang
+disimpan server, punya dry-run, dan tidak pernah menulis satu kolom bisnis pun.
+Migrasi itu sendiri tidak menjalankan backfill apa pun saat deploy.
+
+Prosedurnya ada di `supabase_12c_staging_rollout.md` §6; regresinya dijaga
+`supabase/tests/database/journal_backfill.test.sql`.
 
 **Realtime publication.** Migrasi menambahkan `sync_change_journal` ke publikasi
 `supabase_realtime` bila ada. Policy RLS-nya melakukan satu probe keberadaan
@@ -107,18 +142,164 @@ memperlakukan kegagalan pull sebagai retryable dan tetap dapat push.
 ## 6. Yang belum terverifikasi
 
 - Perilaku di bawah volume produksi — semua angka di sini dari stack lokal.
-- Backfill: strateginya didokumentasikan, belum dijalankan.
-- Retensi: fungsinya ada, belum pernah dieksekusi terhadap data nyata.
+- Backfill: mekanismenya sudah diimplementasikan dan diuji lokal (pgTAP), tetapi
+  belum dijalankan terhadap project remote mana pun.
+- Retensi: fungsinya ada, planner-nya ada, belum pernah dieksekusi terhadap data
+  nyata — dan memang tidak boleh sebelum keputusan produk di
+  `supabase_12c_staging_rollout.md` §8.
 - Head-of-line horizon di bawah transaksi panjang produksi.
 - Beban probe keberadaan policy jurnal per baris pada tabel jurnal besar.
 - Multi-device melampaui lima device dan empat actor fixture.
 
 ## 7. Gate sebelum rollout
 
+Tabel GO/NO-GO lengkap ada di `supabase_12c_staging_rollout.md` §10. Ringkasnya:
+
 - Backup dan restore terverifikasi di staging.
-- Strategi backfill dipilih dan dijalankan di staging.
+- Backfill dijalankan di staging dan `missing_baseline_total = 0`.
 - `supabase test db` lulus di staging.
-- Runner 12C dijalankan terhadap staging, bukan hanya lokal.
+- Runner 12B dan 12C staging lulus, bukan hanya lokal.
+- Realtime diuji lewat frame nyata, termasuk isolasi lintas cabang.
 - Beban tulis dan ukuran jurnal diukur dengan traffic realistis.
-- Kebijakan retensi disepakati pemilik produk.
+- Fix-forward (cabut execute pull) sudah dilatih di staging.
+- Kebijakan retensi disepakati pemilik produk — belum ada prune yang dijadwalkan.
 - Rilis klien dijadwalkan setelah migrasi server.
+
+Status produksi per 2026-08-03: migrasi sudah diterapkan ke produksi sebelum
+preflight yang disetujui sempat berjalan — catatan lengkapnya di
+`supabase_12c_production_rollout_incident.md`. Backup pre-canary
+`20260803T133929Z-pre-canary` PASS beserta checksum, dan restore rehearsal pada
+stack lokal terisolasi PASS. Preflight produksi yang disetujui **belum
+dijalankan**: kontrak environment masih kekurangan change ticket, maintenance
+window, operator acknowledgement, dan dua kunci Supabase. Canary **BLOCKED**
+sampai preflight benar-benar PASS.
+
+## 8. Status canary per 2026-08-03 (setelah audit namespace)
+
+Production canary **belum dijalankan** dan tetap **BLOCKED**.
+
+Audit terhadap `tool/production_canary_namespace.ts` — dilakukan sebelum tulisan
+produksi pertama — menemukan celah cleanup pada setup parsial: seluruh remote
+write setup terjadi sebelum instance dikembalikan, sehingga `try`/`finally`
+harness tidak dapat memanggil `retire()` bila setup gagal di tengah. Kasus
+terburuknya adalah Auth user yang sudah dibuat tetapi insert `public.users` atau
+`user_auth_links`-nya gagal: kredensial produksi tersebut tidak tercatat untuk
+diblokir. Rollout ditahan di titik itu.
+
+Perbaikan (kode, test, dan dokumen lokal saja) ada di
+`supabase_production_canary_rollout.md` §17 dan
+`supabase_12c_production_rollout_incident.md` §11. Ringkasnya: setup kini
+fail-closed, Auth identity dicatat segera setelah `createUser`, retirement
+diverifikasi terhadap id yang benar-benar berubah, `user_auth_links` dan child
+row purchase request punya kebijakan eksplisit, dan `retire()` idempotent. Tidak
+ada hard-delete, tidak ada filter selain `.in("id", <id yang dicatat run ini>)`,
+dan tidak ada migration baru.
+
+| Item | Status |
+| --- | --- |
+| Live production empty-state recheck 2026-08-03T14:42:28Z | **PASS** — 15 relasi bernilai 0 |
+| Backfill | **SKIP** |
+| Preflight produksi 28/28 pada commit `14380dc` | **STALE** — kode yang diperiksanya sudah berubah |
+| Production canary | **NOT RUN / BLOCKED** |
+| Realtime canary | **NOT RUN / BLOCKED** |
+| Performance | **NOT RUN** |
+| GO/NO-GO | **HOLD** |
+
+Preflight 28/28 itu berlaku untuk commit `14380dc` saja. Ia memeriksa working
+tree dan tooling, keduanya berubah pada commit ini, jadi preflight **wajib
+diulang dari HEAD baru**. Langkah operator berikutnya: review manusia atas
+perubahan fail-safe ini, lalu preflight ulang. Canary baru menjadi eligible bila
+preflight baru PASS — dan tetap memerlukan backup pre-change tersendiri, karena
+`20260803T133929Z-pre-canary` adalah backup pasca-migrasi.
+
+---
+
+## Production canary sudah dijalankan, 2026-08-03 — FAIL 32/33
+
+Status di atas sudah tidak berlaku: canary tidak lagi `NOT RUN`. Ia dijalankan
+terhadap produksi pada commit `8193560` dan **gagal**. Catatan lengkap ada di
+`docs/supabase_12c_production_rollout_incident.md` §12.
+
+| Item | Status |
+| --- | --- |
+| Backup `20260803T152802Z-pre-canary-8193560`, 15:28:02Z | **PASS** — checksum terverifikasi |
+| Preflight produksi, 15:31:19Z, commit `8193560` | **PASS — 28/28**, 0 stop condition |
+| Production E2E canary, 15:32:41Z → 15:33:12Z | **FAIL — 32/33** |
+| Check yang gagal | `realtime/a_scope_change_produces_an_invalidation` |
+| Retirement namespace canary | **PASS** — 19/19, 0 hilang |
+| Auth identity canary | **PASS** — 4/4 dinonaktifkan (di-ban, bukan dihapus) |
+| Ledger | **PASS** — 0 movement diposting, 0 duplikat, 0 saldo negatif |
+| Standalone Realtime canary | **NOT RUN** |
+| Benchmark produksi | **NOT RUN** |
+| Backfill | **SKIPPED** |
+| Verifikasi retirement read-only di produksi | **PENDING** |
+| Audit Realtime read-only di produksi | **PENDING** |
+| Preflight `8193560` | **STALE** — commit baru sudah mendarat |
+| **GO/NO-GO** | **HOLD** |
+| **Production retry** | **BLOCKED** |
+
+Yang lulus: push 12B dan pengenalan replay, penomoran dokumen server, pull 12C
+deterministik, cursor monotonic, drain dari cursor 0, halaman ganjil tanpa
+duplikasi atau lompatan, cursor di kepala dan di luar server, isolasi cabang,
+isolasi device, klien tidak dapat menulis jurnal, subscription Realtime
+`SUBSCRIBED`, pull setelah update memberi state terbaru, catch-up setelah
+disconnect, dan seluruh invariant ledger.
+
+### Dua deviasi proses — ditemukan **setelah** canary
+
+1. **Static safety test tidak pernah berjalan.** Dipanggil sebagai
+   `deno test tool/production_canary_safety_test.ts` tanpa `--allow-read`. Deno
+   menolak akses file source, hasilnya **0/11**. Ini bukan kegagalan assertion —
+   gate-nya memang tidak dieksekusi, dan production write tetap berjalan di
+   belakangnya. Setelah dijalankan dengan permission yang benar: **11/11 PASS**,
+   kini 20/20 setelah hardening.
+2. **Tidak ada bukti restore rehearsal untuk backup ini.**
+   `.env.production.local` menyatakan `AISH_RESTORE_REHEARSAL_CONFIRMED=true`,
+   tetapi pada saat canary berjalan tidak ada bukti rehearsal terhadap
+   `20260803T152802Z-pre-canary-8193560`. Rehearsal baru dilakukan setelahnya dan
+   **PASS** — dicatat sebagai POST-CANARY VALIDATION, bukan gate yang selesai
+   sebelum write.
+
+Keduanya tidak boleh dinyatakan sebagai gate yang sudah selesai sebelum write.
+
+### Akar masalah Realtime
+
+Publication bukan penyebabnya: preflight mencatat `in_realtime_publication =
+true`, dan dump pre-canary sendiri memuat
+`ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."sync_change_journal"`.
+RLS juga bukan: pada reproduksi lokal, actor yang berlangganan **dapat**
+membaca baris jurnal itu. Trigger juga bukan: baris jurnalnya ada, dan pull
+mengembalikannya.
+
+Reproduksi lokal — Realtime kini diaktifkan di `config.toml`, sebelumnya
+`enabled = false` sehingga jalur ini tidak pernah diuji di luar project remote —
+menunjukkan satu pola yang konsisten: **subscription pertama setelah service
+Realtime start tidak menerima frame sama sekali**, sedangkan iterasi berikutnya
+terkirim dalam 67–349 ms. Frame-nya tidak terlambat, melainkan hilang. Karena
+itu menaikkan timeout tidak akan memperbaiki apa pun, dan timeout 20 detik tetap
+tidak diubah.
+
+Produksi belum pernah punya subscriber Realtime sebelum canary ini (preflight:
+0 baris jurnal, 0 device terdaftar). Itu menjadikan cold start sebagai hipotesis
+utama — **hipotesis, bukan fakta produksi**. Yang menentukan adalah
+`artifacts/production/read-only-realtime-audit-8193560.sql`, dan statusnya masih
+**PENDING** sampai operator menjalankannya.
+
+### Langkah operator berikutnya
+
+1. Baca `docs/supabase_12c_production_rollout_incident.md` §12.
+2. Jalankan kedua file SQL read-only di Supabase SQL Editor dan lampirkan
+   hasilnya. Keduanya murni `SELECT`, dibuktikan `tool/readonly_sql_check.ts`.
+3. Putuskan secara eksplisit apakah canary boleh melakukan warm-up Realtime
+   sebelum mutasi. Sengaja **tidak** diimplementasikan: itu akan menutupi
+   properti produksi yang nyata di balik perilaku harness.
+4. Backup baru, lalu restore rehearsal terhadap backup itu, dengan file bukti.
+5. Preflight ulang dari HEAD baru — preflight `8193560` sudah **STALE**.
+6. Persetujuan manusia. Sampai itu ada, retry **BLOCKED** dan PR #1 tidak boleh
+   di-merge.
+
+Gate lokal kini satu perintah, agar tidak bisa salah ketik lagi:
+
+```bash
+bash tool/run_production_canary_local_gates.sh
+```

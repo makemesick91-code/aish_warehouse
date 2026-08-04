@@ -1,0 +1,7 @@
+{
+  "_comment": "Flutter dart-define contract for the staging build. Copy to config/supabase.staging.json (gitignored) and replace the placeholders. Only the publishable/anon key belongs in a client build; the service-role key never does.",
+  "APP_ENV": "staging",
+  "SUPABASE_ENABLED": true,
+  "SUPABASE_URL": "https://example-staging.supabase.co",
+  "SUPABASE_PUBLISHABLE_KEY": "<STAGING_PUBLISHABLE_KEY>"
+}

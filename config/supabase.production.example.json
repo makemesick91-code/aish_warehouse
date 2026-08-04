@@ -1,0 +1,7 @@
+{
+  "_comment": "Flutter dart-define contract for the production build. Copy to config/supabase.production.json (gitignored) and replace the placeholders. Only the publishable/anon key belongs in a client build; the service-role key never does, and no operator variable from .env.production.example belongs here either.",
+  "APP_ENV": "production",
+  "SUPABASE_ENABLED": true,
+  "SUPABASE_URL": "https://replace-with-production-project-ref.supabase.co",
+  "SUPABASE_PUBLISHABLE_KEY": "<PRODUCTION_PUBLISHABLE_KEY>"
+}

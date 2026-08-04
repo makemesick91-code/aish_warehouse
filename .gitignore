@@ -34,13 +34,22 @@ migrate_working_dir/
 /coverage/
 node_modules/
 
-# Environment and Supabase local state. The example contract remains tracked.
+# Environment and Supabase local state. The example contracts remain tracked;
+# they carry variable names and placeholders only, never a value.
 .env
 .env.*
 !.env.example
+!.env.staging.example
+!.env.production.example
 config/supabase.dev.json
 config/supabase.staging.json
 config/supabase.production.json
+
+# Rollout artifacts, staging and production alike. Verification, backfill and
+# benchmark reports name the target project, the change ticket, the operator and
+# the fixture or canary actors that ran against it, so they stay local and are
+# attached to the rollout ticket by hand rather than committed.
+artifacts/
 supabase/.env
 supabase/functions/.env
 supabase/.temp/
