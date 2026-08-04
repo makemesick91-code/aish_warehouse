@@ -943,7 +943,8 @@ sequence hop by hop against the local stack only:
 set -a; eval "$(npx supabase status -o env)"; set +a
 export SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY" \
        SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
-deno run --node-modules-dir=auto --allow-env --allow-net \
+deno run --node-modules-dir=auto --allow-env \
+  --allow-net=127.0.0.1,localhost \
   tool/realtime_journal_local_repro.ts
 ```
 
@@ -951,9 +952,16 @@ It refuses any host that is not loopback and refuses to run with a production
 contract in the environment. Iterations are clamped at 25: it is a diagnostic,
 not a load generator.
 
-Locally, delivery takes 67–349 ms. The single reproducible failure is the
-**first subscription after the Realtime service starts**, where no frame arrives
-at all — not late, never. Warm runs deliver 100%.
+Earlier single-phase warm controls delivered in 67–349 ms. With the
+explicit two-phase readiness contract, the first local subscription failed
+readiness: the journal row existed, the actor could `SELECT` it, pull supplied
+the state, and no Realtime frame arrived within 20 seconds plus the 10-second
+diagnostic grace.
+
+The next two warm controls delivered readiness in 64 ms and 266 ms, followed by
+distinct business frames in 494 ms and 514 ms. This supports the local
+cold-start hypothesis only; it does not confirm the historical production root
+cause.
 
 ### 18.5 Before any production retry
 
@@ -962,10 +970,11 @@ at all — not late, never. Warm runs deliver 100%.
    `artifacts/production/read-only-retirement-verification-8193560.sql` in the
    Supabase SQL Editor and attach both outputs. Both are `SELECT`-only, proven
    by `tool/readonly_sql_check.ts`.
-3. Decide explicitly, and record the decision, whether the canary should warm the
-   Realtime subscription before mutating. It is deliberately not implemented:
-   it would probably make the check pass, and it would do so by hiding a real
-   production property behind harness behaviour.
+3. Review and approve the explicit post-`SUBSCRIBED` readiness contract.
+   One bounded canary-room mutation must produce a matching frame before the
+   business mutation may begin. A readiness failure stops the canary. This is
+   not a hidden retry, does not warm before subscribing, and does not replace
+   the positive frame assertion for the business mutation.
 4. Take a fresh backup and rehearse restoring **that** backup, with an evidence
    file.
 5. Re-run the production preflight from the new HEAD. The `8193560` preflight is

@@ -222,9 +222,12 @@ const REPRO = "tool/realtime_journal_local_repro.ts";
 Deno.test("the Realtime verdict is still a positive assertion", async () => {
   const body = code(await source(HARNESSES[0]));
   const check = "a_scope_change_produces_an_invalidation";
-  const index = body.indexOf(`record("realtime", "${check}"`);
-  assert(index > 0, "the Realtime invalidation check is gone");
-  const call = body.slice(index, index + 260);
+  const checkIndex = body.indexOf(`"${check}"`);
+  assert(checkIndex >= 0, "the Realtime invalidation check is gone");
+  const recordIndex = body.lastIndexOf("record(", checkIndex);
+  assert(recordIndex >= 0,
+    "the Realtime invalidation check is not inside a record call");
+  const call = body.slice(recordIndex, recordIndex + 420);
   // The verdict must still be gated on a frame that actually arrived in time.
   assert(
     call.includes("sawFrame") && call.includes("outcomeIsPass"),
@@ -237,6 +240,189 @@ Deno.test("the Realtime verdict is still a positive assertion", async () => {
       `the Realtime verdict has been softened with ${softener}`,
     );
   }
+});
+
+Deno.test("readiness is bounded and precedes the business mutation", async () => {
+  for (const path of HARNESSES) {
+    const body = code(await source(path));
+    const match = body.match(
+      /REALTIME_READINESS_TIMEOUT_MS\s*=\s*([0-9_]+)/,
+    );
+    assert(match, `${path} has no readiness timeout`);
+    assertEquals(
+      Number(match[1].replaceAll("_", "")),
+      20_000,
+      `${path} changed the readiness timeout`,
+    );
+
+    const readinessWrite = body.indexOf("readiness-1");
+    const readinessGate = body.indexOf(
+      "if (!readinessPassed || !readinessFrame)",
+    );
+    const businessWrite = body.indexOf("const renamed =", readinessGate);
+    assert(readinessWrite > 0, `${path} has no readiness mutation`);
+    assert(readinessGate > readinessWrite,
+      `${path} does not fail closed on readiness`);
+    assert(businessWrite > readinessGate,
+      `${path} mutates business state before readiness succeeds`);
+  }
+});
+
+Deno.test("readiness frames cannot satisfy business delivery", async () => {
+  const e2e = code(await source(HARNESSES[0]));
+  assert(e2e.includes(
+    "const cursorBeforeEvent = readinessFrame.change_seq",
+  ));
+  assert(e2e.includes("frame.change_seq > cursorBeforeEvent"));
+
+  const standalone = code(await source(HARNESSES[1]));
+  assert(standalone.includes(
+    "const readinessChangeSeq = readinessFrame.change_seq",
+  ));
+  assert(standalone.includes(
+    "frame.change_seq > readinessChangeSeq",
+  ));
+});
+
+Deno.test("the readiness probe stays inside the standalone write ceiling", async () => {
+  const body = code(await source(HARNESSES[1]));
+  const writes = [...body.matchAll(/await renameCanaryRoom\(/g)].length;
+  assertEquals(writes, 6);
+  assert(body.includes("const MAX_CANARY_WRITES = 6;"));
+});
+
+Deno.test("readiness and business verdicts reject stale frames and channel errors", async () => {
+  const e2e = code(await source(HARNESSES[0]));
+  assert(
+    e2e.includes("outcomeIsPass(readinessOutcome)"),
+    "the E2E readiness gate ignores its classified outcome",
+  );
+  assert(
+    e2e.includes("if (!readinessPassed || !readinessFrame)"),
+    "the E2E readiness gate does not fail closed",
+  );
+  assert(
+    e2e.includes(
+      'outcome: readinessPassed\n        ? "readiness_confirmed"\n' +
+        "        : readinessOutcome",
+    ),
+    "the E2E readiness report can disagree with its verdict",
+  );
+
+  const standalone = code(await source(HARNESSES[1]));
+  const waitStart = standalone.indexOf("const readinessSeen =");
+  const frameStart = standalone.indexOf(
+    "const readinessFrame =",
+    waitStart,
+  );
+  assert(waitStart > 0 && frameStart > waitStart,
+    "the standalone readiness observation is missing");
+
+  const waitSection = standalone.slice(waitStart, frameStart);
+  assert(
+    waitSection.includes("frame.change_seq > readinessCursor"),
+    "the standalone readiness wait can accept a stale frame",
+  );
+  assert(
+    standalone.includes("outcomeIsPass(readinessOutcome)"),
+    "the standalone readiness gate ignores its classified outcome",
+  );
+  assert(
+    standalone.includes("collectorA.channelError === null"),
+    "the standalone business verdict can pass after a channel error",
+  );
+});
+
+Deno.test("readiness failures retain journal RLS and late-frame diagnostics", async () => {
+  for (const path of HARNESSES) {
+    const body = code(await source(path));
+    const readinessStart = body.indexOf(
+      "let readinessJournalSeq: number | null = null",
+    );
+    const readinessGate = body.indexOf(
+      "if (!readinessPassed || !readinessFrame)",
+      readinessStart,
+    );
+    assert(readinessStart > 0,
+      `${path} has no readiness diagnostic probes`);
+    assert(readinessGate > readinessStart,
+      `${path} aborts before recording readiness diagnostics`);
+
+    const section = body.slice(readinessStart, readinessGate);
+    for (const required of [
+      "journal_change_seq_after_readiness",
+      "actor_can_select_readiness_row",
+      "late_readiness_frame_within_grace",
+      "classifyRealtimeOutcome",
+      "FRAME_GRACE_MS",
+    ]) {
+      assert(section.includes(required),
+        `${path} readiness diagnostics omit ${required}`);
+    }
+  }
+});
+
+Deno.test("readiness mutation failures close the active channel before aborting", async () => {
+  const e2e = code(await source(HARNESSES[0]));
+  const e2eFailure = e2e.indexOf("canary_readiness_rename_failed");
+  assert(e2eFailure > 0, "the E2E readiness mutation failure is missing");
+  assert(
+    e2e.slice(Math.max(0, e2eFailure - 320), e2eFailure).includes(
+      "await headA.removeChannel(channel)",
+    ),
+    "the E2E readiness mutation failure leaves its channel open",
+  );
+
+  const standalone = code(await source(HARNESSES[1]));
+  const standaloneFailure = standalone.indexOf(
+    "canary_readiness_rename_failed",
+  );
+  assert(standaloneFailure > 0,
+    "the standalone readiness mutation failure is missing");
+  assert(
+    standalone.slice(
+      Math.max(0, standaloneFailure - 280),
+      standaloneFailure,
+    ).includes("await collectorA.unsubscribe()"),
+    "the standalone readiness mutation failure leaves its channel open",
+  );
+});
+
+Deno.test("readiness failures close the active channel before aborting", async () => {
+  const e2e = code(await source(HARNESSES[0]));
+
+  const subscriptionGate = e2e.indexOf("if (!subscribed)");
+  const readinessGate = e2e.indexOf(
+    "if (!readinessPassed || !readinessFrame)",
+  );
+  assert(subscriptionGate > 0, "the E2E subscription gate is missing");
+  assert(readinessGate > subscriptionGate, "the E2E readiness gate is missing");
+
+  assert(
+    e2e.slice(subscriptionGate, readinessGate).includes(
+      "await headA.removeChannel(channel)",
+    ),
+    "the E2E subscription failure leaves its channel open",
+  );
+
+  assert(
+    e2e.slice(readinessGate, readinessGate + 320).includes(
+      "await headA.removeChannel(channel)",
+    ),
+    "the E2E readiness failure leaves its channel open",
+  );
+
+  const standalone = code(await source(HARNESSES[1]));
+  const standaloneGate = standalone.indexOf(
+    "if (!readinessPassed || !readinessFrame)",
+  );
+  assert(standaloneGate > 0, "the standalone readiness gate is missing");
+  assert(
+    standalone.slice(standaloneGate, standaloneGate + 260).includes(
+      "await collectorA.unsubscribe()",
+    ),
+    "the standalone readiness failure leaves its channel open",
+  );
 });
 
 Deno.test("the grace window is bounded and cannot rescue a failure", async () => {
@@ -305,6 +491,26 @@ Deno.test("both harnesses confirm a session before opening a channel", async () 
       `${path} opens a channel without confirming the actor session first`,
     );
   }
+});
+
+Deno.test("the local reproduction fails closed between readiness and business", async () => {
+  const body = code(await source(REPRO));
+  const readiness = body.indexOf('"readiness"');
+  const readinessGate = body.indexOf(
+    'it.readiness.outcome !== "delivered"',
+  );
+  const business = body.indexOf('"business"', readinessGate);
+
+  assert(readiness > 0, "the local repro has no readiness phase");
+  assert(readinessGate > readiness,
+    "the local repro does not stop after readiness failure");
+  assert(business > readinessGate,
+    "the local repro starts business before readiness succeeds");
+  assert(body.includes('it.outcome = "readiness_failed"'));
+  assert(body.includes('it.outcome = it.business.outcome === "delivered"'));
+  assert(body.includes("it.readiness.frame_change_seq"));
+  assert(body.includes("frames.length = 0"));
+  assert(body.includes("channelError: getChannelError()"));
 });
 
 Deno.test("the local reproduction can never point at a managed project", async () => {

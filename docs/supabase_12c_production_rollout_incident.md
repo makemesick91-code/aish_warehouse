@@ -865,15 +865,20 @@ looked healthy.
 evidence says the frame never arrives, so a longer wait buys nothing. The check
 is still a positive assertion: a late frame, a frame for another entity and a
 silent healthy channel all remain failures. No retry was added, no assertion was
-made optional, no check was removed, and no isolation assertion was touched. The
-one added observation window is bounded at 10 seconds, opens only after the
-verdict is already decided, and exists solely so a report can say "arrived at
-24 s" instead of "never arrived".
+made optional, no check was removed, and no isolation assertion was touched. Each
+post-deadline diagnostic grace window is bounded at 10 seconds, opens only
+after its phase verdict is already decided, and exists solely so a report can
+say "arrived at 24 s" instead of "never arrived".
 
 A **cold-start warm-up before subscribing** would very likely make the canary
-pass. It is deliberately **not** implemented: it would mask a real production
-Realtime property behind harness behaviour, and that is an operator's decision
-to take knowingly, not one to slip in during containment.
+pass. It remains deliberately **not** implemented: it would mask a real
+production Realtime property behind harness behaviour.
+
+The later readiness implementation is different. It subscribes normally, then
+performs one explicit, bounded canary-room readiness mutation. The business
+mutation is attempted only after a matching readiness frame arrives, and it
+still requires its own later `change_seq`. Readiness failure is fail-closed and
+is reported separately from business delivery failure.
 
 ### 12.9 Status after this section
 

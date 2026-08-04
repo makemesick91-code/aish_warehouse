@@ -41,6 +41,7 @@ const ITERATIONS = Math.min(
   25,
 );
 const SUBSCRIBE_TIMEOUT_MS = 20_000;
+const REALTIME_READINESS_TIMEOUT_MS = 20_000;
 const FRAME_TIMEOUT_MS = 20_000;
 /// After the timeout expires the harness keeps listening for a short, bounded
 /// window purely to tell "never arrived" apart from "arrived late". The verdict
@@ -51,23 +52,45 @@ const SEED_ACTOR = "branchhead.local@example.test";
 const SEED_PASSWORD = "LocalOnly!12345";
 const SEED_ROOM = "21000000-0000-0000-0000-000000000001";
 
-type Iteration = {
-  index: number;
-  statuses: Array<{ status: string; at_ms: number }>;
-  subscribed_at_ms: number | null;
+type Frame = {
+  entity_type: string;
+  entity_id: string;
+  change_seq: number;
+  at_ms: number;
+};
+
+type PhaseObservation = {
+  attempted: boolean;
   mutation_at_ms: number | null;
   journal_confirmed_at_ms: number | null;
   journal_change_seq: number | null;
   actor_select_visible: boolean | null;
   actor_select_at_ms: number | null;
   first_frame_at_ms: number | null;
-  frame_count: number;
-  frame_entity_ids: string[];
   late_frame_at_ms: number | null;
+  frame_change_seq: number | null;
+  matching_frame_count: number;
   delivery_latency_ms: number | null;
   pull_supplied_state: boolean | null;
+  outcome: RealtimeOutcome | "not_attempted";
+};
+
+type IterationOutcome =
+  | "channel_error"
+  | "readiness_failed"
+  | "business_delivery_failed"
+  | "delivered";
+
+type Iteration = {
+  index: number;
+  statuses: Array<{ status: string; at_ms: number }>;
+  subscribed_at_ms: number | null;
+  frame_count: number;
+  frame_entity_ids: string[];
   channel_error: string | null;
-  outcome: RealtimeOutcome;
+  readiness: PhaseObservation;
+  business: PhaseObservation;
+  outcome: IterationOutcome;
 };
 
 /// A refusal, not an assertion. The harness must be unable to point at a
@@ -93,6 +116,131 @@ function ms(from: number): number {
   return Math.round(performance.now() - from);
 }
 
+function pendingPhase(): PhaseObservation {
+  return {
+    attempted: false,
+    mutation_at_ms: null,
+    journal_confirmed_at_ms: null,
+    journal_change_seq: null,
+    actor_select_visible: null,
+    actor_select_at_ms: null,
+    first_frame_at_ms: null,
+    late_frame_at_ms: null,
+    frame_change_seq: null,
+    matching_frame_count: 0,
+    delivery_latency_ms: null,
+    pull_supplied_state: null,
+    outcome: "not_attempted",
+  };
+}
+
+async function runPhase(
+  phase: "readiness" | "business",
+  marker: string,
+  afterSeq: number,
+  timeoutMs: number,
+  t0: number,
+  client: SupabaseClient,
+  device: string,
+  service: SupabaseClient,
+  frames: Frame[],
+  getChannelError: () => string | null,
+): Promise<PhaseObservation> {
+  const observation = pendingPhase();
+  observation.attempted = true;
+  observation.mutation_at_ms = ms(t0);
+
+  const renamed = await service.from("rooms")
+    .update({ name: marker, updated_at: new Date().toISOString() })
+    .eq("id", SEED_ROOM);
+  if (renamed.error) {
+    throw new Error(`local_${phase}_rename_failed:${renamed.error.message}`);
+  }
+
+  const journal = await service.from("sync_change_journal")
+    .select("change_seq")
+    .eq("entity_id", SEED_ROOM)
+    .gt("change_seq", afterSeq)
+    .order("change_seq", { ascending: false })
+    .limit(1);
+  if (journal.data && journal.data.length > 0) {
+    observation.journal_confirmed_at_ms = ms(t0);
+    observation.journal_change_seq = Number(journal.data[0].change_seq);
+  }
+
+  if (observation.journal_change_seq !== null) {
+    const visible = await client.from("sync_change_journal")
+      .select("change_seq")
+      .eq("change_seq", observation.journal_change_seq);
+    observation.actor_select_visible =
+      !visible.error && (visible.data?.length ?? 0) > 0;
+    observation.actor_select_at_ms = ms(t0);
+  }
+
+  const matchingFrame = () =>
+    frames.find((frame) =>
+      frame.entity_type === "room" &&
+      frame.entity_id === SEED_ROOM &&
+      frame.change_seq > afterSeq
+    );
+
+  const deadline = performance.now() + timeoutMs;
+  while (performance.now() < deadline && !matchingFrame()) {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+
+  let frame = matchingFrame();
+  if (!frame) {
+    const graceDeadline = performance.now() + GRACE_WINDOW_MS;
+    while (performance.now() < graceDeadline && !matchingFrame()) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    frame = matchingFrame();
+    if (frame) observation.late_frame_at_ms = frame.at_ms;
+  } else {
+    observation.first_frame_at_ms = frame.at_ms;
+  }
+
+  observation.frame_change_seq = frame?.change_seq ?? null;
+  observation.matching_frame_count = frames.filter((candidate) =>
+    candidate.entity_type === "room" &&
+    candidate.entity_id === SEED_ROOM &&
+    candidate.change_seq > afterSeq
+  ).length;
+
+  if (
+    observation.first_frame_at_ms !== null &&
+    observation.mutation_at_ms !== null
+  ) {
+    observation.delivery_latency_ms =
+      observation.first_frame_at_ms - observation.mutation_at_ms;
+  }
+
+  const pulled = await client.rpc("pull_sync_changes", {
+    after_cursor: afterSeq,
+    batch_limit: 200,
+    device_id: device,
+  });
+  observation.pull_supplied_state = !pulled.error &&
+    (pulled.data?.changes ?? []).some((change: Record<string, unknown>) =>
+      change.entity_id === SEED_ROOM &&
+      String(
+        (change.payload as Record<string, unknown> ?? {}).name ?? "",
+      ) === marker
+    );
+
+  observation.outcome = classifyRealtimeOutcome({
+    subscribed: true,
+    channelError: getChannelError(),
+    journalCreated: observation.journal_change_seq !== null,
+    actorSelectVisible: observation.actor_select_visible,
+    frameSeen: observation.first_frame_at_ms !== null,
+    lateFrameSeen: observation.late_frame_at_ms !== null,
+  } satisfies FrameObservation);
+
+  return observation;
+}
+
 async function runIteration(
   index: number,
   url: string,
@@ -103,18 +251,11 @@ async function runIteration(
     index,
     statuses: [],
     subscribed_at_ms: null,
-    mutation_at_ms: null,
-    journal_confirmed_at_ms: null,
-    journal_change_seq: null,
-    actor_select_visible: null,
-    actor_select_at_ms: null,
-    first_frame_at_ms: null,
     frame_count: 0,
     frame_entity_ids: [],
-    late_frame_at_ms: null,
-    delivery_latency_ms: null,
-    pull_supplied_state: null,
     channel_error: null,
+    readiness: pendingPhase(),
+    business: pendingPhase(),
     outcome: "channel_error",
   };
 
@@ -149,18 +290,22 @@ async function runIteration(
     })).data?.next_cursor ?? 0,
   );
 
+  const frames: Frame[] = [];
   const channel = client.channel(`repro-${index}-${crypto.randomUUID()}`)
     .on(
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "sync_change_journal" },
       (payload) => {
         const row = payload.new as Record<string, unknown>;
+        const entityId = String(row.entity_id);
         it.frame_count += 1;
-        it.frame_entity_ids.push(String(row.entity_id));
-        if (String(row.entity_id) === SEED_ROOM) {
-          if (it.first_frame_at_ms === null) it.first_frame_at_ms = ms(t0);
-          else it.late_frame_at_ms ??= ms(t0);
-        }
+        it.frame_entity_ids.push(entityId);
+        frames.push({
+          entity_type: String(row.entity_type),
+          entity_id: entityId,
+          change_seq: Number(row.change_seq),
+          at_ms: ms(t0),
+        });
       },
     );
 
@@ -183,84 +328,55 @@ async function runIteration(
   if (!subscribed) {
     it.outcome = "channel_error";
     await client.removeChannel(channel);
+    await client.auth.signOut();
     return it;
   }
 
-  // The mutation. Service role, exactly as the production canary does it.
-  const marker = `REPRO ${index} invalidated ${crypto.randomUUID().slice(0, 8)}`;
-  const renamed = await service.from("rooms")
-    .update({ name: marker, updated_at: new Date().toISOString() })
-    .eq("id", SEED_ROOM);
-  if (renamed.error) throw new Error(`local_rename_failed:${renamed.error.message}`);
-  it.mutation_at_ms = ms(t0);
+  const readinessMarker =
+    `REPRO ${index} readiness ${crypto.randomUUID().slice(0, 8)}`;
+  it.readiness = await runPhase(
+    "readiness",
+    readinessMarker,
+    cursorBefore,
+    REALTIME_READINESS_TIMEOUT_MS,
+    t0,
+    client,
+    device,
+    service,
+    frames,
+    () => it.channel_error,
+  );
 
-  // Hop 1: did the trigger write a journal row at all? Service role, so this
-  // answers the question without RLS in the way.
-  const journal = await service.from("sync_change_journal")
-    .select("change_seq")
-    .eq("entity_id", SEED_ROOM)
-    .gt("change_seq", cursorBefore)
-    .order("change_seq", { ascending: false })
-    .limit(1);
-  if (journal.data && journal.data.length > 0) {
-    it.journal_confirmed_at_ms = ms(t0);
-    it.journal_change_seq = Number(journal.data[0].change_seq);
+  if (
+    it.readiness.outcome !== "delivered" ||
+    it.readiness.frame_change_seq === null
+  ) {
+    it.outcome = "readiness_failed";
+    await client.removeChannel(channel);
+    await client.auth.signOut();
+    return it;
   }
 
-  // Hop 2: can the subscribing actor SELECT that row under RLS? This is the
-  // exact predicate Realtime evaluates per subscriber, and — importantly — no
-  // check in the production canary exercises it: the pull RPC is SECURITY
-  // DEFINER and bypasses the journal policy entirely.
-  if (it.journal_change_seq !== null) {
-    const visible = await client.from("sync_change_journal")
-      .select("change_seq")
-      .eq("change_seq", it.journal_change_seq);
-    it.actor_select_visible = !visible.error && (visible.data?.length ?? 0) > 0;
-    it.actor_select_at_ms = ms(t0);
-  }
+  // A readiness frame can never satisfy the business assertion.
+  frames.length = 0;
+  const businessMarker =
+    `REPRO ${index} business ${crypto.randomUUID().slice(0, 8)}`;
+  it.business = await runPhase(
+    "business",
+    businessMarker,
+    it.readiness.frame_change_seq,
+    FRAME_TIMEOUT_MS,
+    t0,
+    client,
+    device,
+    service,
+    frames,
+    () => it.channel_error,
+  );
 
-  // Hop 3: the frame.
-  const deadline = performance.now() + FRAME_TIMEOUT_MS;
-  while (performance.now() < deadline && it.first_frame_at_ms === null) {
-    await new Promise((r) => setTimeout(r, 50));
-  }
-  const timedOut = it.first_frame_at_ms === null;
-  if (timedOut) {
-    // Bounded grace observation, for diagnosis only. The verdict is already
-    // decided: a frame that lands here is late, and late is a failure.
-    const graceDeadline = performance.now() + GRACE_WINDOW_MS;
-    while (performance.now() < graceDeadline && it.first_frame_at_ms === null) {
-      await new Promise((r) => setTimeout(r, 100));
-    }
-    if (it.first_frame_at_ms !== null) {
-      it.late_frame_at_ms = it.first_frame_at_ms;
-      it.first_frame_at_ms = null;
-    }
-  }
-
-  if (it.first_frame_at_ms !== null && it.mutation_at_ms !== null) {
-    it.delivery_latency_ms = it.first_frame_at_ms - it.mutation_at_ms;
-  }
-
-  const after = await client.rpc("pull_sync_changes", {
-    after_cursor: cursorBefore,
-    batch_limit: 200,
-    device_id: device,
-  });
-  it.pull_supplied_state = !after.error &&
-    (after.data?.changes ?? []).some((c: Record<string, unknown>) =>
-      c.entity_id === SEED_ROOM &&
-      String((c.payload as Record<string, unknown> ?? {}).name ?? "") === marker
-    );
-
-  it.outcome = classifyRealtimeOutcome({
-    subscribed: true,
-    channelError: it.channel_error,
-    journalCreated: it.journal_change_seq !== null,
-    actorSelectVisible: it.actor_select_visible,
-    frameSeen: it.first_frame_at_ms !== null,
-    lateFrameSeen: it.late_frame_at_ms !== null,
-  } satisfies FrameObservation);
+  it.outcome = it.business.outcome === "delivered"
+    ? "delivered"
+    : "business_delivery_failed";
 
   await client.removeChannel(channel);
   await client.auth.signOut();
@@ -294,10 +410,10 @@ async function main(): Promise<number> {
       const it = await runIteration(i, url, anonKey, service);
       iterations.push(it);
       console.log(
-        `iter ${String(i).padStart(2, " ")}  ${it.outcome.padEnd(38, " ")} ` +
-          `subscribed=${it.subscribed_at_ms}ms mutation=${it.mutation_at_ms}ms ` +
-          `journal=${it.journal_confirmed_at_ms}ms actor_select=${it.actor_select_visible} ` +
-          `frame=${it.first_frame_at_ms}ms latency=${it.delivery_latency_ms}ms ` +
+        `iter ${String(i).padStart(2, " ")}  ${it.outcome.padEnd(28, " ")} ` +
+          `subscribed=${it.subscribed_at_ms}ms ` +
+          `readiness=${it.readiness.outcome} ` +
+          `business=${it.business.outcome} ` +
           `frames=${it.frame_count}`,
       );
     }
@@ -309,11 +425,21 @@ async function main(): Promise<number> {
     }
   }
 
-  const latencies = iterations
-    .map((it) => it.delivery_latency_ms)
-    .filter((v): v is number => v !== null);
-  const stats = summariseLatencies(latencies);
+  const readinessLatencies = iterations
+    .map((it) => it.readiness.delivery_latency_ms)
+    .filter((value): value is number => value !== null);
+  const businessLatencies = iterations
+    .map((it) => it.business.delivery_latency_ms)
+    .filter((value): value is number => value !== null);
   const delivered = iterations.filter((it) => it.outcome === "delivered").length;
+
+  const countOutcomes = <T extends string>(values: T[]) =>
+    Object.fromEntries(
+      [...new Set(values)].map((outcome) => [
+        outcome,
+        values.filter((value) => value === outcome).length,
+      ]),
+    );
 
   const report = {
     tool: "realtime_journal_local_repro",
@@ -321,13 +447,21 @@ async function main(): Promise<number> {
     target_host: new URL(url).hostname,
     iterations: ITERATIONS,
     delivered,
-    timed_out: iterations.filter((it) => it.first_frame_at_ms === null).length,
-    outcomes: Object.fromEntries(
-      [...new Set(iterations.map((it) => it.outcome))].map((
-        o,
-      ) => [o, iterations.filter((it) => it.outcome === o).length]),
+    readiness_failed: iterations.filter((it) =>
+      it.outcome === "readiness_failed"
+    ).length,
+    business_delivery_failed: iterations.filter((it) =>
+      it.outcome === "business_delivery_failed"
+    ).length,
+    outcomes: countOutcomes(iterations.map((it) => it.outcome)),
+    readiness_outcomes: countOutcomes(
+      iterations.map((it) => it.readiness.outcome),
     ),
-    latency_ms: stats,
+    business_outcomes: countOutcomes(
+      iterations.map((it) => it.business.outcome),
+    ),
+    readiness_latency_ms: summariseLatencies(readinessLatencies),
+    business_latency_ms: summariseLatencies(businessLatencies),
     detail: iterations,
   };
   console.log("\n" + JSON.stringify(report, null, 2));

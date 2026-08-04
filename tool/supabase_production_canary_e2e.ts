@@ -67,6 +67,7 @@ const MOVEMENT_SCAN_ROWS = Number(
 );
 
 const FRAME_TIMEOUT_MS = 20_000;
+const REALTIME_READINESS_TIMEOUT_MS = 20_000;
 
 /// A bounded observation window that opens only after the deadline has already
 /// been missed and the check has already failed. It exists so a report can say
@@ -270,7 +271,8 @@ async function main(): Promise<number> {
     record("isolation", "a_client_cannot_write_the_journal", journalWrite.error !== null);
 
     // ---------------------------------------------------------------------
-    // 4. Realtime invalidation — one event, no burst
+    // 4. Realtime readiness plus business invalidation — two bounded
+    // events, no burst
     // ---------------------------------------------------------------------
     // The 2026-08-03 canary recorded this section's failure as a bare `false`
     // with an empty detail, which is not enough to act on: it cannot tell a
@@ -278,7 +280,12 @@ async function main(): Promise<number> {
     // timed and named separately, and the diagnostics travel in the report. The
     // verdict is unchanged — a frame naming the room, inside the deadline, or
     // this check fails.
-    const frames: Array<{ entity_id: string; at_ms: number }> = [];
+    const frames: Array<{
+      entity_type: string;
+      entity_id: string;
+      change_seq: number;
+      at_ms: number;
+    }> = [];
     const statuses: Array<{ status: string; at_ms: number }> = [];
     const realtimeT0 = Date.now();
     const since = () => Date.now() - realtimeT0;
@@ -299,8 +306,11 @@ async function main(): Promise<number> {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "sync_change_journal" },
         (payload) => {
+          const row = payload.new as Record<string, unknown>;
           frames.push({
-            entity_id: String((payload.new as Record<string, unknown>).entity_id),
+            entity_type: String(row.entity_type),
+            entity_id: String(row.entity_id),
+            change_seq: Number(row.change_seq),
             at_ms: since(),
           });
         },
@@ -322,19 +332,166 @@ async function main(): Promise<number> {
     const subscribedAtMs = subscribed ? since() : null;
     record("realtime", "subscription_established", subscribed);
 
-    const cursorBeforeEvent = bulk.cursor;
+    if (!subscribed) {
+      realtimeDiagnostics = {
+        outcome: "subscription_failed",
+        subscribed: false,
+        subscribed_at_ms: subscribedAtMs,
+        readiness: {
+          attempted: false,
+          confirmed: false,
+          timeout_ms: REALTIME_READINESS_TIMEOUT_MS,
+        },
+        status_transitions: statuses,
+        channel_error: channelError,
+      };
+      await headA.removeChannel(channel);
+      throw new Error(
+        `realtime_subscription_failed:${channelError ?? "not subscribed"}`,
+      );
+    }
+
+    const readinessCursor = bulk.cursor;
+    const readinessMutationAtMs = since();
+    const readinessRenamed = await service.from("rooms").update({
+      name: `CANARY ${canary.set.namespace} readiness-1`,
+      updated_at: new Date().toISOString(),
+    }).eq("id", canary.set.roomA);
+    if (readinessRenamed.error) {
+      await headA.removeChannel(channel);
+      throw new Error(
+        `canary_readiness_rename_failed:${redact(readinessRenamed.error)}`,
+      );
+    }
+
+    const readinessSeen = await waitFor(
+      () => frames.some((frame) =>
+        frame.entity_type === "room" &&
+        frame.entity_id === canary.set.roomA &&
+        frame.change_seq > readinessCursor
+      ),
+      REALTIME_READINESS_TIMEOUT_MS,
+    );
+    const readinessFrame = frames.find((frame) =>
+      frame.entity_type === "room" &&
+      frame.entity_id === canary.set.roomA &&
+      frame.change_seq > readinessCursor
+    );
+
+    let readinessJournalSeq: number | null = null;
+    let readinessActorSelectVisible: boolean | null = null;
+    let lateReadinessFrame = false;
+    if (!readinessSeen) {
+      const readinessJournalProbe = await service
+        .from("sync_change_journal")
+        .select("change_seq")
+        .eq("entity_id", canary.set.roomA)
+        .gt("change_seq", readinessCursor)
+        .order("change_seq", { ascending: false })
+        .limit(1);
+      readinessJournalSeq =
+        readinessJournalProbe.data?.[0]?.change_seq ?? null;
+
+      if (readinessJournalSeq !== null) {
+        const visible = await headA
+          .from("sync_change_journal")
+          .select("change_seq")
+          .eq("change_seq", readinessJournalSeq);
+        readinessActorSelectVisible =
+          !visible.error && (visible.data?.length ?? 0) > 0;
+      }
+
+      lateReadinessFrame = await waitFor(
+        () => frames.some((frame) =>
+          frame.entity_type === "room" &&
+          frame.entity_id === canary.set.roomA &&
+          frame.change_seq > readinessCursor
+        ),
+        FRAME_GRACE_MS,
+      );
+    }
+
+    const readinessOutcome = classifyRealtimeOutcome({
+      subscribed,
+      channelError,
+      journalCreated:
+        readinessSeen || readinessJournalSeq !== null,
+      actorSelectVisible: readinessActorSelectVisible,
+      frameSeen: readinessSeen,
+      lateFrameSeen: lateReadinessFrame,
+      otherEntityFrames: frames.filter((frame) =>
+        frame.entity_id !== canary.set.roomA
+      ).length,
+    });
+
+    const readinessPassed =
+      readinessSeen &&
+      readinessFrame !== undefined &&
+      outcomeIsPass(readinessOutcome);
+
+    const readinessDiagnostics = {
+      attempted: true,
+      confirmed: readinessPassed,
+      timeout_ms: REALTIME_READINESS_TIMEOUT_MS,
+      mutation_at_ms: readinessMutationAtMs,
+      frame_at_ms: readinessFrame?.at_ms ?? null,
+      latency_ms: readinessFrame
+        ? readinessFrame.at_ms - readinessMutationAtMs
+        : null,
+      change_seq: readinessFrame?.change_seq ?? null,
+      journal_change_seq_after_readiness: readinessJournalSeq,
+      actor_can_select_readiness_row: readinessActorSelectVisible,
+      late_readiness_frame_within_grace: lateReadinessFrame,
+      grace_window_ms: FRAME_GRACE_MS,
+      outcome: readinessOutcome,
+    };
+
+    realtimeDiagnostics = {
+      outcome: readinessPassed
+        ? "readiness_confirmed"
+        : readinessOutcome,
+      subscribed,
+      subscribed_at_ms: subscribedAtMs,
+      readiness: readinessDiagnostics,
+      status_transitions: statuses,
+      channel_error: channelError,
+    };
+    record("realtime", "readiness_confirmed",
+      readinessPassed,
+      readinessPassed && readinessFrame
+        ? `change_seq=${readinessFrame.change_seq}, ` +
+          `latency=${readinessDiagnostics.latency_ms}ms`
+        : `${readinessOutcome} — ${describeOutcome(readinessOutcome)}`);
+
+    if (!readinessPassed || !readinessFrame) {
+      await headA.removeChannel(channel);
+      throw new Error(
+        `realtime_readiness_failed:${readinessOutcome}`,
+      );
+    }
+
+    frames.length = 0;
+    const cursorBeforeEvent = readinessFrame.change_seq;
+    const mutationAtMs = since();
     const renamed = await service.from("rooms").update({
       name: `CANARY ${canary.set.namespace} invalidated`,
       updated_at: new Date().toISOString(),
     }).eq("id", canary.set.roomA);
     assertCondition(!renamed.error, `canary_rename_failed:${redact(renamed.error)}`);
-    const mutationAtMs = since();
 
     const sawFrame = await waitFor(
-      () => frames.some((frame) => frame.entity_id === canary.set.roomA),
+      () => frames.some((frame) =>
+        frame.entity_type === "room" &&
+        frame.entity_id === canary.set.roomA &&
+        frame.change_seq > cursorBeforeEvent
+      ),
       FRAME_TIMEOUT_MS,
     );
-    const firstFrame = frames.find((frame) => frame.entity_id === canary.set.roomA);
+    const firstFrame = frames.find((frame) =>
+      frame.entity_type === "room" &&
+      frame.entity_id === canary.set.roomA &&
+      frame.change_seq > cursorBeforeEvent
+    );
 
     // Post-timeout diagnosis. Both probes are reads, both are bounded, and
     // neither can change the verdict that was already decided above.
@@ -365,16 +522,22 @@ async function main(): Promise<number> {
       // Hop 3 — a short bounded grace window, so "never arrived" is told apart
       // from "arrived late". Late is still a failure; this only names it.
       lateFrame = await waitFor(
-        () => frames.some((frame) => frame.entity_id === canary.set.roomA),
+        () => frames.some((frame) =>
+          frame.entity_type === "room" &&
+          frame.entity_id === canary.set.roomA &&
+          frame.change_seq > cursorBeforeEvent
+        ),
         FRAME_GRACE_MS,
       );
     }
 
     realtimeDiagnostics = {
+      readiness: readinessDiagnostics,
       subscribed,
       subscribed_at_ms: subscribedAtMs,
       mutation_at_ms: mutationAtMs,
       first_frame_at_ms: firstFrame?.at_ms ?? null,
+      business_frame_change_seq: firstFrame?.change_seq ?? null,
       delivery_latency_ms: firstFrame ? firstFrame.at_ms - mutationAtMs : null,
       frame_count: frames.length,
       frame_entity_ids: frames.map((frame) => maskId(frame.entity_id)),

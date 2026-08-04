@@ -40,8 +40,16 @@ import {
   pendingRetirement,
   ProductionCanaryNamespace,
 } from "./production_canary_namespace.ts";
+import {
+  classifyRealtimeOutcome,
+  describeOutcome,
+  outcomeIsPass,
+  sanitiseChannelError,
+} from "./realtime_diagnostics.ts";
 
 const FRAME_TIMEOUT_MS = 20_000;
+const REALTIME_READINESS_TIMEOUT_MS = 20_000;
+const FRAME_GRACE_MS = 10_000;
 const SUBSCRIBE_TIMEOUT_MS = 20_000;
 const SILENCE_WINDOW_MS = 6_000;
 
@@ -54,7 +62,12 @@ const JOURNAL_COLUMNS = [
   "server_version", "changed_at",
 ];
 
-type Frame = { entity_type: string; entity_id: string; change_seq: number };
+type Frame = {
+  entity_type: string;
+  entity_id: string;
+  change_seq: number;
+  at_ms: number;
+};
 
 const results: Array<{ id: string; ok: boolean; detail: string }> = [];
 
@@ -66,9 +79,14 @@ function record(id: string, ok: boolean, detail = ""): void {
 class FrameCollector {
   readonly frames: Frame[] = [];
   readonly rawKeys = new Set<string>();
+  channelError: string | null = null;
   private channel: RealtimeChannel | null = null;
 
-  constructor(private readonly client: SupabaseClient, private readonly label: string) {}
+  constructor(
+    private readonly client: SupabaseClient,
+    private readonly label: string,
+    private readonly now: () => number = Date.now,
+  ) {}
 
   async subscribe(): Promise<void> {
     // The session has to exist before the channel does. supabase-js hands the
@@ -92,6 +110,7 @@ class FrameCollector {
             entity_type: String(row.entity_type),
             entity_id: String(row.entity_id),
             change_seq: Number(row.change_seq),
+            at_ms: this.now(),
           });
         },
       );
@@ -102,6 +121,7 @@ class FrameCollector {
         SUBSCRIBE_TIMEOUT_MS,
       );
       channel.subscribe((status, error) => {
+        if (error) this.channelError = sanitiseChannelError(error);
         if (status === "SUBSCRIBED") {
           clearTimeout(timer);
           resolve();
@@ -236,23 +256,193 @@ async function main(): Promise<number> {
   );
   let retirement: CanaryRetirement = pendingRetirement();
   const startedAt = new Date().toISOString();
+  const realtimeT0 = Date.now();
+  const since = () => Date.now() - realtimeT0;
+  let realtimeDiagnostics: Record<string, unknown> = {
+    readiness: {
+      attempted: false,
+      confirmed: false,
+      timeout_ms: REALTIME_READINESS_TIMEOUT_MS,
+    },
+    business: {
+      attempted: false,
+      delivered: false,
+      timeout_ms: FRAME_TIMEOUT_MS,
+    },
+  };
 
   try {
     const nurseA = await canary.signIn("nurseA");
     const deviceA = await canary.registerDevice(nurseA, "realtime-a");
-    const collectorA = new FrameCollector(nurseA, `a-${canary.set.token}`);
+    const collectorA = new FrameCollector(
+      nurseA, `a-${canary.set.token}`, since,
+    );
     await collectorA.subscribe();
     record("subscription_established", true);
+
+    const readinessCursor = await scopeCursor(
+      nurseA, deviceA, maxPages,
+    );
+    const readinessMutationAtMs = since();
+    const readinessRenamed = await renameCanaryRoom(
+      canary, canary.set.roomA, "readiness-1",
+    );
+    if (!readinessRenamed) {
+      await collectorA.unsubscribe();
+      throw new Error("canary_readiness_rename_failed");
+    }
+
+    const readinessSeen = await collectorA.waitFor(
+      (frames) => frames.some((frame) =>
+        frame.entity_type === "room" &&
+        frame.entity_id === canary.set.roomA &&
+        frame.change_seq > readinessCursor
+      ),
+      REALTIME_READINESS_TIMEOUT_MS,
+    );
+    const readinessFrame = collectorA.frames.find((frame) =>
+      frame.entity_type === "room" &&
+      frame.entity_id === canary.set.roomA &&
+      frame.change_seq > readinessCursor
+    );
+
+    let readinessJournalSeq: number | null = null;
+    let readinessActorSelectVisible: boolean | null = null;
+    let lateReadinessFrame = false;
+    if (!readinessSeen) {
+      const readinessJournalProbe = await canary.serviceClient()
+        .from("sync_change_journal")
+        .select("change_seq")
+        .eq("entity_id", canary.set.roomA)
+        .gt("change_seq", readinessCursor)
+        .order("change_seq", { ascending: false })
+        .limit(1);
+      readinessJournalSeq =
+        readinessJournalProbe.data?.[0]?.change_seq ?? null;
+
+      if (readinessJournalSeq !== null) {
+        const visible = await nurseA
+          .from("sync_change_journal")
+          .select("change_seq")
+          .eq("change_seq", readinessJournalSeq);
+        readinessActorSelectVisible =
+          !visible.error && (visible.data?.length ?? 0) > 0;
+      }
+
+      lateReadinessFrame = await collectorA.waitFor(
+        (frames) => frames.some((frame) =>
+          frame.entity_type === "room" &&
+          frame.entity_id === canary.set.roomA &&
+          frame.change_seq > readinessCursor
+        ),
+        FRAME_GRACE_MS,
+      );
+    }
+
+    const readinessOutcome = classifyRealtimeOutcome({
+      subscribed: true,
+      channelError: collectorA.channelError,
+      journalCreated:
+        readinessSeen || readinessJournalSeq !== null,
+      actorSelectVisible: readinessActorSelectVisible,
+      frameSeen: readinessSeen,
+      lateFrameSeen: lateReadinessFrame,
+      otherEntityFrames: collectorA.frames.filter((frame) =>
+        frame.entity_id !== canary.set.roomA
+      ).length,
+    });
+
+    const readinessPassed =
+      readinessSeen &&
+      readinessFrame !== undefined &&
+      outcomeIsPass(readinessOutcome);
+
+    const readinessDiagnostics = {
+      attempted: true,
+      confirmed: readinessPassed,
+      timeout_ms: REALTIME_READINESS_TIMEOUT_MS,
+      mutation_at_ms: readinessMutationAtMs,
+      frame_at_ms: readinessFrame?.at_ms ?? null,
+      latency_ms: readinessFrame
+        ? readinessFrame.at_ms - readinessMutationAtMs
+        : null,
+      change_seq: readinessFrame?.change_seq ?? null,
+      journal_change_seq_after_readiness: readinessJournalSeq,
+      actor_can_select_readiness_row: readinessActorSelectVisible,
+      late_readiness_frame_within_grace: lateReadinessFrame,
+      grace_window_ms: FRAME_GRACE_MS,
+      channel_error: collectorA.channelError,
+      outcome: readinessOutcome,
+    };
+    realtimeDiagnostics = {
+      readiness: readinessDiagnostics,
+      business: {
+        attempted: false,
+        delivered: false,
+        timeout_ms: FRAME_TIMEOUT_MS,
+      },
+    };
+    record("readiness_confirmed",
+      readinessPassed,
+      readinessPassed && readinessFrame
+        ? `change_seq=${readinessFrame.change_seq}, ` +
+          `latency=${readinessDiagnostics.latency_ms}ms`
+        : `${readinessOutcome} — ${describeOutcome(readinessOutcome)}`);
+
+    if (!readinessPassed || !readinessFrame) {
+      await collectorA.unsubscribe();
+      throw new Error(
+        `realtime_readiness_failed:${readinessOutcome}`,
+      );
+    }
+
+    collectorA.reset();
+    const readinessChangeSeq = readinessFrame.change_seq;
+    const businessMutationAtMs = since();
 
     // 1. A change inside the canary actor's own scope must reach it.
     const renamed = await renameCanaryRoom(canary, canary.set.roomA, "visible-1");
     assertCondition(renamed, "canary_room_rename_failed");
     const sawOwn = await collectorA.waitFor((frames) =>
       frames.some((frame) =>
-        frame.entity_type === "room" && frame.entity_id === canary.set.roomA
+        frame.entity_type === "room" &&
+        frame.entity_id === canary.set.roomA &&
+        frame.change_seq > readinessChangeSeq
       )
     );
-    record("own_scope_change_produces_invalidation", sawOwn);
+    const businessFrame = collectorA.frames.find((frame) =>
+      frame.entity_type === "room" &&
+      frame.entity_id === canary.set.roomA &&
+      frame.change_seq > readinessChangeSeq
+    );
+    const businessPassed =
+      sawOwn &&
+      businessFrame !== undefined &&
+      collectorA.channelError === null;
+
+    realtimeDiagnostics = {
+      readiness: readinessDiagnostics,
+      business: {
+        attempted: true,
+        delivered: businessPassed,
+        timeout_ms: FRAME_TIMEOUT_MS,
+        channel_error: collectorA.channelError,
+        mutation_at_ms: businessMutationAtMs,
+        frame_at_ms: businessFrame?.at_ms ?? null,
+        latency_ms: businessFrame
+          ? businessFrame.at_ms - businessMutationAtMs
+          : null,
+        change_seq: businessFrame?.change_seq ?? null,
+      },
+    };
+    const businessDetail = businessPassed && businessFrame
+      ? `change_seq=${businessFrame.change_seq}`
+      : collectorA.channelError
+      ? `channel_error=${collectorA.channelError}`
+      : "no business frame after readiness";
+    record("own_scope_change_produces_invalidation",
+      businessPassed,
+      businessDetail);
 
     // 2. The frame carries no business payload, so it cannot become a source of
     // truth even for a client that wanted it to be. On production this is the
@@ -360,6 +550,7 @@ async function main(): Promise<number> {
     namespace: canary.set.namespace,
     started_at_utc: startedAt,
     finished_at_utc: new Date().toISOString(),
+    realtime_diagnostics: realtimeDiagnostics,
     canary_writes: canaryWrites,
     canary_write_budget: MAX_CANARY_WRITES,
     rows_created: canary.createdRows().length,
